@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008/09/10  Bernhard Hobiger
+ * Copyright (C) 2008-11  Bernhard Hobiger
  *
  * This file is part of HoDoKu.
  *
@@ -40,7 +40,7 @@ import javax.swing.UIManager;
 
 /**
  *
- * @author  Bernhard Hobiger
+ * @author  hobiwan
  */
 public class ConfigGeneralPanel extends javax.swing.JPanel {
 
@@ -75,14 +75,14 @@ public class ConfigGeneralPanel extends javax.swing.JPanel {
         
         initComponents();
 
-        levelFGButtons = new JButton[Options.getInstance().difficultyLevels.length];
+        levelFGButtons = new JButton[Options.getInstance().getDifficultyLevels().length];
         levelFGButtons[0] = incompleteFGButton;
         levelFGButtons[1] = easyFGButton;
         levelFGButtons[2] = mediumFGButton;
         levelFGButtons[3] = hardFGButton;
         levelFGButtons[4] = unfairFGButton;
         levelFGButtons[5] = extremeFGButton;
-        levelBGButtons = new JButton[Options.getInstance().difficultyLevels.length];
+        levelBGButtons = new JButton[Options.getInstance().getDifficultyLevels().length];
         levelBGButtons[0] = incompleteBGButton;
         levelBGButtons[1] = easyBGButton;
         levelBGButtons[2] = mediumBGButton;
@@ -143,6 +143,7 @@ public class ConfigGeneralPanel extends javax.swing.JPanel {
         showWrongValuesCheckBox = new javax.swing.JCheckBox();
         showDeviationsCheckBox = new javax.swing.JCheckBox();
         saveWindowLayoutCheckBox = new javax.swing.JCheckBox();
+        alternativeMouseModeCheckBox = new javax.swing.JCheckBox();
         jPanel3 = new javax.swing.JPanel();
         valuesLabel = new javax.swing.JLabel();
         candidatesLabel = new javax.swing.JLabel();
@@ -169,6 +170,9 @@ public class ConfigGeneralPanel extends javax.swing.JPanel {
         localComboBox = new javax.swing.JComboBox();
         lookAndFeelComboBox = new javax.swing.JComboBox();
         shiftKeyCheckBox = new javax.swing.JCheckBox();
+        onlySmallCursorsCheckBox = new javax.swing.JCheckBox();
+        colorValuesCheckBox = new javax.swing.JCheckBox();
+        showSudokuSolvedCheckBox = new javax.swing.JCheckBox();
 
         java.util.ResourceBundle bundle = java.util.ResourceBundle.getBundle("intl/ConfigGeneralPanel"); // NOI18N
         jPanel1.setBorder(javax.swing.BorderFactory.createTitledBorder(bundle.getString("ConfigGeneralPanel.jPanel1.border.title"))); // NOI18N
@@ -433,6 +437,11 @@ public class ConfigGeneralPanel extends javax.swing.JPanel {
         saveWindowLayoutCheckBox.setBorder(javax.swing.BorderFactory.createEmptyBorder(0, 0, 0, 0));
         saveWindowLayoutCheckBox.setMargin(new java.awt.Insets(0, 0, 0, 0));
 
+        alternativeMouseModeCheckBox.setMnemonic(java.util.ResourceBundle.getBundle("intl/ConfigGeneralPanel").getString("ConfigGeneralPanel.alternativeMouseModeCheckBox.mnemonic").charAt(0));
+        alternativeMouseModeCheckBox.setText(bundle.getString("ConfigGeneralPanel.alternativeMouseModeCheckBox.text")); // NOI18N
+        alternativeMouseModeCheckBox.setBorder(javax.swing.BorderFactory.createEmptyBorder(0, 0, 0, 0));
+        alternativeMouseModeCheckBox.setMargin(new java.awt.Insets(0, 0, 0, 0));
+
         javax.swing.GroupLayout jPanel2Layout = new javax.swing.GroupLayout(jPanel2);
         jPanel2.setLayout(jPanel2Layout);
         jPanel2Layout.setHorizontalGroup(
@@ -440,11 +449,12 @@ public class ConfigGeneralPanel extends javax.swing.JPanel {
             .addGroup(jPanel2Layout.createSequentialGroup()
                 .addContainerGap()
                 .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(showDeviationsCheckBox)
-                    .addComponent(showWrongValuesCheckBox)
                     .addComponent(showCandidatesCheckBox)
-                    .addComponent(saveWindowLayoutCheckBox))
-                .addContainerGap(90, Short.MAX_VALUE))
+                    .addComponent(showWrongValuesCheckBox)
+                    .addComponent(showDeviationsCheckBox)
+                    .addComponent(saveWindowLayoutCheckBox)
+                    .addComponent(alternativeMouseModeCheckBox))
+                .addContainerGap(70, Short.MAX_VALUE))
         );
         jPanel2Layout.setVerticalGroup(
             jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -456,7 +466,9 @@ public class ConfigGeneralPanel extends javax.swing.JPanel {
                 .addComponent(showDeviationsCheckBox)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(saveWindowLayoutCheckBox)
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(alternativeMouseModeCheckBox)
+                .addContainerGap(46, Short.MAX_VALUE))
         );
 
         jPanel3.setBorder(javax.swing.BorderFactory.createTitledBorder(bundle.getString("ConfigGeneralPanel.jPanel3.border.title"))); // NOI18N
@@ -616,6 +628,15 @@ public class ConfigGeneralPanel extends javax.swing.JPanel {
         shiftKeyCheckBox.setMnemonic(java.util.ResourceBundle.getBundle("intl/ConfigGeneralPanel").getString("ConfigGeneralPanel.shiftKeyCheckBox.mnemonic").charAt(0));
         shiftKeyCheckBox.setText(bundle.getString("ConfigGeneralPanel.shiftKeyCheckBox.text")); // NOI18N
 
+        onlySmallCursorsCheckBox.setMnemonic(java.util.ResourceBundle.getBundle("intl/ConfigGeneralPanel").getString("ConfigGeneralPanel.onlySmallCursorsCheckBox.mnemonic").charAt(0));
+        onlySmallCursorsCheckBox.setText(bundle.getString("ConfigGeneralPanel.onlySmallCursorsCheckBox.text")); // NOI18N
+
+        colorValuesCheckBox.setMnemonic(java.util.ResourceBundle.getBundle("intl/ConfigGeneralPanel").getString("ConfigGeneralPanel.colorValuesCheckBox.mnemonics").charAt(0));
+        colorValuesCheckBox.setText(bundle.getString("ConfigGeneralPanel.colorValuesCheckBox.text")); // NOI18N
+
+        showSudokuSolvedCheckBox.setMnemonic(java.util.ResourceBundle.getBundle("intl/ConfigGeneralPanel").getString("ConfigGeneralPanel.showSudokuSolvedCheckBox.mnemonic").charAt(0));
+        showSudokuSolvedCheckBox.setText(bundle.getString("ConfigGeneralPanel.showSudokuSolvedCheckBox.text")); // NOI18N
+
         javax.swing.GroupLayout jPanel4Layout = new javax.swing.GroupLayout(jPanel4);
         jPanel4.setLayout(jPanel4Layout);
         jPanel4Layout.setHorizontalGroup(
@@ -623,6 +644,9 @@ public class ConfigGeneralPanel extends javax.swing.JPanel {
             .addGroup(jPanel4Layout.createSequentialGroup()
                 .addContainerGap()
                 .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(showSudokuSolvedCheckBox)
+                    .addComponent(colorValuesCheckBox)
+                    .addComponent(onlySmallCursorsCheckBox)
                     .addComponent(shiftKeyCheckBox)
                     .addGroup(jPanel4Layout.createSequentialGroup()
                         .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -646,7 +670,12 @@ public class ConfigGeneralPanel extends javax.swing.JPanel {
                     .addComponent(lookAndFeelComboBox, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                 .addComponent(shiftKeyCheckBox)
-                .addContainerGap(13, Short.MAX_VALUE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(onlySmallCursorsCheckBox)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(colorValuesCheckBox)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(showSudokuSolvedCheckBox))
         );
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(this);
@@ -676,9 +705,9 @@ public class ConfigGeneralPanel extends javax.swing.JPanel {
                     .addComponent(jPanel3, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                    .addComponent(jPanel2, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(jPanel4, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 17, Short.MAX_VALUE)
+                    .addComponent(jPanel2, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(jPanel4, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 18, Short.MAX_VALUE)
                 .addComponent(resetButton)
                 .addContainerGap())
         );
@@ -758,30 +787,31 @@ public class ConfigGeneralPanel extends javax.swing.JPanel {
         levels[2].setMaxScore(Integer.parseInt(mediumTextField.getText()));
         levels[3].setMaxScore(Integer.parseInt(hardTextField.getText()));
         levels[4].setMaxScore(Integer.parseInt(unfairTextField.getText()));
-        Options.getInstance().difficultyLevels = Options.getInstance().copyDifficultyLevels(levels);
+        Options.getInstance().setDifficultyLevels(Options.getInstance().copyDifficultyLevels(levels));
         
-        Options.getInstance().showCandidates = showCandidatesCheckBox.isSelected();
-        Options.getInstance().showWrongValues = showWrongValuesCheckBox.isSelected();
-        Options.getInstance().showDeviations = showDeviationsCheckBox.isSelected();
-        Options.getInstance().saveWindowLayout = saveWindowLayoutCheckBox.isSelected();
+        Options.getInstance().setShowCandidates(showCandidatesCheckBox.isSelected());
+        Options.getInstance().setShowWrongValues(showWrongValuesCheckBox.isSelected());
+        Options.getInstance().setShowDeviations(showDeviationsCheckBox.isSelected());
+        Options.getInstance().setSaveWindowLayout(saveWindowLayoutCheckBox.isSelected());
+        Options.getInstance().setAlternativeMouseMode(alternativeMouseModeCheckBox.isSelected());
         
-        Options.getInstance().defaultValueFont = fonts[0];
-        Options.getInstance().defaultCandidateFont = fonts[1];
-        Options.getInstance().bigFont = fonts[2];
-        Options.getInstance().smallFont = fonts[3];
+        Options.getInstance().setDefaultValueFont(fonts[0]);
+        Options.getInstance().setDefaultCandidateFont(fonts[1]);
+        Options.getInstance().setBigFont(fonts[2]);
+        Options.getInstance().setSmallFont(fonts[3]);
         
-        Options.getInstance().valueFontFactor = Double.parseDouble(valueFactorTextField.getText());
-        Options.getInstance().candidateFontFactor = Double.parseDouble(candidateFactorTextField.getText());
-        Options.getInstance().hintBackFactor = Double.parseDouble(hintFactorTextField.getText());
+        Options.getInstance().setValueFontFactor(Double.parseDouble(valueFactorTextField.getText()));
+        Options.getInstance().setCandidateFontFactor(Double.parseDouble(candidateFactorTextField.getText()));
+        Options.getInstance().setHintBackFactor(Double.parseDouble(hintFactorTextField.getText()));
         
         language = availableIsoLanguages.get(localComboBox.getSelectedIndex());
-        if (! language.equals(Options.getInstance().language)) {
+        if (! language.equals(Options.getInstance().getLanguage())) {
             JOptionPane.showMessageDialog(this, java.util.ResourceBundle.getBundle("intl/ConfigGeneralPanel").getString("GeneralConfigPanel.restart_program"));
         }
-        Options.getInstance().language = language;
+        Options.getInstance().setLanguage(language);
         
         laf = availableLafClassNames.get(lookAndFeelComboBox.getSelectedIndex());
-        if (! laf.equals(Options.getInstance().laf)) {
+        if (! laf.equals(Options.getInstance().getLaf())) {
             try {
                 if (laf.equals("")) {
                     UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
@@ -794,9 +824,12 @@ public class ConfigGeneralPanel extends javax.swing.JPanel {
                 Logger.getLogger(getClass().getName()).log(Level.SEVERE, "Error setting LAF", ex);
             }
         }
-        Options.getInstance().laf = laf;
+        Options.getInstance().setLaf(laf);
 
-        Options.getInstance().useShiftForRegionSelect = shiftKeyCheckBox.isSelected();
+        Options.getInstance().setUseShiftForRegionSelect(shiftKeyCheckBox.isSelected());
+        Options.getInstance().setOnlySmallCursors(onlySmallCursorsCheckBox.isSelected());
+        Options.getInstance().setColorValues(colorValuesCheckBox.isSelected());
+        Options.getInstance().setShowSudokuSolved(showSudokuSolvedCheckBox.isSelected());
     }
     
     private void initAll(boolean setDefault) {
@@ -807,6 +840,7 @@ public class ConfigGeneralPanel extends javax.swing.JPanel {
             showWrongValuesCheckBox.setSelected(Options.SHOW_WRONG_VALUES);
             showDeviationsCheckBox.setSelected(Options.SHOW_DEVIATIONS);
             saveWindowLayoutCheckBox.setSelected(Options.SAVE_WINDOW_LAYOUT);
+            alternativeMouseModeCheckBox.setSelected(Options.ALTERNATIVE_MOUSE_MODE);
             
             fonts[0] = Options.DEFAULT_VALUE_FONT;
             fonts[1] = Options.DEFAULT_CANDIDATE_FONT;
@@ -820,26 +854,33 @@ public class ConfigGeneralPanel extends javax.swing.JPanel {
             language = Options.DEFAULT_LANGUAGE;
             laf = Options.DEFAULT_LAF;
             shiftKeyCheckBox.setSelected(Options.USE_SHIFT_FOR_REGION_SELECT);
+            onlySmallCursorsCheckBox.setSelected(Options.ONLY_SMALL_CURSORS);
+            colorValuesCheckBox.setSelected(Options.COLOR_VALUES);
+            showSudokuSolvedCheckBox.setSelected(Options.SHOW_SUDOKU_SOLVED);
         } else {
-            levels = Options.getInstance().copyDifficultyLevels(Options.getInstance().difficultyLevels);
+            levels = Options.getInstance().copyDifficultyLevels(Options.getInstance().getDifficultyLevels());
             
-            showCandidatesCheckBox.setSelected(Options.getInstance().showCandidates);
-            showWrongValuesCheckBox.setSelected(Options.getInstance().showWrongValues);
-            showDeviationsCheckBox.setSelected(Options.getInstance().showDeviations);
-            saveWindowLayoutCheckBox.setSelected(Options.getInstance().saveWindowLayout);
+            showCandidatesCheckBox.setSelected(Options.getInstance().isShowCandidates());
+            showWrongValuesCheckBox.setSelected(Options.getInstance().isShowWrongValues());
+            showDeviationsCheckBox.setSelected(Options.getInstance().isShowDeviations());
+            saveWindowLayoutCheckBox.setSelected(Options.getInstance().isSaveWindowLayout());
+            alternativeMouseModeCheckBox.setSelected(Options.getInstance().isAlternativeMouseMode());
             
-            fonts[0] = Options.getInstance().defaultValueFont;
-            fonts[1] = Options.getInstance().defaultCandidateFont;
-            fonts[2] = Options.getInstance().bigFont;
-            fonts[3] = Options.getInstance().smallFont;
+            fonts[0] = Options.getInstance().getDefaultValueFont();
+            fonts[1] = Options.getInstance().getDefaultCandidateFont();
+            fonts[2] = Options.getInstance().getBigFont();
+            fonts[3] = Options.getInstance().getSmallFont();
             
-            valueFactor = Options.getInstance().valueFontFactor;
-            candidateFactor = Options.getInstance().candidateFontFactor;
-            hintFactor = Options.getInstance().hintBackFactor;
+            valueFactor = Options.getInstance().getValueFontFactor();
+            candidateFactor = Options.getInstance().getCandidateFontFactor();
+            hintFactor = Options.getInstance().getHintBackFactor();
             
-            language = Options.getInstance().language;
-            laf = Options.getInstance().laf;
-            shiftKeyCheckBox.setSelected(Options.getInstance().useShiftForRegionSelect);
+            language = Options.getInstance().getLanguage();
+            laf = Options.getInstance().getLaf();
+            shiftKeyCheckBox.setSelected(Options.getInstance().isUseShiftForRegionSelect());
+            onlySmallCursorsCheckBox.setSelected(Options.getInstance().isOnlySmallCursors());
+            colorValuesCheckBox.setSelected(Options.getInstance().isColorValues());
+            showSudokuSolvedCheckBox.setSelected(Options.getInstance().isShowSudokuSolved());
         }
         
         initButtons();
@@ -985,11 +1026,13 @@ public class ConfigGeneralPanel extends javax.swing.JPanel {
     }
     
     // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JCheckBox alternativeMouseModeCheckBox;
     private javax.swing.JTextField candidateFactorTextField;
     private javax.swing.JButton candidatesButton;
     private javax.swing.JLabel candidatesFactorLabel;
     private javax.swing.JLabel candidatesFontLabel;
     private javax.swing.JLabel candidatesLabel;
+    private javax.swing.JCheckBox colorValuesCheckBox;
     private javax.swing.JButton easyBGButton;
     private javax.swing.JButton easyFGButton;
     private javax.swing.JLabel easyLabel;
@@ -1020,6 +1063,7 @@ public class ConfigGeneralPanel extends javax.swing.JPanel {
     private javax.swing.JButton mediumFGButton;
     private javax.swing.JLabel mediumLabel;
     private javax.swing.JTextField mediumTextField;
+    private javax.swing.JCheckBox onlySmallCursorsCheckBox;
     private javax.swing.JButton printLargeButton;
     private javax.swing.JLabel printLargeFontLabel;
     private javax.swing.JLabel printLargeLabel;
@@ -1031,6 +1075,7 @@ public class ConfigGeneralPanel extends javax.swing.JPanel {
     private javax.swing.JCheckBox shiftKeyCheckBox;
     private javax.swing.JCheckBox showCandidatesCheckBox;
     private javax.swing.JCheckBox showDeviationsCheckBox;
+    private javax.swing.JCheckBox showSudokuSolvedCheckBox;
     private javax.swing.JCheckBox showWrongValuesCheckBox;
     private javax.swing.JButton unfairBGButton;
     private javax.swing.JButton unfairFGButton;

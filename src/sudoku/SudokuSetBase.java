@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008/09/10  Bernhard Hobiger
+ * Copyright (C) 2008-11  Bernhard Hobiger
  *
  * This file is part of HoDoKu.
  *
@@ -25,7 +25,7 @@ import java.util.logging.Logger;
 
 /**
  *
- * @author Bernhard Hobiger
+ * @author hobiwan
  */
 public class SudokuSetBase implements Cloneable, Serializable {
     private static final long serialVersionUID = 1L;
@@ -49,8 +49,8 @@ public class SudokuSetBase implements Cloneable, Serializable {
         0x0100000000000000L, 0x0200000000000000L, 0x0400000000000000L, 0x0800000000000000L,
         0x1000000000000000L, 0x2000000000000000L, 0x4000000000000000L, 0x8000000000000000L
     };
-    private static final long MAX_MASK1 = 0xFFFFFFFFFFFFFFFFL;
-    private static final long MAX_MASK2 = 0x1FFFFL;
+    public static final long MAX_MASK1 = 0xFFFFFFFFFFFFFFFFL;
+    public static final long MAX_MASK2 = 0x1FFFFL;
     protected long mask1 = 0; //  0 - 63
 
     protected long mask2 = 0; // 64 - 80
@@ -106,7 +106,7 @@ public class SudokuSetBase implements Cloneable, Serializable {
         initialized = false;
     }
 
-    public void set(SudokuSetBase set) {
+    public final void set(SudokuSetBase set) {
         mask1 = set.mask1;
         mask2 = set.mask2;
         initialized = false;
@@ -120,6 +120,12 @@ public class SudokuSetBase implements Cloneable, Serializable {
         for (int i = 0; i < data.length; i++) {
             add(data[i]);
         }
+    }
+
+    public void set(long m1, long m2) {
+        mask1 = m1;
+        mask2 = m2;
+        initialized = false;
     }
 
     /**
@@ -143,8 +149,22 @@ public class SudokuSetBase implements Cloneable, Serializable {
 
     @Override
     public boolean equals(Object o) {
+        if (o == null) {
+            return false;
+        }
+        if (! (o instanceof SudokuSetBase)) {
+            return false;
+        }
         SudokuSetBase s = (SudokuSetBase) o;
         return mask1 == s.mask1 && mask2 == s.mask2;
+    }
+
+    @Override
+    public int hashCode() {
+        int hash = 3;
+        hash = 71 * hash + (int) (this.mask1 ^ (this.mask1 >>> 32));
+        hash = 71 * hash + (int) (this.mask2 ^ (this.mask2 >>> 32));
+        return hash;
     }
 
     public void clear() {
@@ -152,7 +172,7 @@ public class SudokuSetBase implements Cloneable, Serializable {
         initialized = false;
     }
 
-    public void setAll() {
+    public final void setAll() {
         mask1 = MAX_MASK1;
         mask2 = MAX_MASK2;
         initialized = false;
@@ -257,6 +277,56 @@ public class SudokuSetBase implements Cloneable, Serializable {
         initialized = false;
     }
 
+    /**
+     * Calculates this | (s1 & s2);
+     * 
+     * @param s1
+     * @param s2
+     */
+    public void orAndAnd(SudokuSetBase s1, SudokuSetBase s2) {
+        mask1 |= (s1.mask1 & s2.mask1);
+        mask2 |= (s1.mask2 & s2.mask2);
+        initialized = false;
+    }
+
+    /**
+     * Calculates this = (s1 & s2)
+     * @param s1
+     * @param s2
+     */
+    public void setAnd(SudokuSetBase s1, SudokuSetBase s2) {
+        mask1 = (s1.mask1 & s2.mask1);
+        mask2 = (s1.mask2 & s2.mask2);
+        initialized = false;
+    }
+
+    /**
+     * Calculates this = (s1 & s2) and returns this.isEmpty()
+     * @param s1
+     * @param s2
+     */
+    public static boolean andEmpty(SudokuSetBase s1, SudokuSetBase s2) {
+        return ((s1.mask1 & s2.mask1) == 0 && (s1.mask2 & s2.mask2) == 0);
+    }
+
+    /**
+     * Calculates this = (s1 | s2)
+     * @param s1
+     * @param s2
+     */
+    public void setOr(SudokuSetBase s1, SudokuSetBase s2) {
+//        System.out.println("    setOr");
+//        System.out.println("    " + pM(s1.mask1));
+//        System.out.println("    " + pM(s2.mask1));
+//        System.out.println("    " + pM(s1.mask1|s2.mask1));
+//        System.out.println("    " + pM(s1.mask2));
+//        System.out.println("    " + pM(s2.mask2));
+//        System.out.println("    " + pM(s1.mask2|s2.mask2));
+        mask1 = (s1.mask1 | s2.mask1);
+        mask2 = (s1.mask2 | s2.mask2);
+        initialized = false;
+    }
+
     protected String pM(long mask) {
         return Long.toHexString(mask);
     }
@@ -281,12 +351,12 @@ public class SudokuSetBase implements Cloneable, Serializable {
         if (anz == 0) {
             return "empty!";
         }
-        StringBuffer tmp = new StringBuffer();
+        StringBuilder tmp = new StringBuilder();
         tmp.append(Integer.toString(values[0]));
         for (int i = 1; i < anz; i++) {
-            tmp.append(" " + Integer.toString(values[i]));
+            tmp.append(" ").append(Integer.toString(values[i]));
         }
-        tmp.append(" " + pM(mask1) + "/" + pM(mask2));
+        tmp.append(" ").append(pM(mask1)).append("/").append(pM(mask2));
         return tmp.toString();
     }
 

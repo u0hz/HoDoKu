@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008/09/10  Bernhard Hobiger
+ * Copyright (C) 2008-11  Bernhard Hobiger
  *
  * This file is part of HoDoKu.
  *
@@ -22,6 +22,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.SortedMap;
 import java.util.Stack;
+import solver.SudokuSolver;
 
 /**
  * Holds the complete GUI state at a given time. The state consists of the
@@ -53,32 +54,32 @@ import java.util.Stack;
  * class.<br>
  * In addition to the attributes described above every GUI state can have a
  * name and a timestamp.
+ * 
  * @author hobiwan
  */
 public class GuiState {
     // items from SudokuPanel
-    Sudoku sudoku = null;
-    Sudoku solvedSudoku = null;
-    Stack<Sudoku> undoStack = null;
-    Stack<Sudoku> redoStack = null;
-    SolutionStep step = null;
-    int chainIndex = -1;
-    SortedMap<Integer, Integer> coloringMap = null;
-    SortedMap<Integer, Integer> coloringCandidateMap = null;
+    private Sudoku2 sudoku = null;
+    private Stack<Sudoku2> undoStack = null;
+    private Stack<Sudoku2> redoStack = null;
+    private SolutionStep step = null;
+    private int chainIndex = -1;
+    private SortedMap<Integer, Integer> coloringMap = null;
+    private SortedMap<Integer, Integer> coloringCandidateMap = null;
 
     // items from SudokuSolver
-    List<SolutionStep> steps;
-    int[] anzSteps;
+    private List<SolutionStep> steps;
+    private int[] anzSteps;
 
     // items from SolutionPanel
-    List<String> titels;
-    List<List<SolutionStep>> tabSteps;
+    private List<String> titels;
+    private List<List<SolutionStep>> tabSteps;
 
     // name and timestamp
-    String name;
-    Date timestamp;
+    private String name;
+    private Date timestamp;
     
-    // internal fields
+    // internal fields, are not written by XMLEncoder
     private SudokuPanel sudokuPanel;
     private SudokuSolver sudokuSolver;
     private SolutionPanel solutionPanel;
@@ -108,7 +109,7 @@ public class GuiState {
      * @param sudokuSolver
      * @param solutionPanel
      */
-    public void initialize(SudokuPanel sudokuPanel, SudokuSolver sudokuSolver, SolutionPanel solutionPanel) {
+    public final void initialize(SudokuPanel sudokuPanel, SudokuSolver sudokuSolver, SolutionPanel solutionPanel) {
         this.sudokuPanel = sudokuPanel;
         this.sudokuSolver = sudokuSolver;
         this.solutionPanel = solutionPanel;
@@ -151,56 +152,42 @@ public class GuiState {
      * @return the sudoku
      */
     public // items from SudokuPanel
-    Sudoku getSudoku() {
+    Sudoku2 getSudoku() {
         return sudoku;
     }
 
     /**
      * @param sudoku the sudoku to set
      */
-    public void setSudoku(Sudoku sudoku) {
+    public void setSudoku(Sudoku2 sudoku) {
         this.sudoku = sudoku;
-    }
-
-    /**
-     * @return the solvedSudoku
-     */
-    public Sudoku getSolvedSudoku() {
-        return solvedSudoku;
-    }
-
-    /**
-     * @param solvedSudoku the solvedSudoku to set
-     */
-    public void setSolvedSudoku(Sudoku solvedSudoku) {
-        this.solvedSudoku = solvedSudoku;
     }
 
     /**
      * @return the undoStack
      */
-    public Stack<Sudoku> getUndoStack() {
+    public Stack<Sudoku2> getUndoStack() {
         return undoStack;
     }
 
     /**
      * @param undoStack the undoStack to set
      */
-    public void setUndoStack(Stack<Sudoku> undoStack) {
+    public void setUndoStack(Stack<Sudoku2> undoStack) {
         this.undoStack = undoStack;
     }
 
     /**
      * @return the redoStack
      */
-    public Stack<Sudoku> getRedoStack() {
+    public Stack<Sudoku2> getRedoStack() {
         return redoStack;
     }
 
     /**
      * @param redoStack the redoStack to set
      */
-    public void setRedoStack(Stack<Sudoku> redoStack) {
+    public void setRedoStack(Stack<Sudoku2> redoStack) {
         this.redoStack = redoStack;
     }
 
@@ -321,8 +308,7 @@ public class GuiState {
     /**
      * @return the name
      */
-    public // name and timestamp
-    String getName() {
+    public String getName() {
         return name;
     }
 

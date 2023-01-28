@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008/09/10  Bernhard Hobiger
+ * Copyright (C) 2008-11  Bernhard Hobiger
  *
  * This file is part of HoDoKu.
  *
@@ -43,7 +43,7 @@ import javax.swing.table.TableColumnModel;
 
 /**
  *
- * @author Bernhard_2
+ * @author hobiwan
  */
 public class RestoreSavePointDialog extends javax.swing.JDialog {
 
@@ -197,8 +197,8 @@ public class RestoreSavePointDialog extends javax.swing.JDialog {
         DateFormat tf = DateFormat.getTimeInstance();
         for (int i = 0; i < savePoints.size(); i++) {
             GuiState state = savePoints.get(i);
-            data[i][0] = tf.format(state.timestamp);
-            data[i][1] = state.name;
+            data[i][0] = tf.format(state.getTimestamp());
+            data[i][1] = state.getName();
         }
         savePointTable.setModel(new DefaultTableModel(data, columnNames) {
 

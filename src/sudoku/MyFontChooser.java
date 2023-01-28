@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008/09/10  Bernhard Hobiger
+ * Copyright (C) 2008-11  Bernhard Hobiger
  *
  * This file is part of HoDoKu.
  *
@@ -52,8 +52,8 @@ import javax.swing.event.ListSelectionListener;
  * <p>Der Dialog verwendet NullLayout, es kann daher zu Anzeigeproblemen
  * kommen, wenn nicht das aktuelle Windows-PlugAndFeel des JRE 1.5
  * verwendet wird.</p>
- * @author Bernhard Hobiger
- * @version 1.0
+ * 
+ * @author hobiwan
  */
 public class MyFontChooser extends javax.swing.JDialog implements ListSelectionListener {
     
@@ -91,6 +91,7 @@ public class MyFontChooser extends javax.swing.JDialog implements ListSelectionL
      * @param parent Referenz auf den aufrufenden Dialog (darf nicht <CODE>null</CODE> sein).
      * @param modal <CODE>true</CODE>, wenn der Dialog modal sein soll, sonst <CODE>false</CODE>.
      */
+    @SuppressWarnings("LeakingThisInConstructor")
     private MyFontChooser(Frame owner, boolean modal) {
         super(owner, modal);
         if (fontNames == null)

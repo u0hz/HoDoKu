@@ -1,3 +1,50 @@
+20110806:
+
+   - user created arrows (3022071)
+   - Add a pattern generator to sudoku creation that allows a user to specify which cells should contain givens.
+     (2940097)
+   - Hints when "Show all candidates" is not selected (3387347)
+   - Add mouse click detection (3387327)
+   - Add animation for automatic solving (3387362)
+   - Alt-click for candidates (3387344)
+   - Undo leads to incorrect hints (3260556) (2963769)
+
+ok - Tooltips für alle Knöpfe und Menüs (2990569)
+ok - Add extended print options (3387351)
+ok - Add progress and success marker (3387345)
+ok - create puzzles in the background (3011686) (2940101)
+ok - Store difficulty level between runs (3394539)
+ok - fix "Print solution" (3387212)
+ok - highlight more than one candidate (3324082)
+     <ctrl>-<click> um mehrere Kandidaten auszuwählen
+     ????? wenn alle Kandidate in der Zelle sind oder wenn irgendein Kandidat in der Zelle ist ???????
+ok - Nimbus: selected techniques are not highlighted (3303097)
+ok - It should be possible to remove candidates from a group of cells via the keyboard. If the candidate is set 
+     in at least one cell, the candidate is removed from all cells else it is set in all cells. (3296914)
+ok - The following grid causes a "Multiple Solutions" warning in version 2.0.1. (see sf.net) (3214361)
+ok - rework loading of incorrect puzzles (3144406) (2970905)
+ok - Hidden Pair incorrectly identified as Locked Pair (3134693)
+ok - Create Sudoku Window hangs (3098767)
+ok - The 'Show Deviations' option is not being remembered every time a new game is started. The option to show 
+     deviations on startup is unchecked in the options, and it is off when starting HoDoKU up, but it 
+     automatically turns itself back on every time the new game button is clicked. (3054092)
+ok - puzzle creation training mode: accept any puzzle that contains one of the training techniques (2995579)
+ok - Arrows drawn incorrectly (2954459)
+ok - Load hodoku.hcfg from program directory (2940096)
+ok - UR with missing candidates (2689169)
+ok - Hide hint pane, toolbar; fullscreen? (3387335)
+ok - Change display of focus (3387341)
+ok - Set value in group of cells is broken (3387353)
+ok - Add filter for bivalue cells (3387355)
+ok - Add mode as startup options (3387356)
+ok - Add "vage hint" and "concrete hint" buttons in the hint pane (3387357)
+ok - Add "solve up to" feature (3387359)
+ok - Rework display position of fonts; (make size in cell view configurable - not now)
+ok - gesetzt Zellen nicht färben (konfigurierbar) (3394519)
+
+
+20??-??-??:
+
 ok Bugs in Grouped Continuous Nice Loop fixen (Group nodes und ALS fehlerhaft)
 ok Bug in Forcing Net: "700000004020600010005000800030910000000050000000203090800000700060009020004000005"
    :0000:x:7.......4.2.6...1.+6.5.+9.8.+2.3.91.......+45+6+2.....2.3.9.8.....7...6...9.2...4.....5:112 813 815 318 748 848 152 162 762 862 163 667 169 972 378 179 181 184 384 192 795 895 796 896 698::
@@ -61,7 +108,7 @@ ok - Savepoints setzen
 ok - History of generated puzzles
    - Automatic error report when invalid candidate eliminations are done by the program
    - DUAL Skyscrapers
-   - URs with missing candidates
+ok - URs with missing candidates
 ok - Backdoor searcher (configurable)
 ok - Add "advancing rating" to steps (configurable)
 ok - Allow different sorting options in "show all steps"

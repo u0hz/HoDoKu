@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008/09/10  Bernhard Hobiger
+ * Copyright (C) 2008-11  Bernhard Hobiger
  *
  * This file is part of HoDoKu.
  *
@@ -44,7 +44,7 @@ import javax.swing.table.TableColumnModel;
 
 /**
  *
- * @author Bernhard_2
+ * @author hobiwan
  */
 public class HistoryDialog extends javax.swing.JDialog {
     private MainFrame mainFrame;
@@ -69,7 +69,7 @@ public class HistoryDialog extends javax.swing.JDialog {
 
         initTable();
 
-        previewCheckBox.setSelected(Options.getInstance().historyPreview);
+        previewCheckBox.setSelected(Options.getInstance().isHistoryPreview());
         
         getRootPane().setDefaultButton(okButton);
 
@@ -211,7 +211,7 @@ public class HistoryDialog extends javax.swing.JDialog {
 
     private void previewCheckBoxActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_previewCheckBoxActionPerformed
         //System.out.println("preview " + previewCheckBox.isSelected());
-        Options.getInstance().historyPreview = previewCheckBox.isSelected();
+        Options.getInstance().setHistoryPreview(previewCheckBox.isSelected());
     }//GEN-LAST:event_previewCheckBoxActionPerformed
 
     /**
@@ -220,11 +220,11 @@ public class HistoryDialog extends javax.swing.JDialog {
      * the corresponding puzzles as 81 character strings.
      */
     private void initTable() {
-        List<String> list = Options.getInstance().historyOfCreatedPuzzles;
+        List<String> list = Options.getInstance().getHistoryOfCreatedPuzzles();
         data = new String[list.size()][4];
         puzzles = new String[list.size()];
         stepLevels = new int[list.size()];
-        DifficultyLevel[] levels = Options.getInstance().difficultyLevels;
+        DifficultyLevel[] levels = Options.getInstance().getDifficultyLevels();
         DateFormat df = DateFormat.getDateInstance();
         DateFormat tf = DateFormat.getTimeInstance();
         for (int i = 0; i < list.size(); i++) {
@@ -329,8 +329,8 @@ public class HistoryDialog extends javax.swing.JDialog {
             MyTableCellRenderer comp = (MyTableCellRenderer) super.getTableCellRendererComponent(table,
                     value, isSelected, hasFocus, row, column);
             if (!isSelected) {
-                comp.setBackground(Options.getInstance().difficultyLevels[stepLevels[row]].getBackgroundColor());
-                comp.setForeground(Options.getInstance().difficultyLevels[stepLevels[row]].getForegroundColor());
+                comp.setBackground(Options.getInstance().getDifficultyLevels()[stepLevels[row]].getBackgroundColor());
+                comp.setForeground(Options.getInstance().getDifficultyLevels()[stepLevels[row]].getForegroundColor());
             }
             if (column == 3) {
                 comp.setHorizontalAlignment(SwingConstants.RIGHT);

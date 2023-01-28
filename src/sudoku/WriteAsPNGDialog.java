@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008/09/10  Bernhard Hobiger
+ * Copyright (C) 2008-11  Bernhard Hobiger
  *
  * This file is part of HoDoKu.
  *
@@ -32,7 +32,7 @@ import javax.swing.KeyStroke;
 
 /**
  * 
- * @author Bernhard Hobiger
+ * @author hobiwan
  */
 public class WriteAsPNGDialog extends javax.swing.JDialog {
     private File bildFile;

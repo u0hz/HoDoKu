@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008/09/10  Bernhard Hobiger
+ * Copyright (C) 2008-11  Bernhard Hobiger
  *
  * This file is part of HoDoKu.
  *
@@ -27,7 +27,7 @@ import java.awt.RenderingHints;
 
 /**
  *
- * @author bhobiger
+ * @author hobiwan
  */
 public class StatusColorPanel extends javax.swing.JPanel {
     private boolean reset = false;
@@ -105,9 +105,9 @@ public class StatusColorPanel extends javax.swing.JPanel {
     private void setColor() {
         Color back = null;
         if (index >= 0) {
-            back = Options.getInstance().coloringColors[index];
+            back = Options.getInstance().getColoringColors()[index];
         } else {
-            back = Options.getInstance().defaultCellColor;
+            back = Options.getInstance().getDefaultCellColor();
         }
         setForeground(back);
         setBackground(back);

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008/09/10  Bernhard Hobiger
+ * Copyright (C) 2008-11  Bernhard Hobiger
  *
  * This file is part of HoDoKu.
  *
@@ -21,11 +21,11 @@ package sudoku;
 
 /**
  *
- * @author Bernhard Hobiger
+ * @author hobiwan
  */
 public class Entity implements Cloneable {
-    public int entityName;
-    public int entityNumber;
+    private int entityName;
+    private int entityNumber;
     
     public Entity() {
         
@@ -38,11 +38,25 @@ public class Entity implements Cloneable {
     
     @Override
     public boolean equals(Object o) {
+        if (o == null) {
+            return false;
+        }
+        if (! (o instanceof Entity)) {
+            return false;
+        }
         Entity c = (Entity) o;
         if (entityName == c.entityName && entityNumber == c.entityNumber) {
             return true;
         }
         return false;
+    }
+
+    @Override
+    public int hashCode() {
+        int hash = 7;
+        hash = 13 * hash + this.entityName;
+        hash = 13 * hash + this.entityNumber;
+        return hash;
     }
     
     public int getEntityName() {

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008/09/10  Bernhard Hobiger
+ * Copyright (C) 2008-11  Bernhard Hobiger
  *
  * This file is part of HoDoKu.
  *
@@ -19,6 +19,7 @@
 
 package sudoku;
 
+import generator.BackgroundGeneratorThread;
 import java.awt.Color;
 import java.awt.Component;
 import java.util.Enumeration;
@@ -34,7 +35,7 @@ import javax.swing.tree.TreeSelectionModel;
 
 /**
  *
- * @author  Bernhard Hobiger
+ * @author  hobiwan
  */
 public class ConfigTrainigPanel extends javax.swing.JPanel {
     private StepConfig[] steps;
@@ -228,16 +229,20 @@ public class ConfigTrainigPanel extends javax.swing.JPanel {
         // Caution: steps[] is shared by ConfigSolverPanel and ConfigFindAllStepsPanel
         // okPressed() in ConfigSolverPanel has to be called first, here only the values
         // for enabledTraining are set
+        boolean somethingChanged = false;
         StepConfig[] orgSteps0 = Options.getInstance().solverSteps;
         for (int i = 0; i < steps.length; i++) {
             for (int j = 0; j < orgSteps0.length; j++) {
                 if (steps[i].getType() == orgSteps0[j].getType() && orgSteps0[j].isEnabled()) {
+                    if (orgSteps0[j].isEnabledTraining() != steps[i].isEnabledTraining()) {
+                        somethingChanged = true;
+                    }
                     orgSteps0[j].setEnabledTraining(steps[i].isEnabledTraining());
                     break;
                 }
             }
         }
-        StepConfig[] orgSteps1 = Options.getInstance().orgSolverSteps;
+        StepConfig[] orgSteps1 = Options.getInstance().getOrgSolverSteps();
         for (int i = 0; i < steps.length; i++) {
             for (int j = 0; j < orgSteps1.length; j++) {
                 if (steps[i].getType() == orgSteps1[j].getType() && orgSteps1[j].isEnabled()) {
@@ -245,6 +250,9 @@ public class ConfigTrainigPanel extends javax.swing.JPanel {
                     break;
                 }
             }
+        }
+        if (somethingChanged) {
+            BackgroundGeneratorThread.getInstance().resetTrainingPractising();
         }
     }
     
@@ -372,11 +380,13 @@ public class ConfigTrainigPanel extends javax.swing.JPanel {
                 setForeground(fg);
 //                System.out.println("SBG: " + bg);
 //                System.out.println("SFG: " + fg);
+                setOpaque(true);
             } else {
                 setBackground(UIManager.getColor("List.background"));
                 setForeground(UIManager.getColor("List.foreground"));
 //                System.out.println("BG: " + UIManager.getColor("List.background"));
 //                System.out.println("FG: " + UIManager.getColor("List.foreground"));
+                setOpaque(false);
             }
             setText(((StepConfig)obj).toString());
             setSelected(((StepConfig)obj).isEnabledTraining());

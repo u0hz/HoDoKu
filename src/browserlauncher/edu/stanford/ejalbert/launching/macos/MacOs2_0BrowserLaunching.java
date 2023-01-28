@@ -133,7 +133,6 @@ public class MacOs2_0BrowserLaunching
             throw new BrowserLaunchingExecutionException(e);
         }
         finally {
-            //TODO Oct 10, 2003 (Markus Gebhard): Unnecessary, because local variables - isn't it?
             aeDesc = null; // Encourage it to get disposed if it was created
             browser = null; // Ditto
         }

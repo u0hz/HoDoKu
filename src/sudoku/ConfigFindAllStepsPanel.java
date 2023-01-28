@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008/09/10  Bernhard Hobiger
+ * Copyright (C) 2008-11  Bernhard Hobiger
  *
  * This file is part of HoDoKu.
  *
@@ -26,7 +26,7 @@ import javax.swing.tree.TreeSelectionModel;
 
 /**
  *
- * @author  Bernhard Hobiger
+ * @author  hobiwan
  */
 public class ConfigFindAllStepsPanel extends javax.swing.JPanel {
 
@@ -458,7 +458,7 @@ private void krakenFishCandidatesButtonActionPerformed(java.awt.event.ActionEven
                 }
             }
         }
-        StepConfig[] orgSteps2 = Options.getInstance().orgSolverSteps;
+        StepConfig[] orgSteps2 = Options.getInstance().getOrgSolverSteps();
         for (int i = 0; i < steps.length; i++) {
             for (int j = 0; j < orgSteps2.length; j++) {
                 if (steps[i].getType() == orgSteps2[j].getType()) {
@@ -469,22 +469,22 @@ private void krakenFishCandidatesButtonActionPerformed(java.awt.event.ActionEven
         }
         
         // now the rest
-        Options.getInstance().allStepsSearchFish = fishCheckBox.isSelected();
-        Options.getInstance().allStepsMaxFishType = fishTypeComboBox.getSelectedIndex();
-        Options.getInstance().allStepsMinFishSize = fishFromComboBox.getSelectedIndex() + 2;
-        Options.getInstance().allStepsMaxFishSize = fishToComboBox.getSelectedIndex() + 2;
-        Options.getInstance().allStepsMaxFins = fishMaxFinsComboBox.getSelectedIndex();
-        Options.getInstance().allStepsMaxEndoFins = fishMaxEndoFinsComboBox.getSelectedIndex();
-        Options.getInstance().allStepsCheckTemplates = fishCheckTemplatesCheckBox.isSelected();
+        Options.getInstance().setAllStepsSearchFish(fishCheckBox.isSelected());
+        Options.getInstance().setAllStepsMaxFishType(fishTypeComboBox.getSelectedIndex());
+        Options.getInstance().setAllStepsMinFishSize(fishFromComboBox.getSelectedIndex() + 2);
+        Options.getInstance().setAllStepsMaxFishSize(fishToComboBox.getSelectedIndex() + 2);
+        Options.getInstance().setAllStepsMaxFins(fishMaxFinsComboBox.getSelectedIndex());
+        Options.getInstance().setAllStepsMaxEndoFins(fishMaxEndoFinsComboBox.getSelectedIndex());
+        Options.getInstance().setAllStepsCheckTemplates(fishCheckTemplatesCheckBox.isSelected());
 
-        Options.getInstance().allStepsKrakenMaxFishType = krakenFishTypeComboBox.getSelectedIndex();
-        Options.getInstance().allStepsKrakenMinFishSize = krakenFishFromComboBox.getSelectedIndex() + 2;
-        Options.getInstance().allStepsKrakenMaxFishSize = krakenFishToComboBox.getSelectedIndex() + 2;
-        Options.getInstance().allStepsMaxKrakenFins = krakenFishMaxFinsComboBox.getSelectedIndex();
-        Options.getInstance().allStepsMaxKrakenEndoFins = krakenFishMaxEndoFinsComboBox.getSelectedIndex();
+        Options.getInstance().setAllStepsKrakenMaxFishType(krakenFishTypeComboBox.getSelectedIndex());
+        Options.getInstance().setAllStepsKrakenMinFishSize(krakenFishFromComboBox.getSelectedIndex() + 2);
+        Options.getInstance().setAllStepsKrakenMaxFishSize(krakenFishToComboBox.getSelectedIndex() + 2);
+        Options.getInstance().setAllStepsMaxKrakenFins(krakenFishMaxFinsComboBox.getSelectedIndex());
+        Options.getInstance().setAllStepsMaxKrakenEndoFins(krakenFishMaxEndoFinsComboBox.getSelectedIndex());
         
-        Options.getInstance().allStepsFishCandidates = fishCandidates;
-        Options.getInstance().allStepsKrakenFishCandidates = krakenFishCandidates;
+        Options.getInstance().setAllStepsFishCandidates(fishCandidates);
+        Options.getInstance().setAllStepsKrakenFishCandidates(krakenFishCandidates);
     }
 
     private void initAll(boolean setDefault) {
@@ -511,22 +511,22 @@ private void krakenFishCandidatesButtonActionPerformed(java.awt.event.ActionEven
         } else {
             steps = Options.getInstance().copyStepConfigs(Options.getInstance().solverSteps, true, false);
             
-            fishCheckBox.setSelected(Options.getInstance().allStepsSearchFish);
-            fishTypeComboBox.setSelectedIndex(Options.getInstance().allStepsMaxFishType);
-            fishFromComboBox.setSelectedIndex(Options.getInstance().allStepsMinFishSize - 2);
-            fishToComboBox.setSelectedIndex(Options.getInstance().allStepsMaxFishSize - 2);
-            fishMaxFinsComboBox.setSelectedIndex(Options.getInstance().allStepsMaxFins);
-            fishMaxEndoFinsComboBox.setSelectedIndex(Options.getInstance().allStepsMaxEndoFins);
-            fishCheckTemplatesCheckBox.setSelected(Options.getInstance().allStepsCheckTemplates);
+            fishCheckBox.setSelected(Options.getInstance().isAllStepsSearchFish());
+            fishTypeComboBox.setSelectedIndex(Options.getInstance().getAllStepsMaxFishType());
+            fishFromComboBox.setSelectedIndex(Options.getInstance().getAllStepsMinFishSize() - 2);
+            fishToComboBox.setSelectedIndex(Options.getInstance().getAllStepsMaxFishSize() - 2);
+            fishMaxFinsComboBox.setSelectedIndex(Options.getInstance().getAllStepsMaxFins());
+            fishMaxEndoFinsComboBox.setSelectedIndex(Options.getInstance().getAllStepsMaxEndoFins());
+            fishCheckTemplatesCheckBox.setSelected(Options.getInstance().isAllStepsCheckTemplates());
             
-            krakenFishTypeComboBox.setSelectedIndex(Options.getInstance().allStepsKrakenMaxFishType);
-            krakenFishFromComboBox.setSelectedIndex(Options.getInstance().allStepsKrakenMinFishSize - 2);
-            krakenFishToComboBox.setSelectedIndex(Options.getInstance().allStepsKrakenMaxFishSize - 2);
-            krakenFishMaxFinsComboBox.setSelectedIndex(Options.getInstance().allStepsMaxKrakenFins);
-            krakenFishMaxEndoFinsComboBox.setSelectedIndex(Options.getInstance().allStepsMaxKrakenEndoFins);
+            krakenFishTypeComboBox.setSelectedIndex(Options.getInstance().getAllStepsKrakenMaxFishType());
+            krakenFishFromComboBox.setSelectedIndex(Options.getInstance().getAllStepsKrakenMinFishSize() - 2);
+            krakenFishToComboBox.setSelectedIndex(Options.getInstance().getAllStepsKrakenMaxFishSize() - 2);
+            krakenFishMaxFinsComboBox.setSelectedIndex(Options.getInstance().getAllStepsMaxKrakenFins());
+            krakenFishMaxEndoFinsComboBox.setSelectedIndex(Options.getInstance().getAllStepsMaxKrakenEndoFins());
             
-            fishCandidates = Options.getInstance().allStepsFishCandidates;
-            krakenFishCandidates = Options.getInstance().allStepsKrakenFishCandidates;
+            fishCandidates = Options.getInstance().getAllStepsFishCandidates();
+            krakenFishCandidates = Options.getInstance().getAllStepsKrakenFishCandidates();
         }
         setCandidateLabels();
         
@@ -540,7 +540,7 @@ private void krakenFishCandidatesButtonActionPerformed(java.awt.event.ActionEven
     }
     
     private void setCandidateLabel(JLabel label, String values) {
-        StringBuffer tmp = new StringBuffer();
+        StringBuilder tmp = new StringBuilder();
         int index = 0;
         int startCand = 0;
         int endCand = 0;
@@ -558,7 +558,7 @@ private void krakenFishCandidatesButtonActionPerformed(java.awt.event.ActionEven
             if (startCand > 0) {
                 endCand = index;
                 if (startCand != endCand) {
-                    tmp.append(startCand + "-" + endCand);
+                    tmp.append(startCand).append("-").append(endCand);
                 } else {
                     tmp.append(startCand);
                 }

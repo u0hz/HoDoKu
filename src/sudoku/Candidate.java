@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008/09/10  Bernhard Hobiger
+ * Copyright (C) 2008-11  Bernhard Hobiger
  *
  * This file is part of HoDoKu.
  *
@@ -21,11 +21,11 @@ package sudoku;
 
 /**
  *
- * @author Bernhard Hobiger
+ * @author hobiwan
  */
 public class Candidate implements Cloneable, Comparable<Candidate> {
-    public int value;
-    public int index;
+    private int value;
+    private int index;
     
     public Candidate() {
         
@@ -47,11 +47,25 @@ public class Candidate implements Cloneable, Comparable<Candidate> {
     
     @Override
     public boolean equals(Object o) {
+        if (o == null) {
+            return false;
+        }
+        if (! (o instanceof Candidate)) {
+            return false;
+        }
         Candidate c = (Candidate) o;
         if (index == c.index && value == c.value) {
             return true;
         }
         return false;
+    }
+
+    @Override
+    public int hashCode() {
+        int hash = 7;
+        hash = 29 * hash + this.value;
+        hash = 29 * hash + this.index;
+        return hash;
     }
     
     public int getValue() {

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008/09/10  Bernhard Hobiger
+ * Copyright (C) 2008-11  Bernhard Hobiger
  *
  * This file is part of HoDoKu.
  *
@@ -27,10 +27,11 @@ import javax.swing.SwingConstants;
 import javax.swing.table.AbstractTableModel;
 import javax.swing.table.TableCellRenderer;
 import javax.swing.table.TableColumn;
+import solver.SudokuSolver;
 
 /**
  *
- * @author  Bernhard Hobiger
+ * @author  hobiwan
  */
 public class SummaryPanel extends javax.swing.JPanel {
     private MainFrame mainFrame;

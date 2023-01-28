@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008/09/10  Bernhard Hobiger
+ * Copyright (C) 2008-11  Bernhard Hobiger
  *
  * This file is part of HoDoKu.
  *
@@ -21,7 +21,7 @@ package sudoku;
 
 /**
  *
- * @author  zhobigbe
+ * @author  hobiwan
  */
 public class ConfigStepPanel extends javax.swing.JPanel {
     private static String[] fishTypes = {"Basic", "Basic/Franken", "Basic/Franken/Mutant"};
@@ -104,6 +104,7 @@ public class ConfigStepPanel extends javax.swing.JPanel {
         useZeroInsteadOfDotCheckBox = new javax.swing.JCheckBox();
         erWithTwoCandidatesCheckBox = new javax.swing.JCheckBox();
         allowDualsAndSiameseCheckBox = new javax.swing.JCheckBox();
+        allowMissingCandidatesCheckBox = new javax.swing.JCheckBox();
         alsPanel = new javax.swing.JPanel();
         allowAlsOverlapCheckBox = new javax.swing.JCheckBox();
         onlyOneAlsStepCheckBox = new javax.swing.JCheckBox();
@@ -208,6 +209,9 @@ public class ConfigStepPanel extends javax.swing.JPanel {
         allowDualsAndSiameseCheckBox.setMnemonic(java.util.ResourceBundle.getBundle("intl/ConfigStepPanel").getString("ConfigStepPanel.allowDualsAndSiameseCheckBoxMnemonic").charAt(0));
         allowDualsAndSiameseCheckBox.setText(bundle.getString("ConfigStepPanel.allowDualsAndSiameseCheckBox.text")); // NOI18N
 
+        allowMissingCandidatesCheckBox.setMnemonic(java.util.ResourceBundle.getBundle("intl/ConfigStepPanel").getString("ConfigStepPanel.allowMissingCandidatesCheckBox.mnemonic").charAt(0));
+        allowMissingCandidatesCheckBox.setText(bundle.getString("ConfigStepPanel.allowMissingCandidatesCheckBox.text")); // NOI18N
+
         javax.swing.GroupLayout miscellaneousPanelLayout = new javax.swing.GroupLayout(miscellaneousPanel);
         miscellaneousPanel.setLayout(miscellaneousPanelLayout);
         miscellaneousPanelLayout.setHorizontalGroup(
@@ -217,8 +221,9 @@ public class ConfigStepPanel extends javax.swing.JPanel {
                 .addGroup(miscellaneousPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addComponent(erWithTwoCandidatesCheckBox)
                     .addComponent(useZeroInsteadOfDotCheckBox)
-                    .addComponent(allowDualsAndSiameseCheckBox))
-                .addContainerGap(57, Short.MAX_VALUE))
+                    .addComponent(allowDualsAndSiameseCheckBox)
+                    .addComponent(allowMissingCandidatesCheckBox))
+                .addContainerGap(53, Short.MAX_VALUE))
         );
         miscellaneousPanelLayout.setVerticalGroup(
             miscellaneousPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -228,6 +233,8 @@ public class ConfigStepPanel extends javax.swing.JPanel {
                 .addComponent(useZeroInsteadOfDotCheckBox)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(allowDualsAndSiameseCheckBox)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(allowMissingCandidatesCheckBox)
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
 
@@ -265,7 +272,7 @@ public class ConfigStepPanel extends javax.swing.JPanel {
             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel2Layout.createSequentialGroup()
                 .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
                     .addGroup(jPanel2Layout.createSequentialGroup()
-                        .addContainerGap(129, Short.MAX_VALUE)
+                        .addContainerGap(133, Short.MAX_VALUE)
                         .addComponent(resetButton))
                     .addComponent(alsPanel, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addComponent(miscellaneousPanel, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
@@ -280,7 +287,7 @@ public class ConfigStepPanel extends javax.swing.JPanel {
                 .addComponent(miscellaneousPanel, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(alsPanel, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 72, Short.MAX_VALUE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 80, Short.MAX_VALUE)
                 .addComponent(resetButton)
                 .addContainerGap())
         );
@@ -488,7 +495,7 @@ public class ConfigStepPanel extends javax.swing.JPanel {
                 .addComponent(krakenFishPanel, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jPanel3, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(34, Short.MAX_VALUE))
+                .addContainerGap(57, Short.MAX_VALUE))
         );
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(this);
@@ -513,33 +520,34 @@ public class ConfigStepPanel extends javax.swing.JPanel {
     
     public void okPressed() {
         // Alle Werte übernehmen
-        Options.getInstance().maxFins = Integer.parseInt((String)maxFinsComboBox.getSelectedItem());
-        Options.getInstance().maxEndoFins = Integer.parseInt((String)maxEndoFinsComboBox.getSelectedItem());
-        Options.getInstance().checkTemplates = checkTemplatesCheckBox.isSelected();
-        Options.getInstance().onlyOneFishPerStep = onlyOneFishCheckBox.isSelected();
-        Options.getInstance().fishDisplayMode = fishDisplayTypeComboBox.getSelectedIndex();
+        Options.getInstance().setMaxFins(Integer.parseInt((String)maxFinsComboBox.getSelectedItem()));
+        Options.getInstance().setMaxEndoFins(Integer.parseInt((String)maxEndoFinsComboBox.getSelectedItem()));
+        Options.getInstance().setCheckTemplates(checkTemplatesCheckBox.isSelected());
+        Options.getInstance().setOnlyOneFishPerStep(onlyOneFishCheckBox.isSelected());
+        Options.getInstance().setFishDisplayMode(fishDisplayTypeComboBox.getSelectedIndex());
         
-        Options.getInstance().restrictChainLength = Integer.parseInt((String)restrictChainSizeComboBox.getSelectedItem());
+        Options.getInstance().setRestrictChainLength(Integer.parseInt((String)restrictChainSizeComboBox.getSelectedItem()));
         //Options.getInstance().restrictNiceLoopLength = Integer.parseInt((String)restrictNiceLoopSizeComboBox.getSelectedItem());
-        Options.getInstance().restrictChainSize = restrictChainSizeCheckBox.isSelected();
+        Options.getInstance().setRestrictChainSize(restrictChainSizeCheckBox.isSelected());
 
-        Options.getInstance().maxTableEntryLength = Integer.parseInt(maxTableEntryLengthTextField.getText());
-        Options.getInstance().anzTableLookAhead = Integer.parseInt(lookAheadTextField.getText());
-        Options.getInstance().onlyOneChainPerStep = onlyOneChainCheckBox.isSelected();
-        Options.getInstance().allowAlsInTablingChains = allowAlsInTablingCheckBox.isSelected();
+        Options.getInstance().setMaxTableEntryLength(Integer.parseInt(maxTableEntryLengthTextField.getText()));
+        Options.getInstance().setAnzTableLookAhead(Integer.parseInt(lookAheadTextField.getText()));
+        Options.getInstance().setOnlyOneChainPerStep(onlyOneChainCheckBox.isSelected());
+        Options.getInstance().setAllowAlsInTablingChains(allowAlsInTablingCheckBox.isSelected());
         
-        Options.getInstance().useZeroInsteadOfDot = useZeroInsteadOfDotCheckBox.isSelected();
+        Options.getInstance().setUseZeroInsteadOfDot(useZeroInsteadOfDotCheckBox.isSelected());
         
-        Options.getInstance().allowErsWithOnlyTwoCandidates = erWithTwoCandidatesCheckBox.isSelected();
-        Options.getInstance().allowDualsAndSiamese = allowDualsAndSiameseCheckBox.isSelected();
+        Options.getInstance().setAllowErsWithOnlyTwoCandidates(erWithTwoCandidatesCheckBox.isSelected());
+        Options.getInstance().setAllowDualsAndSiamese(allowDualsAndSiameseCheckBox.isSelected());
+        Options.getInstance().setAllowUniquenessMissingCandidates(allowMissingCandidatesCheckBox.isSelected());
         
-        Options.getInstance().krakenMaxFishType = krakenFishTypeComboBox.getSelectedIndex();
-        Options.getInstance().krakenMaxFishSize = krakenFishMaxSizeComboBox.getSelectedIndex() + 2;
-        Options.getInstance().maxKrakenFins = krakenFishMaxFinsComboBox.getSelectedIndex();
-        Options.getInstance().maxKrakenEndoFins = krakenFishMaxEndoFinsComboBox.getSelectedIndex();
+        Options.getInstance().setKrakenMaxFishType(krakenFishTypeComboBox.getSelectedIndex());
+        Options.getInstance().setKrakenMaxFishSize(krakenFishMaxSizeComboBox.getSelectedIndex() + 2);
+        Options.getInstance().setMaxKrakenFins(krakenFishMaxFinsComboBox.getSelectedIndex());
+        Options.getInstance().setMaxKrakenEndoFins(krakenFishMaxEndoFinsComboBox.getSelectedIndex());
         
-        Options.getInstance().allowAlsOverlap = allowAlsOverlapCheckBox.isSelected();
-        Options.getInstance().onlyOneAlsPerStep = onlyOneAlsStepCheckBox.isSelected();
+        Options.getInstance().setAllowAlsOverlap(allowAlsOverlapCheckBox.isSelected());
+        Options.getInstance().setOnlyOneAlsPerStep(onlyOneAlsStepCheckBox.isSelected());
     }
     
     private void initAll(boolean setDefault) {
@@ -563,6 +571,7 @@ public class ConfigStepPanel extends javax.swing.JPanel {
             
             erWithTwoCandidatesCheckBox.setSelected(Options.ALLOW_ERS_WITH_ONLY_TWO_CANDIDATES);
             allowDualsAndSiameseCheckBox.setSelected(Options.ALLOW_DUALS_AND_SIAMESE);
+            allowMissingCandidatesCheckBox.setSelected(Options.ALLOW_UNIQUENESS_MISSING_CANDIDATES);
             
             krakenFishTypeComboBox.setSelectedIndex(Options.KRAKEN_MAX_FISH_TYPE);
             krakenFishMaxSizeComboBox.setSelectedIndex(Options.KRAKEN_MAX_FISH_SIZE - 2);
@@ -572,33 +581,34 @@ public class ConfigStepPanel extends javax.swing.JPanel {
             allowAlsOverlapCheckBox.setSelected(Options.ALLOW_ALS_OVERLAP);
             onlyOneAlsStepCheckBox.setSelected(Options.ONLY_ONE_ALS_PER_STEP);
         } else {
-            maxFinsComboBox.setSelectedIndex(Options.getInstance().maxFins);
-            maxEndoFinsComboBox.setSelectedIndex(Options.getInstance().maxEndoFins);
-            checkTemplatesCheckBox.setSelected(Options.getInstance().checkTemplates);
-            onlyOneFishCheckBox.setSelected(Options.getInstance().onlyOneFishPerStep);
-            fishDisplayTypeComboBox.setSelectedIndex(Options.getInstance().fishDisplayMode);
+            maxFinsComboBox.setSelectedIndex(Options.getInstance().getMaxFins());
+            maxEndoFinsComboBox.setSelectedIndex(Options.getInstance().getMaxEndoFins());
+            checkTemplatesCheckBox.setSelected(Options.getInstance().isCheckTemplates());
+            onlyOneFishCheckBox.setSelected(Options.getInstance().isOnlyOneFishPerStep());
+            fishDisplayTypeComboBox.setSelectedIndex(Options.getInstance().getFishDisplayMode());
             
-            restrictChainSizeComboBox.setSelectedIndex(Options.getInstance().restrictChainLength);
+            restrictChainSizeComboBox.setSelectedIndex(Options.getInstance().getRestrictChainLength());
             //restrictNiceLoopSizeComboBox.setSelectedIndex(Options.getInstance().restrictNiceLoopLength);
-            restrictChainSizeCheckBox.setSelected(Options.getInstance().restrictChainSize);
+            restrictChainSizeCheckBox.setSelected(Options.getInstance().isRestrictChainSize());
             
-            maxTableEntryLengthTextField.setText(Integer.toString(Options.getInstance().maxTableEntryLength));
-            lookAheadTextField.setText(Integer.toString(Options.getInstance().anzTableLookAhead));
-            onlyOneChainCheckBox.setSelected(Options.getInstance().onlyOneChainPerStep);
-            allowAlsInTablingCheckBox.setSelected(Options.getInstance().allowAlsInTablingChains);
+            maxTableEntryLengthTextField.setText(Integer.toString(Options.getInstance().getMaxTableEntryLength()));
+            lookAheadTextField.setText(Integer.toString(Options.getInstance().getAnzTableLookAhead()));
+            onlyOneChainCheckBox.setSelected(Options.getInstance().isOnlyOneChainPerStep());
+            allowAlsInTablingCheckBox.setSelected(Options.getInstance().isAllowAlsInTablingChains());
             
-            useZeroInsteadOfDotCheckBox.setSelected(Options.getInstance().useZeroInsteadOfDot);
+            useZeroInsteadOfDotCheckBox.setSelected(Options.getInstance().isUseZeroInsteadOfDot());
             
-            erWithTwoCandidatesCheckBox.setSelected(Options.getInstance().allowErsWithOnlyTwoCandidates);
-            allowDualsAndSiameseCheckBox.setSelected(Options.getInstance().allowDualsAndSiamese);
+            erWithTwoCandidatesCheckBox.setSelected(Options.getInstance().isAllowErsWithOnlyTwoCandidates());
+            allowDualsAndSiameseCheckBox.setSelected(Options.getInstance().isAllowDualsAndSiamese());
+            allowMissingCandidatesCheckBox.setSelected(Options.getInstance().isAllowUniquenessMissingCandidates());
             
-            krakenFishTypeComboBox.setSelectedIndex(Options.getInstance().krakenMaxFishType);
-            krakenFishMaxSizeComboBox.setSelectedIndex(Options.getInstance().krakenMaxFishSize - 2);
-            krakenFishMaxFinsComboBox.setSelectedIndex(Options.getInstance().maxKrakenFins);
-            krakenFishMaxEndoFinsComboBox.setSelectedIndex(Options.getInstance().maxKrakenEndoFins);
+            krakenFishTypeComboBox.setSelectedIndex(Options.getInstance().getKrakenMaxFishType());
+            krakenFishMaxSizeComboBox.setSelectedIndex(Options.getInstance().getKrakenMaxFishSize() - 2);
+            krakenFishMaxFinsComboBox.setSelectedIndex(Options.getInstance().getMaxKrakenFins());
+            krakenFishMaxEndoFinsComboBox.setSelectedIndex(Options.getInstance().getMaxKrakenEndoFins());
             
-            allowAlsOverlapCheckBox.setSelected(Options.getInstance().allowAlsOverlap);
-            onlyOneAlsStepCheckBox.setSelected(Options.getInstance().onlyOneAlsPerStep);
+            allowAlsOverlapCheckBox.setSelected(Options.getInstance().isAllowAlsOverlap());
+            onlyOneAlsStepCheckBox.setSelected(Options.getInstance().isOnlyOneAlsPerStep());
         }
     }
     
@@ -606,6 +616,7 @@ public class ConfigStepPanel extends javax.swing.JPanel {
     private javax.swing.JCheckBox allowAlsInTablingCheckBox;
     private javax.swing.JCheckBox allowAlsOverlapCheckBox;
     private javax.swing.JCheckBox allowDualsAndSiameseCheckBox;
+    private javax.swing.JCheckBox allowMissingCandidatesCheckBox;
     private javax.swing.JPanel alsPanel;
     private javax.swing.JCheckBox checkTemplatesCheckBox;
     private javax.swing.JCheckBox erWithTwoCandidatesCheckBox;

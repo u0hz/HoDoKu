@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008/09/10  Bernhard Hobiger
+ * Copyright (C) 2008-11  Bernhard Hobiger
  *
  * This file is part of HoDoKu.
  *
@@ -31,10 +31,12 @@ import javax.swing.JList;
 import javax.swing.JOptionPane;
 import javax.swing.JScrollPane;
 import javax.swing.ListCellRenderer;
+import solver.SudokuSolver;
+import solver.SudokuSolverFactory;
 
 /**
  *
- * @author  Bernhard Hobiger
+ * @author  hobiwan
  */
 public class SolutionPanel extends javax.swing.JPanel {
 
@@ -186,6 +188,7 @@ public class SolutionPanel extends javax.swing.JPanel {
 
         weiterButton.setMnemonic(java.util.ResourceBundle.getBundle("intl/SolutionPanel").getString("SolutionPanel.weiterButton.mnemonic").charAt(0));
         weiterButton.setText(bundle.getString("SolutionPanel.weiterButton.text")); // NOI18N
+        weiterButton.setToolTipText(bundle.getString("SolutionPanel.weiterButton.toolTipText")); // NOI18N
         weiterButton.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 weiterButtonActionPerformed(evt);
@@ -194,6 +197,7 @@ public class SolutionPanel extends javax.swing.JPanel {
 
         alleEinfachenButton.setMnemonic(java.util.ResourceBundle.getBundle("intl/SolutionPanel").getString("SolutionPanel.alleEinfachenButton.mnemonic").charAt(0));
         alleEinfachenButton.setText(bundle.getString("SolutionPanel.alleEinfachenButton.text")); // NOI18N
+        alleEinfachenButton.setToolTipText(bundle.getString("SolutionPanel.alleEinfachenButton.toolTipText")); // NOI18N
         alleEinfachenButton.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 alleEinfachenButtonActionPerformed(evt);
@@ -209,7 +213,7 @@ public class SolutionPanel extends javax.swing.JPanel {
                 .addComponent(weiterButton)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(alleEinfachenButton)
-                .addContainerGap(147, Short.MAX_VALUE))
+                .addContainerGap(159, Short.MAX_VALUE))
         );
 
         southPanelLayout.linkSize(javax.swing.SwingConstants.HORIZONTAL, new java.awt.Component[] {alleEinfachenButton, weiterButton});
@@ -272,6 +276,7 @@ public class SolutionPanel extends javax.swing.JPanel {
 
     private void solutionListMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_solutionListMouseClicked
         getActTab();
+        //System.out.println("solutionListMouseClicked: " + evt.getButton() + "/" + evt.getClickCount());
         // Element in der Liste ausgewählt
         if (evt.getButton() == 1) {
             int index = solutionList.getSelectedIndex();
@@ -343,6 +348,7 @@ public class SolutionPanel extends javax.swing.JPanel {
     }//GEN-LAST:event_weiterButtonActionPerformed
 
 private void solutionTabbedPaneMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_solutionTabbedPaneMouseClicked
+    //System.out.println("solutionTabbedPaneMouseClicked: " + evt.getButton() + "/" + evt.getClickCount());
     if (evt.getButton() != 3) {
         return;
     }
@@ -352,7 +358,7 @@ private void solutionTabbedPaneMouseClicked(java.awt.event.MouseEvent evt) {//GE
             continue;
         }
         getActTab();
-        if (actSteps == null || actSteps.size() == 0) {
+        if (actSteps == null || actSteps.isEmpty()) {
             return;
         }
         tabPopupMenu.show(evt.getComponent(), evt.getX(), evt.getY());
@@ -404,7 +410,12 @@ private void solutionTabbedPaneStateChanged(javax.swing.event.ChangeEvent evt) {
 
 private void tabPrintMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_tabPrintMenuItemActionPerformed
     if (actSteps != null) {
-        new PrintSolutionDialog(mainFrame, true, actSteps, mainFrame.getSudokuPanel().getSudoku().getSudoku(ClipboardMode.LIBRARY)).setVisible(true);
+        String initialState = mainFrame.getSudokuPanel().getSudoku().getInitialState();
+        if (initialState == null) {
+            initialState = mainFrame.getSudokuPanel().getSudoku().getSudoku(ClipboardMode.CLUES_ONLY);
+        }
+//        new PrintSolutionDialog(mainFrame, true, actSteps, mainFrame.getSudokuPanel().getSudoku().getSudoku(ClipboardMode.LIBRARY)).setVisible(true);
+        new PrintSolutionDialog(mainFrame, true, actSteps, initialState).setVisible(true);
         mainFrame.fixFocus();
     }
 }//GEN-LAST:event_tabPrintMenuItemActionPerformed
@@ -425,7 +436,7 @@ private void tabPrintMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//
         selectedIndices.clear();
         addTabPane();
         
-        this.solver = SudokuSolver.getInstance();
+        this.solver = SudokuSolverFactory.getDefaultSolverInstance();
         if (newSteps != null) {
             setActSteps(newSteps);
             setStepsInList();
@@ -444,8 +455,8 @@ private void tabPrintMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//
     public void initialize(List<String> titels, List<List<SolutionStep>> solutions) {
         if (titels.size() != solutions.size()) {
             Logger.getLogger(getClass().getName()).log(Level.SEVERE, 
-                    "SolutionPanel.initialize(): titels and solutions don't have the same length " +
-                    "(" + titels.size() + "/" + solutions.size() + ")");
+                    "SolutionPanel.initialize(): titels and solutions don''t have the same length " + "({0}/{1})", 
+                    new Object[]{titels.size(), solutions.size()});
         }
         int size = titels.size();
         if (solutions.size() < size) {
@@ -476,7 +487,7 @@ private void tabPrintMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//
     
     private void resetSudokuToIndex(int index) {
         getActTab();
-        Sudoku sudoku = mainFrame.getSudokuPanel().getSudoku();
+        Sudoku2 sudoku = mainFrame.getSudokuPanel().getSudoku();
         sudoku.resetSudoku();
         for (int i = 0; i < index; i++) {
             solver.doStep(sudoku, actSteps.get(i));
@@ -484,24 +495,26 @@ private void tabPrintMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//
         setActSelectedIndex(index);
         mainFrame.getSudokuPanel().clearUndoRedo();
         mainFrame.getSudokuPanel().clearColoring();
+        mainFrame.getSudokuPanel().checkProgress();
     }
     
     private void processDoubleClick(int index) {
-        // bei Doppelklick wird das Sudoku neu geladen, dann werden alle Schritte bis zum
+        // bei Doppelklick wird das Sudoku2 neu geladen, dann werden alle Schritte bis zum
         // geklickten ausgeführt
         getActTab();
         resetSudokuToIndex(index);
         
-        // wenn der aktuelle letzte Step INCOMPLETE ist, wird das Sudoku von hier weg neu gelöst
+        // wenn der aktuelle letzte Step INCOMPLETE ist, wird das Sudoku2 von hier weg neu gelöst
         if (actSteps.get(index).getType() == SolutionType.INCOMPLETE) {
             actSteps.remove(actSteps.size() - 1);
-            Sudoku actSudoku = mainFrame.getSudokuPanel().getSudoku().clone();
+            Sudoku2 actSudoku = mainFrame.getSudokuPanel().getSudoku().clone();
             solver.setSudoku(actSudoku, actSteps);
             solver.solve(true);
             setActSteps(solver.getSteps());
             setStepsInList();
             //actList.setSelectedIndex(actSelectedIndex);
             setActSelectedIndex(actSelectedIndex);
+            mainFrame.getSudokuPanel().checkProgress();
         }
     }
     
@@ -692,11 +705,11 @@ private void tabPrintMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//
      */
     public void getState(GuiState state, boolean copy) {
         if (copy) {
-            state.titels = (List<String>) ((ArrayList)titels).clone();
-            state.tabSteps = (List<List<SolutionStep>>) ((ArrayList)tabSteps).clone();
+            state.setTitels((List<String>) ((ArrayList)titels).clone());
+            state.setTabSteps((List<List<SolutionStep>>) ((ArrayList)tabSteps).clone());
         } else {
-            state.titels = titels;
-            state.tabSteps = tabSteps;
+            state.setTitels(titels);
+            state.setTabSteps(tabSteps);
         }
     }
 
@@ -706,7 +719,7 @@ private void tabPrintMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//
      * @param state
      */
     public void setState(GuiState state) {
-        initialize(state.titels, state.tabSteps);
+        initialize(state.getTitels(), state.getTabSteps());
     }
     
     class SolutionListRenderer extends JLabel implements ListCellRenderer {

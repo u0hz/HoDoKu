@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008/09/10  Bernhard Hobiger
+ * Copyright (C) 2008-11  Bernhard Hobiger
  *
  * This file is part of HoDoKu.
  *
@@ -30,7 +30,7 @@ import javax.swing.UIManager;
 
 /**
  *
- * @author  Bernhard Hobiger
+ * @author  hobiwan
  */
 public class ConfigColorPanel extends javax.swing.JPanel {
     private JButton[] buttons = null;
@@ -1015,46 +1015,46 @@ private void stiftButtonEActionPerformed(java.awt.event.ActionEvent evt) {//GEN-
     }
     
     public void okPressed() {
-        Options.getInstance().gridColor = colors[0];
-        Options.getInstance().innerGridColor = colors[1];
-        Options.getInstance().cellFixedValueColor = colors[2];
-        Options.getInstance().cellValueColor = colors[3];
-        Options.getInstance().candidateColor = colors[4];
-        Options.getInstance().wrongValueColor = colors[5];
-        Options.getInstance().deviationColor = colors[6];
-        Options.getInstance().defaultCellColor = colors[7];
-        Options.getInstance().aktCellColor = colors[8];
-        Options.getInstance().invalidCellColor = colors[9];
-        Options.getInstance().possibleCellColor = colors[10];
-        Options.getInstance().hintCandidateColor= colors[11];
-        Options.getInstance().hintCandidateBackColor = colors[12];
-        Options.getInstance().hintCandidateDeleteColor = colors[13];
-        Options.getInstance().hintCandidateDeleteBackColor = colors[14];
-        Options.getInstance().hintCandidateFinColor = colors[15];
-        Options.getInstance().hintCandidateFinBackColor = colors[16];
-        Options.getInstance().hintCandidateEndoFinColor = colors[17];
-        Options.getInstance().hintCandidateEndoFinBackColor = colors[18];
-        Options.getInstance().hintCandidateCannibalisticColor = colors[19];
-        Options.getInstance().hintCandidateCannibalisticBackColor = colors[20];
-        Options.getInstance().arrowColor = colors[21];
-        Options.getInstance().hintCandidateAlsColors[0] = colors[22];
-        Options.getInstance().hintCandidateAlsBackColors[0] = colors[23];
-        Options.getInstance().hintCandidateAlsColors[1] = colors[24];
-        Options.getInstance().hintCandidateAlsBackColors[1] = colors[25];
-        Options.getInstance().hintCandidateAlsColors[2] = colors[26];
-        Options.getInstance().hintCandidateAlsBackColors[2] = colors[27];
-        Options.getInstance().hintCandidateAlsColors[3] = colors[28];
-        Options.getInstance().hintCandidateAlsBackColors[3] = colors[29];
-        Options.getInstance().coloringColors[0] = colors[30];
-        Options.getInstance().coloringColors[1] = colors[31];
-        Options.getInstance().coloringColors[2] = colors[32];
-        Options.getInstance().coloringColors[3] = colors[33];
-        Options.getInstance().coloringColors[4] = colors[34];
-        Options.getInstance().coloringColors[5] = colors[35];
-        Options.getInstance().coloringColors[6] = colors[36];
-        Options.getInstance().coloringColors[7] = colors[37];
-        Options.getInstance().coloringColors[8] = colors[38];
-        Options.getInstance().coloringColors[9] = colors[39];
+        Options.getInstance().setGridColor(colors[0]);
+        Options.getInstance().setInnerGridColor(colors[1]);
+        Options.getInstance().setCellFixedValueColor(colors[2]);
+        Options.getInstance().setCellValueColor(colors[3]);
+        Options.getInstance().setCandidateColor(colors[4]);
+        Options.getInstance().setWrongValueColor(colors[5]);
+        Options.getInstance().setDeviationColor(colors[6]);
+        Options.getInstance().setDefaultCellColor(colors[7]);
+        Options.getInstance().setAktCellColor(colors[8]);
+        Options.getInstance().setInvalidCellColor(colors[9]);
+        Options.getInstance().setPossibleCellColor(colors[10]);
+        Options.getInstance().setHintCandidateColor(colors[11]);
+        Options.getInstance().setHintCandidateBackColor(colors[12]);
+        Options.getInstance().setHintCandidateDeleteColor(colors[13]);
+        Options.getInstance().setHintCandidateDeleteBackColor(colors[14]);
+        Options.getInstance().setHintCandidateFinColor(colors[15]);
+        Options.getInstance().setHintCandidateFinBackColor(colors[16]);
+        Options.getInstance().setHintCandidateEndoFinColor(colors[17]);
+        Options.getInstance().setHintCandidateEndoFinBackColor(colors[18]);
+        Options.getInstance().setHintCandidateCannibalisticColor(colors[19]);
+        Options.getInstance().setHintCandidateCannibalisticBackColor(colors[20]);
+        Options.getInstance().setArrowColor(colors[21]);
+        Options.getInstance().getHintCandidateAlsColors()[0] = colors[22];
+        Options.getInstance().getHintCandidateAlsBackColors()[0] = colors[23];
+        Options.getInstance().getHintCandidateAlsColors()[1] = colors[24];
+        Options.getInstance().getHintCandidateAlsBackColors()[1] = colors[25];
+        Options.getInstance().getHintCandidateAlsColors()[2] = colors[26];
+        Options.getInstance().getHintCandidateAlsBackColors()[2] = colors[27];
+        Options.getInstance().getHintCandidateAlsColors()[3] = colors[28];
+        Options.getInstance().getHintCandidateAlsBackColors()[3] = colors[29];
+        Options.getInstance().getColoringColors()[0] = colors[30];
+        Options.getInstance().getColoringColors()[1] = colors[31];
+        Options.getInstance().getColoringColors()[2] = colors[32];
+        Options.getInstance().getColoringColors()[3] = colors[33];
+        Options.getInstance().getColoringColors()[4] = colors[34];
+        Options.getInstance().getColoringColors()[5] = colors[35];
+        Options.getInstance().getColoringColors()[6] = colors[36];
+        Options.getInstance().getColoringColors()[7] = colors[37];
+        Options.getInstance().getColoringColors()[8] = colors[38];
+        Options.getInstance().getColoringColors()[9] = colors[39];
     }
     
     private void initAll(boolean setDefault) {
@@ -1103,46 +1103,46 @@ private void stiftButtonEActionPerformed(java.awt.event.ActionEvent evt) {//GEN-
             colors[38] = Options.COLORING_COLORS[8];
             colors[39] = Options.COLORING_COLORS[9];
         } else {
-            colors[0] = Options.getInstance().gridColor;
-            colors[1] = Options.getInstance().innerGridColor;
-            colors[2] = Options.getInstance().cellFixedValueColor;
-            colors[3] = Options.getInstance().cellValueColor;
-            colors[4] = Options.getInstance().candidateColor;
-            colors[5] = Options.getInstance().wrongValueColor;
-            colors[6] = Options.getInstance().deviationColor;
-            colors[7] = Options.getInstance().defaultCellColor;
-            colors[8] = Options.getInstance().aktCellColor;
-            colors[9] = Options.getInstance().invalidCellColor;
-            colors[10] = Options.getInstance().possibleCellColor;
-            colors[11] = Options.getInstance().hintCandidateColor;
-            colors[12] = Options.getInstance().hintCandidateBackColor;
-            colors[13] = Options.getInstance().hintCandidateDeleteColor;
-            colors[14] = Options.getInstance().hintCandidateDeleteBackColor;
-            colors[15] = Options.getInstance().hintCandidateFinColor;
-            colors[16] = Options.getInstance().hintCandidateFinBackColor;
-            colors[17] = Options.getInstance().hintCandidateEndoFinColor;
-            colors[18] = Options.getInstance().hintCandidateEndoFinBackColor;
-            colors[19] = Options.getInstance().hintCandidateCannibalisticColor;
-            colors[20] = Options.getInstance().hintCandidateCannibalisticBackColor;
-            colors[21] = Options.getInstance().arrowColor;
-            colors[22] = Options.getInstance().hintCandidateAlsColors[0];
-            colors[23] = Options.getInstance().hintCandidateAlsBackColors[0];
-            colors[24] = Options.getInstance().hintCandidateAlsColors[1];
-            colors[25] = Options.getInstance().hintCandidateAlsBackColors[1];
-            colors[26] = Options.getInstance().hintCandidateAlsColors[2];
-            colors[27] = Options.getInstance().hintCandidateAlsBackColors[2];
-            colors[28] = Options.getInstance().hintCandidateAlsColors[3];
-            colors[29] = Options.getInstance().hintCandidateAlsBackColors[3];
-            colors[30] = Options.getInstance().coloringColors[0];
-            colors[31] = Options.getInstance().coloringColors[1];
-            colors[32] = Options.getInstance().coloringColors[2];
-            colors[33] = Options.getInstance().coloringColors[3];
-            colors[34] = Options.getInstance().coloringColors[4];
-            colors[35] = Options.getInstance().coloringColors[5];
-            colors[36] = Options.getInstance().coloringColors[6];
-            colors[37] = Options.getInstance().coloringColors[7];
-            colors[38] = Options.getInstance().coloringColors[8];
-            colors[39] = Options.getInstance().coloringColors[9];
+            colors[0] = Options.getInstance().getGridColor();
+            colors[1] = Options.getInstance().getInnerGridColor();
+            colors[2] = Options.getInstance().getCellFixedValueColor();
+            colors[3] = Options.getInstance().getCellValueColor();
+            colors[4] = Options.getInstance().getCandidateColor();
+            colors[5] = Options.getInstance().getWrongValueColor();
+            colors[6] = Options.getInstance().getDeviationColor();
+            colors[7] = Options.getInstance().getDefaultCellColor();
+            colors[8] = Options.getInstance().getAktCellColor();
+            colors[9] = Options.getInstance().getInvalidCellColor();
+            colors[10] = Options.getInstance().getPossibleCellColor();
+            colors[11] = Options.getInstance().getHintCandidateColor();
+            colors[12] = Options.getInstance().getHintCandidateBackColor();
+            colors[13] = Options.getInstance().getHintCandidateDeleteColor();
+            colors[14] = Options.getInstance().getHintCandidateDeleteBackColor();
+            colors[15] = Options.getInstance().getHintCandidateFinColor();
+            colors[16] = Options.getInstance().getHintCandidateFinBackColor();
+            colors[17] = Options.getInstance().getHintCandidateEndoFinColor();
+            colors[18] = Options.getInstance().getHintCandidateEndoFinBackColor();
+            colors[19] = Options.getInstance().getHintCandidateCannibalisticColor();
+            colors[20] = Options.getInstance().getHintCandidateCannibalisticBackColor();
+            colors[21] = Options.getInstance().getArrowColor();
+            colors[22] = Options.getInstance().getHintCandidateAlsColors()[0];
+            colors[23] = Options.getInstance().getHintCandidateAlsBackColors()[0];
+            colors[24] = Options.getInstance().getHintCandidateAlsColors()[1];
+            colors[25] = Options.getInstance().getHintCandidateAlsBackColors()[1];
+            colors[26] = Options.getInstance().getHintCandidateAlsColors()[2];
+            colors[27] = Options.getInstance().getHintCandidateAlsBackColors()[2];
+            colors[28] = Options.getInstance().getHintCandidateAlsColors()[3];
+            colors[29] = Options.getInstance().getHintCandidateAlsBackColors()[3];
+            colors[30] = Options.getInstance().getColoringColors()[0];
+            colors[31] = Options.getInstance().getColoringColors()[1];
+            colors[32] = Options.getInstance().getColoringColors()[2];
+            colors[33] = Options.getInstance().getColoringColors()[3];
+            colors[34] = Options.getInstance().getColoringColors()[4];
+            colors[35] = Options.getInstance().getColoringColors()[5];
+            colors[36] = Options.getInstance().getColoringColors()[6];
+            colors[37] = Options.getInstance().getColoringColors()[7];
+            colors[38] = Options.getInstance().getColoringColors()[8];
+            colors[39] = Options.getInstance().getColoringColors()[9];
         }
         
         for (int i = 0; i < buttons.length; i++) {

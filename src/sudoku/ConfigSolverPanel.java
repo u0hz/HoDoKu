@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008/09/10  Bernhard Hobiger
+ * Copyright (C) 2008-11  Bernhard Hobiger
  *
  * This file is part of HoDoKu.
  *
@@ -43,7 +43,7 @@ import javax.swing.tree.TreeSelectionModel;
 
 /**
  *
- * @author  Bernhard Hobiger
+ * @author  hobiwan
  */
 public class ConfigSolverPanel extends javax.swing.JPanel
 implements ListDragAndDropChange {
@@ -61,6 +61,7 @@ implements ListDragAndDropChange {
     private boolean listView = false; // absichtlich verkehrt, damit stepList gesetzt wird
     
     /** Creates new form ConfigSolverPanel */
+    @SuppressWarnings("ResultOfObjectAllocationIgnored")
     public ConfigSolverPanel() {
         initComponents();
         
@@ -78,8 +79,8 @@ implements ListDragAndDropChange {
         stepTree.getSelectionModel().setSelectionMode(TreeSelectionModel.SINGLE_TREE_SELECTION);
         stepTree.putClientProperty("JTree.lineStyle", "Angled");
         
-        for (int i = 1; i < Options.getInstance().difficultyLevels.length; i++) {
-            levelComboBox.addItem(Options.getInstance().difficultyLevels[i].getName());
+        for (int i = 1; i < Options.getInstance().getDifficultyLevels().length; i++) {
+            levelComboBox.addItem(Options.getInstance().getDifficultyLevels()[i].getName());
         }
         
         NumbersOnlyDocument doc = new NumbersOnlyDocument();
@@ -547,6 +548,7 @@ implements ListDragAndDropChange {
         @Override
         public Component getListCellRendererComponent(JList listBox, Object obj, int index,
                 boolean isSelected, boolean hasFocus) {
+//            System.out.println(((StepConfig)obj).toString());
             if (isSelected) {
                 Color bg = UIManager.getColor("List.selectionBackground");
                 if (bg == null) {
@@ -560,11 +562,15 @@ implements ListDragAndDropChange {
                 setForeground(fg);
 //                System.out.println("SBG: " + bg);
 //                System.out.println("SFG: " + fg);
+                //necessary for Nimbus!
+                setOpaque(true);
             } else {
                 setBackground(UIManager.getColor("List.background"));
                 setForeground(UIManager.getColor("List.foreground"));
 //                System.out.println("BG: " + UIManager.getColor("List.background"));
 //                System.out.println("FG: " + UIManager.getColor("List.foreground"));
+                //necessary for Nimbus!
+                setOpaque(false);
             }
             setText(((StepConfig)obj).toString());
             setSelected(((StepConfig)obj).isEnabled());
@@ -580,6 +586,7 @@ implements ListDragAndDropChange {
         @Override
         public void paintComponent(Graphics g) {
             super.paintComponent(g);
+//            System.out.println("paintComponent: " + getText()+ "/"+ getForeground() + "/" + getBackground());
             Graphics2D g2 = (Graphics2D) g;
             if (isTargetCell) {
                 Insets insets = getInsets();

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008/09/10  Bernhard Hobiger
+ * Copyright (C) 2008-11  Bernhard Hobiger
  *
  * This file is part of HoDoKu.
  *
@@ -42,11 +42,11 @@ import javax.swing.JPanel;
 
 /**
  *
- * @author zhobigbe
+ * @author hobiwan
  */
 public class ListDragAndDrop implements DragSourceListener, DropTargetListener, DragGestureListener {
-    private static DataFlavor stepConfigDataFlavor = null;
-    private static DataFlavor[] supportedFlavors = null;
+    private static final DataFlavor stepConfigDataFlavor;
+    private static final DataFlavor[] supportedFlavors;
     
     private DragSource dragSource;
     private DropTarget dropTarget;
@@ -61,6 +61,7 @@ public class ListDragAndDrop implements DragSourceListener, DropTargetListener, 
         supportedFlavors = new DataFlavor[] { stepConfigDataFlavor };
     }
     
+    @SuppressWarnings("LeakingThisInConstructor")
     public ListDragAndDrop(JList list, ListDragAndDropChange panel, JPanel cPanel) {
         this.list = list;
         this.panel = panel;

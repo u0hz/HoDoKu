@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008/09/10  Bernhard Hobiger
+ * Copyright (C) 2008-11  Bernhard Hobiger
  *
  * This file is part of HoDoKu.
  *
@@ -33,17 +33,17 @@ package sudoku;
  * int mask2: 32 - 63
  * int mask3: 64 - 95
  *
- * Mehrer Instanzen von SudokuSet können miteinander verglichen werden. Speziell ist es
+ * Mehrere Instanzen von SudokuSet können miteinander verglichen werden. Speziell ist es
  * möglich zu prüfen, ob Werte eines SudokuSet in einem anderen enthalten sind. Außerdem
  * können effizient Vereinigungen von SudokuSets gebildet werden (entspricht mischen).
  *
- * @author Bernhard Hobiger
+ * @author hobiwan
  */
 public class SudokuSet extends SudokuSetBase implements Cloneable {
     // für jede der 256 möglichen Kombinationen von Bits das entsprechende Array
     private static int[][] possibleValues = new int[256][8];
     // und zu jeder Zahl die Länge des Arrays
-    private static int[] anzValues = new int[256];
+    public static int[] anzValues = new int[256];
     
     private int[] values = null;
     private int anz = 0;
@@ -96,6 +96,9 @@ public class SudokuSet extends SudokuSetBase implements Cloneable {
     }
     
     public int size() {
+        if (isEmpty()) {
+            return 0;
+        }
         if (! isInitialized()) {
             initialize();
         }
@@ -169,12 +172,12 @@ public class SudokuSet extends SudokuSetBase implements Cloneable {
         if (anz == 0) {
             return "empty!";
         }
-        StringBuffer tmp = new StringBuffer();
+        StringBuilder tmp = new StringBuilder();
         tmp.append(Integer.toString(values[0]));
         for (int i = 1; i < anz; i++) {
-            tmp.append(" " + Integer.toString(values[i]));
+            tmp.append(" ").append(Integer.toString(values[i]));
         }
-        tmp.append(" " + pM(mask1) + "/" + pM(mask2));
+        tmp.append(" ").append(pM(mask1)).append("/").append(pM(mask2));
         return tmp.toString();
     }
     

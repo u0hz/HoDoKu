@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008/09/10  Bernhard Hobiger
+ * Copyright (C) 2008-11  Bernhard Hobiger
  *
  * This file is part of HoDoKu.
  *
@@ -20,10 +20,11 @@
 package sudoku;
 
 import java.awt.EventQueue;
+import solver.SudokuSolver;
 
 /**
  *
- * @author  Bernhard Hobiger
+ * @author  hobiwan
  */
 public class SolverProgressDialog extends javax.swing.JDialog
         implements Runnable {

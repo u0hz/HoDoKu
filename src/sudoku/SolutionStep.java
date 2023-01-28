@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008/09/10  Bernhard Hobiger
+ * Copyright (C) 2008-11  Bernhard Hobiger
  *
  * This file is part of HoDoKu.
  *
@@ -18,6 +18,8 @@
  */
 package sudoku;
 
+import solver.RestrictedCommon;
+import solver.Als;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -33,7 +35,7 @@ import java.util.logging.Logger;
 
 /**
  *
- * @author Bernhard Hobiger
+ * @author hobiwan
  */
 public class SolutionStep implements Comparable<SolutionStep>, Cloneable {
 
@@ -140,7 +142,7 @@ public class SolutionStep implements Comparable<SolutionStep>, Cloneable {
     }
 
     public StringBuffer getForcingChainString(Chain chain) {
-        return getForcingChainString(chain.chain, chain.start, chain.end, false);
+        return getForcingChainString(chain.getChain(), chain.getStart(), chain.getEnd(), false);
     }
 
     /**
@@ -217,11 +219,11 @@ public class SolutionStep implements Comparable<SolutionStep>, Cloneable {
     }
 
     public StringBuffer getChainString(Chain chain) {
-        return getChainString(chain.chain, chain.start, chain.end, false, true, true, false);
+        return getChainString(chain.getChain(), chain.getStart(), chain.getEnd(), false, true, true, false);
     }
 
     public StringBuffer getChainString(Chain chain, boolean internalFormat) {
-        return getChainString(chain.chain, chain.start, chain.end, true, true, true, internalFormat);
+        return getChainString(chain.getChain(), chain.getStart(), chain.getEnd(), true, true, true, internalFormat);
     }
 
     public StringBuffer getChainString(int[] chain, int start, int end, boolean alternate, boolean up) {
@@ -346,14 +348,14 @@ public class SolutionStep implements Comparable<SolutionStep>, Cloneable {
      * library format
      */
     public String getValueIndexString() {
-        StringBuffer tmp = new StringBuffer();
+        StringBuilder tmp = new StringBuilder();
         for (int i = 0; i < values.size(); i++) {
             int value = values.get(i);
             for (int j = 0; j < indices.size(); j++) {
                 int index = indices.get(j);
                 tmp.append(value);
-                tmp.append(Integer.toString(Sudoku.getLine(index) + 1));
-                tmp.append(Integer.toString(Sudoku.getCol(index) + 1));
+                tmp.append(Integer.toString(Sudoku2.getLine(index) + 1));
+                tmp.append(Integer.toString(Sudoku2.getCol(index) + 1));
                 tmp.append(" ");
             }
         }
@@ -375,21 +377,21 @@ public class SolutionStep implements Comparable<SolutionStep>, Cloneable {
     public String getCandidateString(boolean library, boolean statistics) {
         Collections.sort(candidatesToDelete);
         eliminateDoubleCandidatesToDelete();
-        StringBuffer candBuff = new StringBuffer();
+        StringBuilder candBuff = new StringBuilder();
         int lastCand = -1;
         StringBuffer delPos = new StringBuffer();
         for (Candidate cand : candidatesToDelete) {
-            if (cand.value != lastCand) {
+            if (cand.getValue() != lastCand) {
                 if (lastCand != -1) {
                     candBuff.append("/");
                 }
-                candBuff.append(cand.value);
-                lastCand = cand.value;
+                candBuff.append(cand.getValue());
+                lastCand = cand.getValue();
             }
             delPos.append(" ");
             if (library) {
-                delPos.append(Integer.toString(cand.value) + Integer.toString(Sudoku.getLine(cand.index) + 1) +
-                        Integer.toString(Sudoku.getCol(cand.index) + 1));
+                delPos.append(Integer.toString(cand.getValue())).append(Integer.toString(Sudoku2.getLine(cand.getIndex()) + 1)).
+                        append(Integer.toString(Sudoku2.getCol(cand.getIndex()) + 1));
             }
         }
         if (library) {
@@ -430,9 +432,9 @@ public class SolutionStep implements Comparable<SolutionStep>, Cloneable {
 
     public static String getCellPrint(int index, boolean withParen) {
         if (withParen) {
-            return "[r" + (Sudoku.getLine(index) + 1) + "c" + (Sudoku.getCol(index) + 1) + "]";
+            return "[r" + (Sudoku2.getLine(index) + 1) + "c" + (Sudoku2.getCol(index) + 1) + "]";
         } else {
-            return "r" + (Sudoku.getLine(index) + 1) + "c" + (Sudoku.getCol(index) + 1);
+            return "r" + (Sudoku2.getLine(index) + 1) + "c" + (Sudoku2.getCol(index) + 1);
         }
     }
 
@@ -470,12 +472,12 @@ public class SolutionStep implements Comparable<SolutionStep>, Cloneable {
     }
 
     public static String getCompactCellPrint(TreeSet<Integer> tmpSet) {
-        StringBuffer tmp = new StringBuffer();
+        StringBuilder tmp = new StringBuilder();
         boolean first = true;
         while (tmpSet.size() > 0) {
             int index = tmpSet.pollFirst();
-            int line = Sudoku.getLine(index);
-            int col = Sudoku.getCol(index);
+            int line = Sudoku2.getLine(index);
+            int col = Sudoku2.getCol(index);
             int anzLines = 1;
             int anzCols = 1;
             if (first) {
@@ -487,8 +489,8 @@ public class SolutionStep implements Comparable<SolutionStep>, Cloneable {
             Iterator<Integer> it = tmpSet.iterator();
             while (it.hasNext()) {
                 int i1 = it.next();
-                int l1 = Sudoku.getLine(i1);
-                int c1 = Sudoku.getCol(i1);
+                int l1 = Sudoku2.getLine(i1);
+                int c1 = Sudoku2.getCol(i1);
                 if (l1 == line && anzLines == 1) {
                     // Spalte hinzufügen
                     int pIndex = tmp.lastIndexOf("]");
@@ -514,7 +516,7 @@ public class SolutionStep implements Comparable<SolutionStep>, Cloneable {
         return tmp.toString();
     }
 
-    public void setType(SolutionType type) {
+    public final void setType(SolutionType type) {
         boolean found = false;
         for (SolutionType t : SolutionType.values()) {
             if (t == type) {
@@ -658,7 +660,7 @@ public class SolutionStep implements Comparable<SolutionStep>, Cloneable {
     }
 
     public String getEntityShortNameNumber() {
-        if (entity == SudokuCell.CELL) {
+        if (entity == Sudoku2.CELL) {
             return getCellPrint(entityNumber, false);
         } else {
             return entityShortNames[entity] + Integer.toString(entityNumber + 1);
@@ -709,16 +711,30 @@ public class SolutionStep implements Comparable<SolutionStep>, Cloneable {
                 if (art >= 1) {
                     tmp.append(": ");
                     if (type == SolutionType.HIDDEN_PAIR || type == SolutionType.NAKED_PAIR || type == SolutionType.LOCKED_PAIR) {
-                        tmp.append(values.get(0) + "," + values.get(1));
+                        tmp.append(values.get(0));
+                        tmp.append(",");
+                        tmp.append(values.get(1));
                     } else if (type == SolutionType.HIDDEN_TRIPLE || type == SolutionType.NAKED_TRIPLE || type == SolutionType.LOCKED_TRIPLE) {
-                        tmp.append(values.get(0) + "," + values.get(1) + "," + values.get(2));
+                        tmp.append(values.get(0));
+                        tmp.append(",");
+                        tmp.append(values.get(1));
+                        tmp.append(",");
+                        tmp.append(values.get(2));
                     } else if (type == SolutionType.HIDDEN_QUADRUPLE || type == SolutionType.NAKED_QUADRUPLE) {
-                        tmp.append(values.get(0) + "," + values.get(1) + "," + values.get(2) + "," + values.get(3));
+                        tmp.append(values.get(0));
+                        tmp.append(",");
+                        tmp.append(values.get(1));
+                        tmp.append(",");
+                        tmp.append(values.get(2));
+                        tmp.append(",");
+                        tmp.append(values.get(3));
                     }
                 }
                 if (art >= 2) {
-                    tmp.append(" " + java.util.ResourceBundle.getBundle("intl/SolutionStep").getString("SolutionStep.in") + " " +
-                            getCompactCellPrint(indices));
+                    tmp.append(" ");
+                    tmp.append(java.util.ResourceBundle.getBundle("intl/SolutionStep").getString("SolutionStep.in"));
+                    tmp.append(" ");
+                    tmp.append(getCompactCellPrint(indices));
                     getCandidatesToDelete(tmp);
                 }
                 str = tmp.toString();
@@ -786,9 +802,17 @@ public class SolutionStep implements Comparable<SolutionStep>, Cloneable {
                 }
                 if (art >= 2) {
                     tmp = new StringBuffer(str);
-                    tmp.append(" " + java.util.ResourceBundle.getBundle("intl/SolutionStep").getString("SolutionStep.in") + " " + getCompactCellPrint(indices, 0, 1) +
-                            " " + java.util.ResourceBundle.getBundle("intl/SolutionStep").getString("SolutionStep.connected_by") + " " +
-                            values.get(1) + " " + java.util.ResourceBundle.getBundle("intl/SolutionStep").getString("SolutionStep.in") + " ");
+                    tmp.append(" ");
+                    tmp.append(java.util.ResourceBundle.getBundle("intl/SolutionStep").getString("SolutionStep.in"));
+                    tmp.append(" ");
+                    tmp.append(getCompactCellPrint(indices, 0, 1));
+                    tmp.append(" ");
+                    tmp.append(java.util.ResourceBundle.getBundle("intl/SolutionStep").getString("SolutionStep.connected_by"));
+                    tmp.append(" ");
+                    tmp.append(values.get(1));
+                    tmp.append(" ");
+                    tmp.append(java.util.ResourceBundle.getBundle("intl/SolutionStep").getString("SolutionStep.in"));
+                    tmp.append(" ");
                     getFinSet(tmp, fins, false);
                     getCandidatesToDelete(tmp);
                     str = tmp.toString();
@@ -852,30 +876,31 @@ public class SolutionStep implements Comparable<SolutionStep>, Cloneable {
 //                    }
                 }
                 if (art >= 2) {
+                    List<Chain> dummy1 = getChains();
                     StringBuffer tmpChain = getChainString(getChains().get(0));
                     // adjust nice loop notation
                     if (type == SolutionType.CONTINUOUS_NICE_LOOP || type == SolutionType.GROUPED_CONTINUOUS_NICE_LOOP) {
                         Chain ch = getChains().get(0);
-                        int start = ch.start;
+                        int start = ch.getStart();
                         int cellIndex = ch.getCellIndex(start);
                         while (ch.getCellIndex(start) == cellIndex) {
                             start++;
                         }
-                        int end = ch.end;
+                        int end = ch.getEnd();
                         cellIndex = ch.getCellIndex(end);
                         while (ch.getCellIndex(end) == cellIndex) {
                             end--;
                         }
                         end++;
                         tmpChain.insert(0, ch.getCandidate(end) + "= ");
-                        tmpChain.append(" =" + ch.getCandidate(start));
+                        tmpChain.append(" =").append(ch.getCandidate(start));
                         //System.out.println(Chain.toString(ch.chain[start]) + "/" + Chain.toString(ch.chain[ch.end]));
                     }
                     if (type == SolutionType.AIC || type == SolutionType.GROUPED_AIC || type == SolutionType.XY_CHAIN) {
                         Chain ch = getChains().get(0);
                         //System.out.println(Chain.toString(ch.chain[ch.start]) + "/" + Chain.toString(ch.chain[ch.end]));
-                        tmpChain.insert(0, ch.getCandidate(ch.start) + "- ");
-                        tmpChain.append(" -" + ch.getCandidate(ch.end));
+                        tmpChain.insert(0, ch.getCandidate(ch.getStart()) + "- ");
+                        tmpChain.append(" -").append(ch.getCandidate(ch.getEnd()));
                     }
                     //str += " " + getChainString(getChains().get(0));
                     str += " " + tmpChain;
@@ -988,16 +1013,16 @@ public class SolutionStep implements Comparable<SolutionStep>, Cloneable {
             case KRAKEN_FISH_TYPE_2:
                 tmp = new StringBuffer();
                 if (isSiamese) {
-                    tmp.append(java.util.ResourceBundle.getBundle("intl/SolutionStep").getString("SolutionStep.siamese") + " ");
+                    tmp.append(java.util.ResourceBundle.getBundle("intl/SolutionStep").getString("SolutionStep.siamese")).append(" ");
                 }
                 tmp.append(getStepName());
                 if (art >= 1) {
                     if (type.isKrakenFish()) {
                         tmp.append(": ");
                         getCandidatesToDelete(tmp);
-                        tmp.append("\r\n  " + subType.getStepName());
+                        tmp.append("\r\n  ").append(subType.getStepName());
                     }
-                    tmp.append(": " + values.get(0));
+                    tmp.append(": ").append(values.get(0));
                 }
                 if (art >= 2) {
                     tmp.append(" ");
@@ -1005,7 +1030,7 @@ public class SolutionStep implements Comparable<SolutionStep>, Cloneable {
                     tmp.append(" ");
                     getEntities(tmp, coverEntities, true, true);
                     //tmp.append(" Positionen: ");
-                    int displayMode = Options.getInstance().fishDisplayMode;
+                    int displayMode = Options.getInstance().getFishDisplayMode();
                     if (type.isKrakenFish()) {
                         // no statistics
                         displayMode = 0;
@@ -1034,7 +1059,7 @@ public class SolutionStep implements Comparable<SolutionStep>, Cloneable {
                 }
                 if (type.isKrakenFish()) {
                     for (int i = 0; i < chains.size(); i++) {
-                        tmp.append("\r\n  " + getChainString(chains.get(i)));
+                        tmp.append("\r\n  ").append(getChainString(chains.get(i)));
                     }
                 }
                 str = tmp.toString();
@@ -1103,13 +1128,13 @@ public class SolutionStep implements Comparable<SolutionStep>, Cloneable {
                 break;
             case ALS_XY_CHAIN:
                 str = getStepName();
-                if (restrictedCommons.size() == 0) {
+                if (restrictedCommons.isEmpty()) {
                     // old code -> has to remain for correctly displaying saved files
                     if (art == 1) {
                         tmp = new StringBuffer(str + ": ");
-                        tmp.append(java.util.ResourceBundle.getBundle("intl/SolutionStep").getString("SolutionStep.start") + "=");
+                        tmp.append(java.util.ResourceBundle.getBundle("intl/SolutionStep").getString("SolutionStep.start")).append("=");
                         getAls(tmp, 0);
-                        tmp.append(", " + java.util.ResourceBundle.getBundle("intl/SolutionStep").getString("SolutionStep.end") + "=");
+                        tmp.append(", ").append(java.util.ResourceBundle.getBundle("intl/SolutionStep").getString("SolutionStep.end")).append("=");
                         getAls(tmp, alses.size() - 1);
                         str = tmp.toString();
                     }
@@ -1137,9 +1162,9 @@ public class SolutionStep implements Comparable<SolutionStep>, Cloneable {
                 } else {
                     if (art == 1) {
                         tmp = new StringBuffer(str + ": ");
-                        tmp.append(java.util.ResourceBundle.getBundle("intl/SolutionStep").getString("SolutionStep.start") + "=");
+                        tmp.append(java.util.ResourceBundle.getBundle("intl/SolutionStep").getString("SolutionStep.start")).append("=");
                         getAls(tmp, 0);
-                        tmp.append(", " + java.util.ResourceBundle.getBundle("intl/SolutionStep").getString("SolutionStep.end") + "=");
+                        tmp.append(", ").append(java.util.ResourceBundle.getBundle("intl/SolutionStep").getString("SolutionStep.end")).append("=");
                         getAls(tmp, alses.size() - 1);
                         str = tmp.toString();
                     }
@@ -1184,7 +1209,7 @@ public class SolutionStep implements Comparable<SolutionStep>, Cloneable {
                 }
                 if (art >= 2) {
                     tmp = new StringBuffer(str + ": ");
-                    tmp.append(getCompactCellPrint(indices) + "=" + values.get(0));
+                    tmp.append(getCompactCellPrint(indices)).append("=").append(values.get(0));
                     str = tmp.toString();
                 }
                 break;
@@ -1206,7 +1231,8 @@ public class SolutionStep implements Comparable<SolutionStep>, Cloneable {
                 }
                 if (art >= 2) {
                     tmp = new StringBuffer(str + ": ");
-                    tmp.append(getCompactCellPrint(indices) + "=" + values.get(0));
+                    tmp.append(getCompactCellPrint(indices)).append("=").append(values.get(0));
+                    str = tmp.toString();
                 }
                 break;
             case INCOMPLETE:
@@ -1216,7 +1242,7 @@ public class SolutionStep implements Comparable<SolutionStep>, Cloneable {
                 tmp = new StringBuffer();
                 tmp.append(getStepName());
                 if (art >= 1) {
-                    tmp.append(": " + java.util.ResourceBundle.getBundle("intl/SolutionStep").getString("SolutionStep.dont_know"));
+                    tmp.append(": ").append(java.util.ResourceBundle.getBundle("intl/SolutionStep").getString("SolutionStep.dont_know"));
                 }
                 str = tmp.toString();
                 break;
@@ -1243,28 +1269,28 @@ public class SolutionStep implements Comparable<SolutionStep>, Cloneable {
         // exo fins
         set.clear();
         for (int i = 0; i < fins.size(); i++) {
-            set.add(fins.get(i).index);
+            set.add(fins.get(i).getIndex());
         }
         for (int i = 0; i < endoFins.size(); i++) {
-            set.remove(endoFins.get(i).index);
+            set.remove(endoFins.get(i).getIndex());
         }
         appendFishData(tmp, set, "XF", cells);
         // endo fins
         set.clear();
         for (int i = 0; i < endoFins.size(); i++) {
-            set.add(endoFins.get(i).index);
+            set.add(endoFins.get(i).getIndex());
         }
         appendFishData(tmp, set, "NF", cells);
         // eventual eliminations
         set.clear();
         for (int i = 0; i < candidatesToDelete.size(); i++) {
-            set.add(candidatesToDelete.get(i).index);
+            set.add(candidatesToDelete.get(i).getIndex());
         }
         appendFishData(tmp, set, "EE", cells);
         // cannibalistic eventual eliminations
         set.clear();
         for (int i = 0; i < cannibalistic.size(); i++) {
-            set.add(cannibalistic.get(i).index);
+            set.add(cannibalistic.get(i).getIndex());
         }
         appendFishData(tmp, set, "CE", cells);
         // potential eliminations
@@ -1316,7 +1342,7 @@ public class SolutionStep implements Comparable<SolutionStep>, Cloneable {
         List<Candidate> list = x ? endoFins : fins;
         TreeSet<Integer> cands = new TreeSet<Integer>();
         for (int i = 0; i < list.size(); i++) {
-            cands.add(list.get(i).value);
+            cands.add(list.get(i).getValue());
         }
         boolean first = true;
         for (int cand : cands) {
@@ -1334,7 +1360,7 @@ public class SolutionStep implements Comparable<SolutionStep>, Cloneable {
     }
 
     public static String getAls(Als als, boolean withCandidates) {
-        StringBuffer tmp = new StringBuffer();
+        StringBuilder tmp = new StringBuilder();
         TreeSet<Integer> set = new TreeSet<Integer>();
         for (int i = 0; i < als.indices.size(); i++) {
             set.add(als.indices.get(i));
@@ -1343,9 +1369,13 @@ public class SolutionStep implements Comparable<SolutionStep>, Cloneable {
         if (withCandidates) {
             //tmp.append(" - {");
             tmp.append(" {");
-            for (int i = 0; i < als.candidates.size(); i++) {
-                tmp.append(als.candidates.get(i));
+            int[] cands = Sudoku2.POSSIBLE_VALUES[als.candidates];
+            for (int i = 0; i < cands.length; i++) {
+                tmp.append(cands[i]);
             }
+//            for (int i = 0; i < als.candidates.size(); i++) {
+//                tmp.append(als.candidates.get(i));
+//            }
             tmp.append("}");
         }
         return tmp.toString();
@@ -1357,11 +1387,11 @@ public class SolutionStep implements Comparable<SolutionStep>, Cloneable {
 
     public void getAls(StringBuffer tmp, int alsIndex, boolean withCandidates) {
         AlsInSolutionStep als = alses.get(alsIndex);
-        tmp.append(getCompactCellPrint(als.indices));
+        tmp.append(getCompactCellPrint(als.getIndices()));
         if (withCandidates) {
             //tmp.append(" - {");
             tmp.append(" {");
-            for (Integer cand : als.candidates) {
+            for (Integer cand : als.getCandidates()) {
                 tmp.append(cand);
             }
             tmp.append("}");
@@ -1388,8 +1418,8 @@ public class SolutionStep implements Comparable<SolutionStep>, Cloneable {
         TreeSet<Integer> indexes = new TreeSet<Integer>();
         TreeSet<Integer> candidates = new TreeSet<Integer>();
         for (Candidate cand : fins) {
-            indexes.add(cand.index);
-            candidates.add(cand.value);
+            indexes.add(cand.getIndex());
+            candidates.add(cand.getValue());
         }
         // Alle indexe ausschließen, die in indices enthalten sind
         for (int index : indices) {
@@ -1430,14 +1460,14 @@ public class SolutionStep implements Comparable<SolutionStep>, Cloneable {
                 }
             }
             if (library) {
-                if (lastEntityName != act.entityName) {
-                    tmp.append(getEntityShortName(act.entityName));
+                if (lastEntityName != act.getEntityName()) {
+                    tmp.append(getEntityShortName(act.getEntityName()));
                 }
-                tmp.append(act.entityNumber);
+                tmp.append(act.getEntityNumber());
             } else {
-                tmp.append(getEntityName(act.entityName) + " " + act.entityNumber);
+                tmp.append(getEntityName(act.getEntityName())).append(" ").append(act.getEntityNumber());
             }
-            lastEntityName = act.entityName;
+            lastEntityName = act.getEntityName();
             if (checkSiamese && isSiamese && index == siameseIndex) {
                 tmp.append("/");
                 lastEntityName = -1;
@@ -1471,12 +1501,12 @@ public class SolutionStep implements Comparable<SolutionStep>, Cloneable {
     private void getRestrictedCommon(RestrictedCommon rc, StringBuffer tmp) {
         int anz = 0;
         tmp.append(" -");
-        if (rc.actualRC == 1 || rc.actualRC == 3) {
-            tmp.append(rc.cand1);
+        if (rc.getActualRC() == 1 || rc.getActualRC() == 3) {
+            tmp.append(rc.getCand1());
             anz++;
         }
-        if (rc.actualRC == 2 || rc.actualRC == 3) {
-            tmp.append(rc.cand2);
+        if (rc.getActualRC() == 2 || rc.getActualRC() == 3) {
+            tmp.append(rc.getCand2());
             anz++;
         }
 //        if (rc.cand2 != 0 && anz < 2) {
@@ -1498,7 +1528,7 @@ public class SolutionStep implements Comparable<SolutionStep>, Cloneable {
     private void getCandidatesToDeleteDigits(StringBuffer tmp) {
         SortedSet<Integer> candSet = new TreeSet<Integer>();
         for (int i = 0; i < candidatesToDelete.size(); i++) {
-            candSet.add(candidatesToDelete.get(i).value);
+            candSet.add(candidatesToDelete.get(i).getValue());
         }
         for (int value : candSet) {
             tmp.append(value);
@@ -1527,12 +1557,12 @@ public class SolutionStep implements Comparable<SolutionStep>, Cloneable {
         while (tmpList.size() > 0) {
             Candidate firstCand = tmpList.remove(0);
             candList.clear();
-            candList.add(firstCand.index);
+            candList.add(firstCand.getIndex());
             Iterator<Candidate> it = tmpList.iterator();
             while (it.hasNext()) {
                 Candidate c1 = it.next();
-                if (c1.value == firstCand.value) {
-                    candList.add(c1.index);
+                if (c1.getValue() == firstCand.getValue()) {
+                    candList.add(c1.getIndex());
                     it.remove();
                 }
             }
@@ -1543,7 +1573,7 @@ public class SolutionStep implements Comparable<SolutionStep>, Cloneable {
             }
             tmp.append(getCompactCellPrint(candList));
             tmp.append("<>");
-            tmp.append(firstCand.value);
+            tmp.append(firstCand.getValue());
         }
     }
 
@@ -1553,21 +1583,21 @@ public class SolutionStep implements Comparable<SolutionStep>, Cloneable {
 
     public void getFins(StringBuffer tmp, boolean endo, boolean library) {
         List<Candidate> list = endo ? endoFins : fins;
-        if (list.size() == 0) {
+        if (list.isEmpty()) {
             return;
         }
         if (!library) {
             if (list.size() == 1) {
                 if (endo) {
-                    tmp.append(" " + java.util.ResourceBundle.getBundle("intl/SolutionStep").getString("SolutionStep.endofin_in") + " ");
+                    tmp.append(" ").append(java.util.ResourceBundle.getBundle("intl/SolutionStep").getString("SolutionStep.endofin_in")).append(" ");
                 } else {
-                    tmp.append(" " + java.util.ResourceBundle.getBundle("intl/SolutionStep").getString("SolutionStep.fin_in") + " ");
+                    tmp.append(" ").append(java.util.ResourceBundle.getBundle("intl/SolutionStep").getString("SolutionStep.fin_in")).append(" ");
                 }
             } else {
                 if (endo) {
-                    tmp.append(" " + java.util.ResourceBundle.getBundle("intl/SolutionStep").getString("SolutionStep.endofins_in") + " ");
+                    tmp.append(" ").append(java.util.ResourceBundle.getBundle("intl/SolutionStep").getString("SolutionStep.endofins_in")).append(" ");
                 } else {
-                    tmp.append(" " + java.util.ResourceBundle.getBundle("intl/SolutionStep").getString("SolutionStep.fins_in") + " ");
+                    tmp.append(" ").append(java.util.ResourceBundle.getBundle("intl/SolutionStep").getString("SolutionStep.fins_in")).append(" ");
                 }
             }
         }
@@ -1584,9 +1614,9 @@ public class SolutionStep implements Comparable<SolutionStep>, Cloneable {
                 }
             }
             if (library) {
-                tmp.append(finStr + getCellPrint(cand.index, false));
+                tmp.append(finStr).append(getCellPrint(cand.getIndex(), false));
             } else {
-                tmp.append(getCellPrint(cand.index, false));
+                tmp.append(getCellPrint(cand.getIndex(), false));
             }
         }
     }
@@ -1596,7 +1626,7 @@ public class SolutionStep implements Comparable<SolutionStep>, Cloneable {
     }
 
     public void setEntity(int entity) {
-        if (entity != SudokuCell.USER && entity != SudokuCell.LINE && entity != SudokuCell.COL && entity != SudokuCell.CELL) {
+        if (entity != Sudoku2.BLOCK && entity != Sudoku2.LINE && entity != Sudoku2.COL && entity != Sudoku2.CELL) {
             throw new RuntimeException(java.util.ResourceBundle.getBundle("intl/SolutionStep").getString("SolutionStep.invalid_setEntity") + " (" + entity + java.util.ResourceBundle.getBundle("intl/SolutionStep").getString(")"));
         }
         this.entity = entity;
@@ -1655,42 +1685,42 @@ public class SolutionStep implements Comparable<SolutionStep>, Cloneable {
         return chains;
     }
 
-    public boolean containsChain(int start, int end, int[] chain) {
-        int i = 0, j = 0;
-        for (int m = 0; m < chains.size(); m++) {
-            Chain akt = chains.get(m);
-            // chains können nur gleich sein, wenn sie gleich lang sind
-            if (akt.end - akt.start != end - start) {
-                continue;
-            }
-
-            // einmal hin...
-            for (i = akt.start, j =
-                            start;
-                    j <= end; i++, j++) {
-                if (akt.chain[i] != chain[j]) {
-                    break;
-                }
-            }
-            if (j == end + 1) {
-                return true;
-            }
-            // und einmal her...
-            for (i = akt.start, j =
-                            end;
-                    j >= start; i++, j--) {
-                // die Zellen und Kandidaten müssen gleich sein
-                if (!Chain.equalsIndexCandidate(akt.chain[i], chain[j])) {
-                    break;
-                }
-                // um strong oder weak kümmere ich mich einmal nicht...
-            }
-            if (j == start - 1) {
-                return true;
-            }
-        }
-        return false;
-    }
+//    public boolean containsChain(int start, int end, int[] chain) {
+//        int i = 0, j = 0;
+//        for (int m = 0; m < chains.size(); m++) {
+//            Chain akt = chains.get(m);
+//            // chains können nur gleich sein, wenn sie gleich lang sind
+//            if (akt.end - akt.start != end - start) {
+//                continue;
+//            }
+//
+//            // einmal hin...
+//            for (i = akt.start, j =
+//                            start;
+//                    j <= end; i++, j++) {
+//                if (akt.chain[i] != chain[j]) {
+//                    break;
+//                }
+//            }
+//            if (j == end + 1) {
+//                return true;
+//            }
+//            // und einmal her...
+//            for (i = akt.start, j =
+//                            end;
+//                    j >= start; i++, j--) {
+//                // die Zellen und Kandidaten müssen gleich sein
+//                if (!Chain.equalsIndexCandidate(akt.chain[i], chain[j])) {
+//                    break;
+//                }
+//                // um strong oder weak kümmere ich mich einmal nicht...
+//            }
+//            if (j == start - 1) {
+//                return true;
+//            }
+//        }
+//        return false;
+//    }
 
     public int getChainLength() {
         int length = 0;
@@ -1709,8 +1739,8 @@ public class SolutionStep implements Comparable<SolutionStep>, Cloneable {
         if (chains.size() > 0) {
             for (int i = 0; i < chains.size(); i++) {
                 Chain tmp = chains.get(i);
-                for (int j = tmp.start; j <= tmp.end; j++) {
-                    if (tmp.chain[j] < 0) {
+                for (int j = tmp.getStart(); j <= tmp.getEnd(); j++) {
+                    if (tmp.getChain()[j] < 0) {
                         return true;
                     }
                 }
@@ -1722,7 +1752,7 @@ public class SolutionStep implements Comparable<SolutionStep>, Cloneable {
     public int getAlsesIndexCount() {
         int count = 0;
         for (AlsInSolutionStep als : alses) {
-            count += als.indices.size();
+            count += als.getIndices().size();
         }
         return count;
     }
@@ -1750,6 +1780,18 @@ public class SolutionStep implements Comparable<SolutionStep>, Cloneable {
         alses.add(als);
     }
 
+    public void addAls(SudokuSet indices, short candidates) {
+        AlsInSolutionStep als = new AlsInSolutionStep();
+        for (int i = 0; i < indices.size(); i++) {
+            als.addIndex(indices.get(i));
+        }
+        int[] cands = Sudoku2.POSSIBLE_VALUES[candidates];
+        for (int i = 0; i < cands.length; i++) {
+            als.addCandidate(cands[i]);
+        }
+        alses.add(als);
+    }
+
     public void addRestrictedCommon(RestrictedCommon rc) {
         restrictedCommons.add(rc);
     }
@@ -1765,15 +1807,15 @@ public class SolutionStep implements Comparable<SolutionStep>, Cloneable {
     public int getAlsIndex(int index, int chainIndex) {
         if (chainIndex == -1) {
             for (int i = 0; i < alses.size(); i++) {
-                if (alses.get(i).indices.contains(index)) {
+                if (alses.get(i).getIndices().contains(index)) {
                     return i;
                 }
             }
         } else {
             Chain chain = chains.get(chainIndex);
-            for (int i = chain.start; i <= chain.end; i++) {
+            for (int i = chain.getStart(); i <= chain.getEnd(); i++) {
                 if (chain.getNodeType(i) == Chain.ALS_NODE) {
-                    int alsIndex = Chain.getSAlsIndex(chain.chain[i]);
+                    int alsIndex = Chain.getSAlsIndex(chain.getChain()[i]);
                     AlsInSolutionStep als = alses.get(alsIndex);
                     if (als.getIndices().contains(index)) {
                         return alsIndex;
@@ -1913,10 +1955,18 @@ public class SolutionStep implements Comparable<SolutionStep>, Cloneable {
 
         // nach Äquivalenz (gleiche zu löschende Kandidaten)
         if (!isEquivalent(o)) {
+            // change 20110512: short chains first!
+            int chainDiff = compareChainLengths(o);
+            if (chainDiff != 0) {
+                return chainDiff;
+            }
+            
             // nicht äquivalent: nach Indexsumme der zu löschenden Kandidaten
             sum1 = getIndexSumme(candidatesToDelete);
             sum2 = getIndexSumme(o.candidatesToDelete);
-            return sum1 == sum2 ? 1 : sum1 - sum2;
+            // BUG 20110512: Sort order is intransitiv - doesnt work with Java7 anymore
+//            return sum1 == sum2 ? 1 : sum1 - sum2;
+            return (sum1 - sum2);
         }
 
         // SPECIAL STEPS
@@ -2040,7 +2090,7 @@ public class SolutionStep implements Comparable<SolutionStep>, Cloneable {
             boolean found = false;
             for (int j = 0; j < anz; j++) {
                 Candidate c2 = l2.get(j);
-                if (c1.index == c2.index && c1.value == c2.value) {
+                if (c1.getIndex() == c2.getIndex() && c1.getValue() == c2.getValue()) {
                     found = true;
                     break;
                 }
@@ -2055,7 +2105,7 @@ public class SolutionStep implements Comparable<SolutionStep>, Cloneable {
     public int getIndexSumme(List<Candidate> list) {
         int sum = 0;
         for (int i = 0; i < list.size(); i++) {
-            sum += list.get(i).index;
+            sum += list.get(i).getIndex();
         }
         return sum;
     }
@@ -2080,7 +2130,7 @@ public class SolutionStep implements Comparable<SolutionStep>, Cloneable {
         for (int i = 0; i < size1; i++) {
             Candidate c1 = candidatesToDelete.get(i);
             Candidate c2 = o.candidatesToDelete.get(i);
-            result = (c1.index * 10 + c1.value) - (c2.index * 10 + c2.value);
+            result = (c1.getIndex() * 10 + c1.getValue()) - (c2.getIndex() * 10 + c2.getValue());
             if (result != 0) {
                 return result;
             }

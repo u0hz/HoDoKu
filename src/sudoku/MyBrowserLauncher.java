@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008/09/10  Bernhard Hobiger
+ * Copyright (C) 2008-11  Bernhard Hobiger
  *
  * This file is part of HoDoKu.
  *
@@ -27,7 +27,7 @@ import java.util.logging.Logger;
 
 /**
  *
- * @author Bernhard_2
+ * @author hobiwan
  */
 public class MyBrowserLauncher {
     private static MyBrowserLauncher instance = null;

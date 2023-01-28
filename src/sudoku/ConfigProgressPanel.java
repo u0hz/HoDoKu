@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008/09/10  Bernhard Hobiger
+ * Copyright (C) 2008-11  Bernhard Hobiger
  *
  * This file is part of HoDoKu.
  *
@@ -45,7 +45,7 @@ import javax.swing.tree.TreeSelectionModel;
 
 /**
  *
- * @author  Bernhard Hobiger
+ * @author  hobiwan
  */
 public class ConfigProgressPanel extends javax.swing.JPanel
 implements ListDragAndDropChange {
@@ -544,7 +544,7 @@ implements ListDragAndDropChange {
 //                }
 //            }
 //        }
-        orgSteps = instance.orgSolverSteps;
+        orgSteps = instance.getOrgSolverSteps();
         for (int i = 0; i < steps.length; i++) {
             for (int j = 0; j < orgSteps.length; j++) {
                 if (steps[i].getType() == orgSteps[j].getType() &&
@@ -555,7 +555,7 @@ implements ListDragAndDropChange {
                 }
             }
         }
-        instance.solverStepsProgress = instance.copyStepConfigs(instance.orgSolverSteps, false, false, false, true);
+        instance.solverStepsProgress = instance.copyStepConfigs(instance.getOrgSolverSteps(), false, false, false, true);
 //        Options.getInstance().sortProgressSteps();
     }
     
@@ -695,11 +695,13 @@ implements ListDragAndDropChange {
                 setForeground(fg);
 //                System.out.println("SBG: " + bg);
 //                System.out.println("SFG: " + fg);
+                setOpaque(true);
             } else {
                 setBackground(UIManager.getColor("List.background"));
                 setForeground(UIManager.getColor("List.foreground"));
 //                System.out.println("BG: " + UIManager.getColor("List.background"));
 //                System.out.println("FG: " + UIManager.getColor("List.foreground"));
+                setOpaque(false);
             }
             setText(((StepConfig)obj).toString());
             setSelected(((StepConfig)obj).isEnabledProgress());

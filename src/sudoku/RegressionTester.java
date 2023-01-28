@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008/09/10  Bernhard Hobiger, MaNik-e Team
+ * Copyright (C) 2008-11  Bernhard Hobiger, MaNik-e Team
  *
  * This file is part of HoDoKu.
  *
@@ -29,6 +29,8 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import solver.SudokuSolverFactory;
+import solver.SudokuStepFinder;
 
 /**
  * A class that implements a Regression Tester for HoDoKu
@@ -44,38 +46,19 @@ import java.util.logging.Logger;
  */
 public class RegressionTester {
 
-    private SimpleSolver simpleSolver;
-    private SingleDigitPatternSolver singleDigitPatternSolver;
-    private MiscellaneousSolver miscellaneousSolver;
-    private FishSolver fishSolver;
-    private UniquenessSolver uniquenessSolver;
-    private WingSolver wingSolver;
-    private ColoringSolver coloringSolver;
-    private ChainSolver chainSolver;
-    private TemplateSolver templateSolver;
-    private AlsSolver alsSolver;
-    private TablingSolver tablingSolver;
+    private SudokuStepFinder stepFinder;
     private int anzTestCases = 0;
     private int anzGoodCases = 0;
     private int anzBadCases = 0;
     private int anzIgnoreCases = 0;
+    private int anzNotImplementedCases = 0;
     private Map<String, Integer> ignoredTechniques = new TreeMap<String, Integer>();
+    private Map<String, Integer> notImplementedTechniques = new TreeMap<String, Integer>();
     private Map<String, String> failedCases = new TreeMap<String, String>();
     private boolean fastMode = false;
 
     public RegressionTester() {
-        SudokuSolver solver = SudokuSolver.getInstance();
-        simpleSolver = (SimpleSolver) solver.getSpecialisedSolver(SimpleSolver.class);
-        singleDigitPatternSolver = (SingleDigitPatternSolver) solver.getSpecialisedSolver(SingleDigitPatternSolver.class);
-        miscellaneousSolver = (MiscellaneousSolver) solver.getSpecialisedSolver(MiscellaneousSolver.class);
-        fishSolver = (FishSolver) solver.getSpecialisedSolver(FishSolver.class);
-        uniquenessSolver = (UniquenessSolver) solver.getSpecialisedSolver(UniquenessSolver.class);
-        wingSolver = (WingSolver) solver.getSpecialisedSolver(WingSolver.class);
-        coloringSolver = (ColoringSolver) solver.getSpecialisedSolver(ColoringSolver.class);
-        chainSolver = (ChainSolver) solver.getSpecialisedSolver(ChainSolver.class);
-        templateSolver = (TemplateSolver) solver.getSpecialisedSolver(TemplateSolver.class);
-        alsSolver = (AlsSolver) solver.getSpecialisedSolver(AlsSolver.class);
-        tablingSolver = (TablingSolver) solver.getSpecialisedSolver(TablingSolver.class);
+        stepFinder = SudokuSolverFactory.getDefaultSolverInstance().getStepFinder();
     }
 
     public void runTest(String testFile) {
@@ -108,6 +91,9 @@ public class RegressionTester {
                 if ((anzLines % 10) == 0) {
                     System.out.print(".");
                 }
+                if ((anzLines % 400) == 0) {
+                    System.out.println();
+                }
                 line = line.trim();
                 if (line.startsWith("#")) {
                     continue;
@@ -120,16 +106,25 @@ public class RegressionTester {
         } catch (IOException ex) {
             Logger.getLogger(getClass().getName()).log(Level.SEVERE, "error reading test cases...", ex);
         }
+        System.out.println();
         System.out.println("Test finished!");
         System.out.println((anzTestCases) + " cases total");
         System.out.println(anzGoodCases + " tests succeeded");
         System.out.println(anzBadCases + " tests failed");
         System.out.println(anzIgnoreCases + " tests were ignored");
+        System.out.println(anzNotImplementedCases + " tests could not be run because the technique is not implemented");
         if (anzIgnoreCases != 0) {
             System.out.println("Ignored techniques:");
             Set<String> keys = ignoredTechniques.keySet();
             for (String key : keys) {
                 System.out.println("  " + key + ": " + ignoredTechniques.get(key));
+            }
+        }
+        if (anzNotImplementedCases != 0) {
+            System.out.println("Test cases for techniques not implemented:");
+            Set<String> keys = notImplementedTechniques.keySet();
+            for (String key : keys) {
+                System.out.println("  " + key + ": " + notImplementedTechniques.get(key));
             }
         }
         if (anzBadCases != 0) {
@@ -193,8 +188,8 @@ public class RegressionTester {
             return;
         }
 
-        // Create and set a new Sudoku
-        Sudoku sudoku = new Sudoku();
+        // Create and set a new Sudoku2
+        Sudoku2 sudoku = new Sudoku2();
         //System.out.println(testCase);
         sudoku.setSudoku(testCase);
         //System.out.println("after set: " + sudoku.getSudoku(ClipboardMode.LIBRARY));
@@ -206,85 +201,90 @@ public class RegressionTester {
         boolean oldOption2 = false;
         switch (type) {
             case FULL_HOUSE:
-                steps = simpleSolver.findAllFullHouses(sudoku);
+                steps = stepFinder.findAllFullHouses(sudoku);
                 checkResults(testCase, steps, sudoku, start, failCase);
                 break;
             case HIDDEN_SINGLE:
             case HIDDEN_PAIR:
             case HIDDEN_TRIPLE:
             case HIDDEN_QUADRUPLE:
-                steps = simpleSolver.findAllHiddenXle(sudoku);
+                steps = stepFinder.findAllHiddenXle(sudoku);
                 checkResults(testCase, steps, sudoku, start, failCase);
                 break;
             case NAKED_SINGLE:
             case NAKED_PAIR:
             case NAKED_TRIPLE:
             case NAKED_QUADRUPLE:
-                steps = simpleSolver.findAllNakedXle(sudoku);
+                steps = stepFinder.findAllNakedXle(sudoku);
                 checkResults(testCase, steps, sudoku, start, failCase);
                 break;
             case LOCKED_PAIR:
             case LOCKED_TRIPLE:
-                steps = simpleSolver.findAllNakedXle(sudoku);
-                steps1 = simpleSolver.findAllHiddenXle(sudoku);
-                steps.addAll(steps1);
-                checkResults(testCase, steps, sudoku, start, failCase);
+                if (variant == 1) {
+                    steps = stepFinder.findAllNakedXle(sudoku);
+                    steps1 = stepFinder.findAllHiddenXle(sudoku);
+                    steps.addAll(steps1);
+                    checkResults(testCase, steps, sudoku, start, failCase);
+                } else {
+                    anzNotImplementedCases++;
+                    notImplementedTechniques.put(testCase, 1);
+                }
                 break;
             case LOCKED_CANDIDATES_1:
             case LOCKED_CANDIDATES_2:
-                steps = simpleSolver.findAllLockedCandidates(sudoku);
+                steps = stepFinder.findAllLockedCandidates(sudoku);
                 checkResults(testCase, steps, sudoku, start, failCase);
                 break;
             case SKYSCRAPER:
-                oldOption = Options.getInstance().allowDualsAndSiamese;
-                Options.getInstance().allowDualsAndSiamese = false;
-                steps = singleDigitPatternSolver.findAllSkyScrapers(sudoku);
+                oldOption = Options.getInstance().isAllowDualsAndSiamese();
+                Options.getInstance().setAllowDualsAndSiamese(false);
+                steps = stepFinder.findAllSkyScrapers(sudoku);
                 checkResults(testCase, steps, sudoku, start, failCase);
-                Options.getInstance().allowDualsAndSiamese = oldOption;
+                Options.getInstance().setAllowDualsAndSiamese(oldOption);
                 break;
             case TWO_STRING_KITE:
-                oldOption = Options.getInstance().allowDualsAndSiamese;
-                Options.getInstance().allowDualsAndSiamese = false;
-                steps = singleDigitPatternSolver.findAllTwoStringKites(sudoku);
+                oldOption = Options.getInstance().isAllowDualsAndSiamese();
+                Options.getInstance().setAllowDualsAndSiamese(false);
+                steps = stepFinder.findAllTwoStringKites(sudoku);
                 checkResults(testCase, steps, sudoku, start, failCase);
-                Options.getInstance().allowDualsAndSiamese = oldOption;
+                Options.getInstance().setAllowDualsAndSiamese(oldOption);
                 break;
             case DUAL_TWO_STRING_KITE:
-                oldOption = Options.getInstance().allowDualsAndSiamese;
-                Options.getInstance().allowDualsAndSiamese = true;
-                steps = singleDigitPatternSolver.findAllTwoStringKites(sudoku);
+                oldOption = Options.getInstance().isAllowDualsAndSiamese();
+                Options.getInstance().setAllowDualsAndSiamese(true);
+                steps = stepFinder.findAllTwoStringKites(sudoku);
                 checkResults(testCase, steps, sudoku, start, failCase);
-                Options.getInstance().allowDualsAndSiamese = oldOption;
+                Options.getInstance().setAllowDualsAndSiamese(oldOption);
                 break;
             case EMPTY_RECTANGLE:
-                oldOption = Options.getInstance().allowErsWithOnlyTwoCandidates;
+                oldOption = Options.getInstance().isAllowErsWithOnlyTwoCandidates();
                 if (variant == 1) {
-                    Options.getInstance().allowErsWithOnlyTwoCandidates = true;
+                    Options.getInstance().setAllowErsWithOnlyTwoCandidates(true);
                 }
-                steps = singleDigitPatternSolver.findAllEmptyRectangles(sudoku);
+                steps = stepFinder.findAllEmptyRectangles(sudoku);
                 checkResults(testCase, steps, sudoku, start, failCase);
-                Options.getInstance().allowErsWithOnlyTwoCandidates = oldOption;
+                Options.getInstance().setAllowErsWithOnlyTwoCandidates(oldOption);
                 break;
             case DUAL_EMPTY_RECTANGLE:
-                oldOption = Options.getInstance().allowErsWithOnlyTwoCandidates;
-                oldOption2 = Options.getInstance().allowDualsAndSiamese;
-                Options.getInstance().allowErsWithOnlyTwoCandidates = true;
-                Options.getInstance().allowDualsAndSiamese = true;
-                steps = singleDigitPatternSolver.findAllEmptyRectangles(sudoku);
+                oldOption = Options.getInstance().isAllowErsWithOnlyTwoCandidates();
+                oldOption2 = Options.getInstance().isAllowDualsAndSiamese();
+                Options.getInstance().setAllowErsWithOnlyTwoCandidates(true);
+                Options.getInstance().setAllowDualsAndSiamese(true);
+                steps = stepFinder.findAllEmptyRectangles(sudoku);
                 checkResults(testCase, steps, sudoku, start, failCase);
-                Options.getInstance().allowErsWithOnlyTwoCandidates = oldOption;
-                Options.getInstance().allowDualsAndSiamese = oldOption2;
+                Options.getInstance().setAllowErsWithOnlyTwoCandidates(oldOption);
+                Options.getInstance().setAllowDualsAndSiamese(oldOption2);
                 break;
             case SIMPLE_COLORS:
             case SIMPLE_COLORS_TRAP:
             case SIMPLE_COLORS_WRAP:
-                steps = coloringSolver.findAllSimpleColors(sudoku);
+                steps = stepFinder.findAllSimpleColors(sudoku);
                 checkResults(testCase, steps, sudoku, start, failCase);
                 break;
             case MULTI_COLORS:
             case MULTI_COLORS_1:
             case MULTI_COLORS_2:
-                steps = coloringSolver.findAllMultiColors(sudoku);
+                steps = stepFinder.findAllMultiColors(sudoku);
                 checkResults(testCase, steps, sudoku, start, failCase);
                 break;
             case UNIQUENESS_1:
@@ -296,13 +296,20 @@ public class RegressionTester {
             case HIDDEN_RECTANGLE:
             case AVOIDABLE_RECTANGLE_1:
             case AVOIDABLE_RECTANGLE_2:
-                steps = uniquenessSolver.getAllUniqueness(sudoku);
+                oldOption = Options.getInstance().isAllowUniquenessMissingCandidates();
+                if (variant == 1) {
+                    Options.getInstance().setAllowUniquenessMissingCandidates(false);
+                } else if (variant == 2) {
+                    Options.getInstance().setAllowUniquenessMissingCandidates(true);
+                }
+                steps = stepFinder.getAllUniqueness(sudoku);
                 checkResults(testCase, steps, sudoku, start, failCase);
+                Options.getInstance().setAllowUniquenessMissingCandidates(oldOption);
                 break;
             case BUG_PLUS_1:
                 steps = new ArrayList<SolutionStep>();
-                uniquenessSolver.setSudoku(sudoku);
-                SolutionStep step = uniquenessSolver.getStep(type);
+                stepFinder.setSudoku(sudoku);
+                SolutionStep step = stepFinder.getStep(type);
                 if (step != null) {
                     steps.add(step);
                 }
@@ -311,45 +318,45 @@ public class RegressionTester {
             case XY_WING:
             case XYZ_WING:
             case W_WING:
-                steps = wingSolver.getAllWings(sudoku);
+                steps = stepFinder.getAllWings(sudoku);
                 checkResults(testCase, steps, sudoku, start, failCase);
                 break;
             case TURBOT_FISH:
             case X_CHAIN:
             case XY_CHAIN:
             case REMOTE_PAIR:
-                oldOption = Options.getInstance().onlyOneChainPerStep;
-                Options.getInstance().onlyOneChainPerStep = false;
-                steps = chainSolver.getAllChains(sudoku);
+                oldOption = Options.getInstance().isOnlyOneChainPerStep();
+                Options.getInstance().setOnlyOneChainPerStep(false);
+                steps = stepFinder.getAllChains(sudoku);
                 checkResults(testCase, steps, sudoku, start, failCase);
-                Options.getInstance().onlyOneChainPerStep = oldOption;
+                Options.getInstance().setOnlyOneChainPerStep(oldOption);
                 break;
             case CONTINUOUS_NICE_LOOP:
             case DISCONTINUOUS_NICE_LOOP:
             case AIC:
-                oldOption = Options.getInstance().onlyOneChainPerStep;
-                Options.getInstance().onlyOneChainPerStep = false;
-                steps = tablingSolver.getAllNiceLoops(sudoku);
+                oldOption = Options.getInstance().isOnlyOneChainPerStep();
+                Options.getInstance().setOnlyOneChainPerStep(false);
+                steps = stepFinder.getAllNiceLoops(sudoku);
                 checkResults(testCase, steps, sudoku, start, failCase);
-                Options.getInstance().onlyOneChainPerStep = oldOption;
+                Options.getInstance().setOnlyOneChainPerStep(oldOption);
                 break;
             case GROUPED_CONTINUOUS_NICE_LOOP:
             case GROUPED_DISCONTINUOUS_NICE_LOOP:
             case GROUPED_AIC:
-                oldOption = Options.getInstance().onlyOneChainPerStep;
-                oldOption2 = Options.getInstance().allowAlsInTablingChains;
-                Options.getInstance().onlyOneChainPerStep = false;
+                oldOption = Options.getInstance().isOnlyOneChainPerStep();
+                oldOption2 = Options.getInstance().isAllowAlsInTablingChains();
+                Options.getInstance().setOnlyOneChainPerStep(false);
                 if ((type == SolutionType.GROUPED_CONTINUOUS_NICE_LOOP && variant == 2) ||
                         (type == SolutionType.GROUPED_DISCONTINUOUS_NICE_LOOP && (variant == 3 || variant == 4)) ||
                         (type == SolutionType.GROUPED_AIC && (variant == 3 || variant == 4))) {
-                    Options.getInstance().allowAlsInTablingChains = true;
+                    Options.getInstance().setAllowAlsInTablingChains(true);
                 } else {
-                    Options.getInstance().allowAlsInTablingChains = false;
+                    Options.getInstance().setAllowAlsInTablingChains(false);
                 }
-                steps = tablingSolver.getAllGroupedNiceLoops(sudoku);
+                steps = stepFinder.getAllGroupedNiceLoops(sudoku);
                 checkResults(testCase, steps, sudoku, start, failCase);
-                Options.getInstance().onlyOneChainPerStep = oldOption;
-                Options.getInstance().allowAlsInTablingChains = oldOption2;
+                Options.getInstance().setOnlyOneChainPerStep(oldOption);
+                Options.getInstance().setAllowAlsInTablingChains(oldOption2);
                 break;
             case X_WING:
             case FINNED_X_WING:
@@ -370,11 +377,16 @@ public class RegressionTester {
             case SWORDFISH:
             case FINNED_SWORDFISH:
             case SASHIMI_SWORDFISH:
+                oldOption = Options.getInstance().isAllowDualsAndSiamese();
+                Options.getInstance().setAllowDualsAndSiamese(true);
                 steps = findAllFishes(sudoku, 3, 0);
                 checkResults(testCase, steps, sudoku, start, failCase);
+                Options.getInstance().setAllowDualsAndSiamese(oldOption);
                 break;
             case FRANKEN_SWORDFISH:
             case FINNED_FRANKEN_SWORDFISH:
+                oldOption = Options.getInstance().isAllowDualsAndSiamese();
+                Options.getInstance().setAllowDualsAndSiamese(true);
                 if (! fastMode) {
                     steps = findAllFishes(sudoku, 3, 1);
                     checkResults(testCase, steps, sudoku, start, failCase);
@@ -382,9 +394,12 @@ public class RegressionTester {
                     anzIgnoreCases++;
                     ignoredTechniques.put(testCase, 1);
                 }
+                Options.getInstance().setAllowDualsAndSiamese(oldOption);
                 break;
             case MUTANT_SWORDFISH:
             case FINNED_MUTANT_SWORDFISH:
+                oldOption = Options.getInstance().isAllowDualsAndSiamese();
+                Options.getInstance().setAllowDualsAndSiamese(true);
                 if (! fastMode) {
                     steps = findAllFishes(sudoku, 3, 2);
                     checkResults(testCase, steps, sudoku, start, failCase);
@@ -392,15 +407,21 @@ public class RegressionTester {
                     anzIgnoreCases++;
                     ignoredTechniques.put(testCase, 1);
                 }
+                Options.getInstance().setAllowDualsAndSiamese(oldOption);
                 break;
             case JELLYFISH:
             case FINNED_JELLYFISH:
             case SASHIMI_JELLYFISH:
+                oldOption = Options.getInstance().isAllowDualsAndSiamese();
+                Options.getInstance().setAllowDualsAndSiamese(true);
                 steps = findAllFishes(sudoku, 4, 0);
                 checkResults(testCase, steps, sudoku, start, failCase);
+                Options.getInstance().setAllowDualsAndSiamese(oldOption);
                 break;
             case FRANKEN_JELLYFISH:
             case FINNED_FRANKEN_JELLYFISH:
+                oldOption = Options.getInstance().isAllowDualsAndSiamese();
+                Options.getInstance().setAllowDualsAndSiamese(true);
                 if (! fastMode) {
                     steps = findAllFishes(sudoku, 4, 1);
                     checkResults(testCase, steps, sudoku, start, failCase);
@@ -408,9 +429,12 @@ public class RegressionTester {
                     anzIgnoreCases++;
                     ignoredTechniques.put(testCase, 1);
                 }
+                Options.getInstance().setAllowDualsAndSiamese(oldOption);
                 break;
             case MUTANT_JELLYFISH:
             case FINNED_MUTANT_JELLYFISH:
+                oldOption = Options.getInstance().isAllowDualsAndSiamese();
+                Options.getInstance().setAllowDualsAndSiamese(true);
                 if (! fastMode) {
                     steps = findAllFishes(sudoku, 4, 2);
                     checkResults(testCase, steps, sudoku, start, failCase);
@@ -418,6 +442,7 @@ public class RegressionTester {
                     anzIgnoreCases++;
                     ignoredTechniques.put(testCase, 1);
                 }
+                Options.getInstance().setAllowDualsAndSiamese(oldOption);
                 break;
             case SQUIRMBAG:
             case FINNED_SQUIRMBAG:
@@ -508,77 +533,77 @@ public class RegressionTester {
                 }
                 break;
             case SUE_DE_COQ:
-                steps = miscellaneousSolver.getAllSueDeCoqs(sudoku);
+                steps = stepFinder.getAllSueDeCoqs(sudoku);
                 checkResults(testCase, steps, sudoku, start, failCase);
                 break;
             case ALS_XZ:
             case ALS_XY_WING:
             case ALS_XY_CHAIN:
-                oldOption = Options.getInstance().onlyOneAlsPerStep;
-                oldOption2 = Options.getInstance().allowAlsOverlap;
-                Options.getInstance().onlyOneAlsPerStep = false;
-                Options.getInstance().allowAlsOverlap = false;
+                oldOption = Options.getInstance().isOnlyOneAlsPerStep();
+                oldOption2 = Options.getInstance().isAllowAlsOverlap();
+                Options.getInstance().setOnlyOneAlsPerStep(false);
+                Options.getInstance().setAllowAlsOverlap(false);
                 if ((type == SolutionType.ALS_XY_CHAIN && variant == 2) ||
                      (type == SolutionType.ALS_XY_WING && variant == 2)) {
-                    Options.getInstance().allowAlsOverlap = true;
+                    Options.getInstance().setAllowAlsOverlap(true);
                 }
-                steps = alsSolver.getAllAlses(sudoku);
+                steps = stepFinder.getAllAlses(sudoku);
                 checkResults(testCase, steps, sudoku, start, failCase);
-                Options.getInstance().onlyOneAlsPerStep = oldOption;
-                Options.getInstance().allowAlsOverlap = oldOption2;
+                Options.getInstance().setOnlyOneAlsPerStep(oldOption);
+                Options.getInstance().setAllowAlsOverlap(oldOption2);
                 break;
             case DEATH_BLOSSOM:
-                oldOption = Options.getInstance().onlyOneAlsPerStep;
-                oldOption2 = Options.getInstance().allowAlsOverlap;
-                Options.getInstance().onlyOneAlsPerStep = false;
-                Options.getInstance().allowAlsOverlap = false;
+                oldOption = Options.getInstance().isOnlyOneAlsPerStep();
+                oldOption2 = Options.getInstance().isAllowAlsOverlap();
+                Options.getInstance().setOnlyOneAlsPerStep(false);
+                Options.getInstance().setAllowAlsOverlap(false);
                 if (variant == 2) {
-                    Options.getInstance().allowAlsOverlap = true;
+                    Options.getInstance().setAllowAlsOverlap(true);
                 }
-                steps = alsSolver.getAllDeathBlossoms(sudoku);
+                steps = stepFinder.getAllDeathBlossoms(sudoku);
                 checkResults(testCase, steps, sudoku, start, failCase);
-                Options.getInstance().onlyOneAlsPerStep = oldOption;
-                Options.getInstance().allowAlsOverlap = oldOption2;
+                Options.getInstance().setOnlyOneAlsPerStep(oldOption);
+                Options.getInstance().setAllowAlsOverlap(oldOption2);
                 break;
             case TEMPLATE_SET:
             case TEMPLATE_DEL:
-                steps = templateSolver.getAllTemplates(sudoku);
+                steps = stepFinder.getAllTemplates(sudoku);
                 checkResults(testCase, steps, sudoku, start, failCase);
                 break;
             case FORCING_CHAIN_CONTRADICTION:
             case FORCING_CHAIN_VERITY:
-                oldOption = Options.getInstance().onlyOneChainPerStep;
-                oldOption2 = Options.getInstance().allowAlsInTablingChains;
-                Options.getInstance().onlyOneChainPerStep = false;
-                Options.getInstance().allowAlsInTablingChains = false;
-                steps = tablingSolver.getAllForcingChains(sudoku);
+                oldOption = Options.getInstance().isOnlyOneChainPerStep();
+                oldOption2 = Options.getInstance().isAllowAlsInTablingChains();
+                Options.getInstance().setOnlyOneChainPerStep(false);
+                Options.getInstance().setAllowAlsInTablingChains(false);
+                steps = stepFinder.getAllForcingChains(sudoku);
                 checkResults(testCase, steps, sudoku, start, failCase);
-                Options.getInstance().onlyOneChainPerStep = oldOption;
-                Options.getInstance().allowAlsInTablingChains = oldOption2;
+                Options.getInstance().setOnlyOneChainPerStep(oldOption);
+                Options.getInstance().setAllowAlsInTablingChains(oldOption2);
                 break;
             case FORCING_NET_CONTRADICTION:
             case FORCING_NET_VERITY:
-                oldOption = Options.getInstance().onlyOneChainPerStep;
-                oldOption2 = Options.getInstance().allowAlsInTablingChains;
-                Options.getInstance().onlyOneChainPerStep = false;
-                Options.getInstance().allowAlsInTablingChains = false;
-                steps = tablingSolver.getAllForcingNets(sudoku);
+                oldOption = Options.getInstance().isOnlyOneChainPerStep();
+                oldOption2 = Options.getInstance().isAllowAlsInTablingChains();
+                Options.getInstance().setOnlyOneChainPerStep(false);
+                Options.getInstance().setAllowAlsInTablingChains(false);
+                steps = stepFinder.getAllForcingNets(sudoku);
                 checkResults(testCase, steps, sudoku, start, failCase);
-                Options.getInstance().onlyOneChainPerStep = oldOption;
-                Options.getInstance().allowAlsInTablingChains = oldOption2;
+                Options.getInstance().setOnlyOneChainPerStep(oldOption);
+                Options.getInstance().setAllowAlsInTablingChains(oldOption2);
                 break;
             case KRAKEN_FISH_TYPE_1:
             case KRAKEN_FISH_TYPE_2:
-                oldOption = Options.getInstance().onlyOneFishPerStep;
-                oldOption2 = Options.getInstance().checkTemplates;
-                Options.getInstance().onlyOneFishPerStep = false;
-                Options.getInstance().checkTemplates = true;
-                steps = fishSolver.getAllKrakenFishes(sudoku, 2, 4,
-                        Options.getInstance().allStepsMaxFins,
-                        Options.getInstance().allStepsMaxEndoFins, null, -1, 1);
+                oldOption = Options.getInstance().isOnlyOneFishPerStep();
+                oldOption2 = Options.getInstance().isCheckTemplates();
+                Options.getInstance().setOnlyOneFishPerStep(false);
+                Options.getInstance().setCheckTemplates(true);
+                steps = stepFinder.getAllKrakenFishes(sudoku, 2, 4,
+                        Options.getInstance().getAllStepsMaxFins(),
+                        Options.getInstance().getAllStepsMaxEndoFins(), null, -1, 1);
                 checkResults(testCase, steps, sudoku, start, failCase);
-                Options.getInstance().onlyOneFishPerStep = oldOption;
-                Options.getInstance().checkTemplates = oldOption2;
+                Options.getInstance().setOnlyOneFishPerStep(oldOption);
+                Options.getInstance().setCheckTemplates(oldOption2);
                 break;
             default:
                 anzIgnoreCases++;
@@ -587,16 +612,16 @@ public class RegressionTester {
         }
     }
 
-    private List<SolutionStep> findAllFishes(Sudoku sudoku, int size, int type) {
-        boolean oldOption = Options.getInstance().onlyOneFishPerStep;
-        boolean oldOption2 = Options.getInstance().checkTemplates;
-        Options.getInstance().onlyOneFishPerStep = false;
-        Options.getInstance().checkTemplates = true;
-        List<SolutionStep> steps = fishSolver.getAllFishes(sudoku, size, size,
-                Options.getInstance().allStepsMaxFins,
-                Options.getInstance().allStepsMaxEndoFins, null, -1, type);
-        Options.getInstance().onlyOneFishPerStep = oldOption;
-        Options.getInstance().checkTemplates = oldOption2;
+    private List<SolutionStep> findAllFishes(Sudoku2 sudoku, int size, int type) {
+        boolean oldOption = Options.getInstance().isOnlyOneFishPerStep();
+        boolean oldOption2 = Options.getInstance().isCheckTemplates();
+        Options.getInstance().setOnlyOneFishPerStep(false);
+        Options.getInstance().setCheckTemplates(true);
+        List<SolutionStep> steps = stepFinder.getAllFishes(sudoku, size, size,
+                Options.getInstance().getAllStepsMaxFins(),
+                Options.getInstance().getAllStepsMaxEndoFins(), null, -1, type);
+        Options.getInstance().setOnlyOneFishPerStep(oldOption);
+        Options.getInstance().setCheckTemplates(oldOption2);
         return steps;
     }
 
@@ -614,7 +639,7 @@ public class RegressionTester {
      * @param start
      * @param failCase
      */
-    private void checkResults(String testCase, List<SolutionStep> steps, Sudoku sudoku,
+    private void checkResults(String testCase, List<SolutionStep> steps, Sudoku2 sudoku,
             String start, boolean failCase) {
         boolean found = false;
         boolean exactMatch = false;
@@ -671,6 +696,16 @@ public class RegressionTester {
         }
         ignoredTechniques.put(technique, count);
         anzIgnoreCases++;
+    }
+
+    private void addNotImplementedTechnique(String technique) {
+        int count = 1;
+        if (notImplementedTechniques.containsKey(technique)) {
+            count = notImplementedTechniques.get(technique);
+            count++;
+        }
+        notImplementedTechniques.put(technique, count);
+        anzNotImplementedCases++;
     }
 
     public static void main(String[] args) {

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008/09/10  Bernhard Hobiger
+ * Copyright (C) 2008-11  Bernhard Hobiger
  *
  * This file is part of HoDoKu.
  *
@@ -26,7 +26,7 @@ import javax.swing.text.PlainDocument;
 
 /**
  *
- * @author zhobigbe
+ * @author hobiwan
  */
 public class NumbersOnlyDocument extends PlainDocument {
     

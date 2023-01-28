@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008/09/10  Bernhard Hobiger
+ * Copyright (C) 2008-11  Bernhard Hobiger
  *
  * This file is part of HoDoKu.
  *
@@ -21,16 +21,18 @@ package sudoku;
 
 import java.awt.EventQueue;
 import java.util.List;
+import solver.SudokuSolverFactory;
+import solver.SudokuStepFinder;
 
 /**
  *
- * @author Bernhard Hobiger
+ * @author hobiwan
  */
 public class FindAllSteps implements Runnable {
     private FindAllStepsProgressDialog dlg = null;
     private List<SolutionStep> steps;
     private List<SolutionType> testTypes = null;
-    private Sudoku sudoku;
+    private Sudoku2 sudoku;
 //    private int minSize;
 //    private int maxSize;
 //    private int maxFins;
@@ -38,35 +40,14 @@ public class FindAllSteps implements Runnable {
 //    private boolean forcingChains;
 //    private boolean forcingNets;
 //    private boolean krakenFish;
-    
-    private SimpleSolver simpleSolver;
-    private SingleDigitPatternSolver singleDigitPatternSolver;
-    private MiscellaneousSolver miscellaneousSolver;
-    private FishSolver fishSolver;
-    private UniquenessSolver uniquenessSolver;
-    private WingSolver wingSolver;
-    private ColoringSolver coloringSolver;
-    private ChainSolver chainSolver;
-    private TemplateSolver templateSolver;
-    private AlsSolver alsSolver;
-    private TablingSolver tablingSolver;
+
+    private SudokuStepFinder stepFinder;
     
     public FindAllSteps() {
-        SudokuSolver solver = SudokuSolver.getInstance();
-        simpleSolver = (SimpleSolver) solver.getSpecialisedSolver(SimpleSolver.class);
-        singleDigitPatternSolver = (SingleDigitPatternSolver) solver.getSpecialisedSolver(SingleDigitPatternSolver.class);
-        miscellaneousSolver = (MiscellaneousSolver) solver.getSpecialisedSolver(MiscellaneousSolver.class);
-        fishSolver = (FishSolver) solver.getSpecialisedSolver(FishSolver.class);
-        uniquenessSolver = (UniquenessSolver) solver.getSpecialisedSolver(UniquenessSolver.class);
-        wingSolver = (WingSolver) solver.getSpecialisedSolver(WingSolver.class);
-        coloringSolver = (ColoringSolver) solver.getSpecialisedSolver(ColoringSolver.class);
-        chainSolver = (ChainSolver) solver.getSpecialisedSolver(ChainSolver.class);
-        templateSolver = (TemplateSolver) solver.getSpecialisedSolver(TemplateSolver.class);
-        alsSolver = (AlsSolver) solver.getSpecialisedSolver(AlsSolver.class);
-        tablingSolver = (TablingSolver) solver.getSpecialisedSolver(TablingSolver.class);
+        stepFinder = SudokuSolverFactory.getDefaultSolverInstance().getStepFinder();
     }
     
-    public FindAllSteps(List<SolutionStep> steps, Sudoku sudoku, FindAllStepsProgressDialog dlg) {
+    public FindAllSteps(List<SolutionStep> steps, Sudoku2 sudoku, FindAllStepsProgressDialog dlg) {
         this();
         
         this.sudoku = sudoku;
@@ -131,31 +112,31 @@ public class FindAllSteps implements Runnable {
             switch (actStep) {
                 case 0:
                     updateProgress(java.util.ResourceBundle.getBundle("intl/FindAllStepsProgressDialog").getString("FindAllStepsProgressDialog.simple_solutions"), actStep);
-                    steps1 = simpleSolver.findAllFullHouses(sudoku);
+                    steps1 = stepFinder.findAllFullHouses(sudoku);
                     steps.addAll(steps1);
-                    steps1 = simpleSolver.findAllHiddenXle(sudoku);
+                    steps1 = stepFinder.findAllHiddenXle(sudoku);
                     steps.addAll(steps1);
-                    steps1 = simpleSolver.findAllNakedXle(sudoku);
+                    steps1 = stepFinder.findAllNakedXle(sudoku);
                     steps.addAll(steps1);
                     filterSteps(steps);
                     if (isAllStepsEnabled(SolutionType.LOCKED_CANDIDATES)) {
-                        steps1 = simpleSolver.findAllLockedCandidates(sudoku);
+                        steps1 = stepFinder.findAllLockedCandidates(sudoku);
                         steps.addAll(steps1);
                     }
                     if (isAllStepsEnabled(SolutionType.SKYSCRAPER)) {
-                        steps1 = singleDigitPatternSolver.findAllSkyScrapers(sudoku);
+                        steps1 = stepFinder.findAllSkyScrapers(sudoku);
                         steps.addAll(steps1);
                     }
                     if (isAllStepsEnabled(SolutionType.EMPTY_RECTANGLE)) {
-                        steps1 = singleDigitPatternSolver.findAllEmptyRectangles(sudoku);
+                        steps1 = stepFinder.findAllEmptyRectangles(sudoku);
                         steps.addAll(steps1);
                     }
                     if (isAllStepsEnabled(SolutionType.TWO_STRING_KITE)) {
-                        steps1 = singleDigitPatternSolver.findAllTwoStringKites(sudoku);
+                        steps1 = stepFinder.findAllTwoStringKites(sudoku);
                         steps.addAll(steps1);
                     }
                     if (isAllStepsEnabled(SolutionType.SUE_DE_COQ)) {
-                        steps1 = miscellaneousSolver.getAllSueDeCoqs(sudoku);
+                        steps1 = stepFinder.getAllSueDeCoqs(sudoku);
                         steps.addAll(steps1);
                     }
                     break;
@@ -170,18 +151,18 @@ public class FindAllSteps implements Runnable {
                 case 9:
                     //System.out.println("Fish search cand " + (actStep) + ": " + Options.getInstance().allStepsFishCandidates.charAt(actStep - 1));
                     updateProgress(java.util.ResourceBundle.getBundle("intl/FindAllStepsProgressDialog").getString("FindAllStepsProgressDialog.fish") + " " + actStep, actStep);
-                    if ((testTypes == null && Options.getInstance().allStepsSearchFish && 
-                            Options.getInstance().allStepsFishCandidates.charAt(actStep - 1) == '1') ||
+                    if ((testTypes == null && Options.getInstance().isAllStepsSearchFish() && 
+                            Options.getInstance().getAllStepsFishCandidates().charAt(actStep - 1) == '1') ||
                             testTypes != null && isFishTestTypes()) {
-                        boolean oldCheckTemplates = Options.getInstance().checkTemplates;
-                        Options.getInstance().checkTemplates = Options.getInstance().allStepsCheckTemplates;
-                        steps1 = fishSolver.getAllFishes(sudoku, Options.getInstance().allStepsMinFishSize, 
-                                Options.getInstance().allStepsMaxFishSize, 
-                                Options.getInstance().allStepsMaxFins, 
-                                Options.getInstance().allStepsMaxEndoFins, dlg, actStep,
-                                Options.getInstance().allStepsMaxFishType);
+                        boolean oldCheckTemplates = Options.getInstance().isCheckTemplates();
+                        Options.getInstance().setCheckTemplates(Options.getInstance().isAllStepsCheckTemplates());
+                        steps1 = stepFinder.getAllFishes(sudoku, Options.getInstance().getAllStepsMinFishSize(),
+                                Options.getInstance().getAllStepsMaxFishSize(), 
+                                Options.getInstance().getAllStepsMaxFins(), 
+                                Options.getInstance().getAllStepsMaxEndoFins(), dlg, actStep,
+                                Options.getInstance().getAllStepsMaxFishType());
                         steps.addAll(steps1);
-                        Options.getInstance().checkTemplates = oldCheckTemplates;
+                        Options.getInstance().setCheckTemplates(oldCheckTemplates);
                     }
                     break;
                 case 10:
@@ -195,13 +176,13 @@ public class FindAllSteps implements Runnable {
                 case 18:
                     //System.out.println("Kraken Fish search cand " + (actStep - 9) + ": " + Options.getInstance().allStepsFishCandidates.charAt(actStep - 10));
                     if (isAllStepsEnabled(SolutionType.KRAKEN_FISH) && 
-                            Options.getInstance().allStepsKrakenFishCandidates.charAt(actStep - 10) == '1') {
+                            Options.getInstance().getAllStepsKrakenFishCandidates().charAt(actStep - 10) == '1') {
                         updateProgress(java.util.ResourceBundle.getBundle("intl/FindAllStepsProgressDialog").getString("FindAllStepsProgressDialog.kraken_fish") + " " + (actStep - 9), actStep);
-                        steps1 = fishSolver.getAllKrakenFishes(sudoku, Options.getInstance().allStepsKrakenMinFishSize, 
-                                Options.getInstance().allStepsKrakenMaxFishSize, 
-                                Options.getInstance().allStepsMaxKrakenFins, 
-                                Options.getInstance().allStepsMaxKrakenEndoFins, dlg, actStep - 9,
-                                Options.getInstance().allStepsKrakenMaxFishType);
+                        steps1 = stepFinder.getAllKrakenFishes(sudoku, Options.getInstance().getAllStepsKrakenMinFishSize(),
+                                Options.getInstance().getAllStepsKrakenMaxFishSize(), 
+                                Options.getInstance().getAllStepsMaxKrakenFins(), 
+                                Options.getInstance().getAllStepsMaxKrakenEndoFins(), dlg, actStep - 9,
+                                Options.getInstance().getAllStepsKrakenMaxFishType());
                         steps.addAll(steps1);
                     }
                     break;
@@ -216,26 +197,26 @@ public class FindAllSteps implements Runnable {
                             isAllStepsEnabled(SolutionType.HIDDEN_RECTANGLE) ||
                             isAllStepsEnabled(SolutionType.AVOIDABLE_RECTANGLE_1) ||
                             isAllStepsEnabled(SolutionType.AVOIDABLE_RECTANGLE_2)) {
-                        steps1 = uniquenessSolver.getAllUniqueness(sudoku);
+                        steps1 = stepFinder.getAllUniqueness(sudoku);
                         filterSteps(steps1);
                         steps.addAll(steps1);
                     }
                     if (isAllStepsEnabled(SolutionType.BUG_PLUS_1)) {
-                        uniquenessSolver.setSudoku(sudoku);
-                        SolutionStep result = uniquenessSolver.getStep(SolutionType.BUG_PLUS_1);
+                        stepFinder.setSudoku(sudoku);
+                        SolutionStep result = stepFinder.getStep(SolutionType.BUG_PLUS_1);
                         if (result != null) {
                             steps.add(result);
                         }
                     }
-                    steps1 = wingSolver.getAllWings(sudoku);
+                    steps1 = stepFinder.getAllWings(sudoku);
                     filterSteps(steps1);
                     steps.addAll(steps1);
                     if (isAllStepsEnabled(SolutionType.SIMPLE_COLORS)) {
-                        steps1 = coloringSolver.findAllSimpleColors(sudoku);
+                        steps1 = stepFinder.findAllSimpleColors(sudoku);
                         steps.addAll(steps1);
                     }
                     if (isAllStepsEnabled(SolutionType.MULTI_COLORS)) {
-                        steps1 = coloringSolver.findAllMultiColors(sudoku);
+                        steps1 = stepFinder.findAllMultiColors(sudoku);
                         steps.addAll(steps1);
                     }
                     break;
@@ -243,7 +224,7 @@ public class FindAllSteps implements Runnable {
                     updateProgress(java.util.ResourceBundle.getBundle("intl/FindAllStepsProgressDialog").getString("FindAllStepsProgressDialog.chains"), actStep);
                     if (isAllStepsEnabled(SolutionType.X_CHAIN) || isAllStepsEnabled(SolutionType.XY_CHAIN) ||
                             isAllStepsEnabled(SolutionType.REMOTE_PAIR) || isAllStepsEnabled(SolutionType.TURBOT_FISH)) {
-                        steps1 = chainSolver.getAllChains(sudoku);
+                        steps1 = stepFinder.getAllChains(sudoku);
                         filterSteps(steps1);
                         steps.addAll(steps1);
                     }
@@ -251,21 +232,21 @@ public class FindAllSteps implements Runnable {
                 case 21:
                     updateProgress(java.util.ResourceBundle.getBundle("intl/FindAllStepsProgressDialog").getString("FindAllStepsProgressDialog.nice_loops"), actStep);
                     if (isAllStepsEnabled(SolutionType.NICE_LOOP)) {
-                        steps1 = tablingSolver.getAllNiceLoops(sudoku);
+                        steps1 = stepFinder.getAllNiceLoops(sudoku);
                         steps.addAll(steps1);
                     }
                     break;
                 case 22:
                     updateProgress(java.util.ResourceBundle.getBundle("intl/FindAllStepsProgressDialog").getString("FindAllStepsProgressDialog.grouped_nice_loops"), actStep);
                     if (isAllStepsEnabled(SolutionType.GROUPED_NICE_LOOP)) {
-                        steps1 = tablingSolver.getAllGroupedNiceLoops(sudoku);
+                        steps1 = stepFinder.getAllGroupedNiceLoops(sudoku);
                         steps.addAll(steps1);
                     }
                     break;
                 case 23:
                     updateProgress(java.util.ResourceBundle.getBundle("intl/FindAllStepsProgressDialog").getString("FindAllStepsProgressDialog.templates"), actStep);
                     if (isAllStepsEnabled(SolutionType.TEMPLATE_DEL) || isAllStepsEnabled(SolutionType.TEMPLATE_SET)) {
-                        steps1 = templateSolver.getAllTemplates(sudoku);
+                        steps1 = stepFinder.getAllTemplates(sudoku);
                         filterSteps(steps1);
                         steps.addAll(steps1);
                     }
@@ -274,12 +255,12 @@ public class FindAllSteps implements Runnable {
                     updateProgress(java.util.ResourceBundle.getBundle("intl/FindAllStepsProgressDialog").getString("FindAllStepsProgressDialog.als"), actStep);
                     if (isAllStepsEnabled(SolutionType.ALS_XZ) || isAllStepsEnabled(SolutionType.ALS_XY_WING) ||
                             isAllStepsEnabled(SolutionType.ALS_XY_CHAIN)) {
-                        steps1 = alsSolver.getAllAlses(sudoku);
+                        steps1 = stepFinder.getAllAlses(sudoku);
                         filterSteps(steps1);
                         steps.addAll(steps1);
                     }
                     if (isAllStepsEnabled(SolutionType.DEATH_BLOSSOM)) {
-                        steps1 = alsSolver.getAllDeathBlossoms(sudoku);
+                        steps1 = stepFinder.getAllDeathBlossoms(sudoku);
                         filterSteps(steps1);
                         steps.addAll(steps1);
                     }
@@ -287,21 +268,21 @@ public class FindAllSteps implements Runnable {
                 case 25:
                     if (isAllStepsEnabled(SolutionType.FORCING_CHAIN)) {
                         updateProgress(java.util.ResourceBundle.getBundle("intl/FindAllStepsProgressDialog").getString("FindAllStepsProgressDialog.forcing_Chains"), actStep);
-                        steps1 = tablingSolver.getAllForcingChains(sudoku);
+                        steps1 = stepFinder.getAllForcingChains(sudoku);
                         steps.addAll(steps1);
                     }
                     break;
                 case 26:
                     if (isAllStepsEnabled(SolutionType.FORCING_NET)) {
                         updateProgress(java.util.ResourceBundle.getBundle("intl/FindAllStepsProgressDialog").getString("FindAllStepsProgressDialog.forcing_Nets"), actStep);
-                        steps1 = tablingSolver.getAllForcingNets(sudoku);
+                        steps1 = stepFinder.getAllForcingNets(sudoku);
                         steps.addAll(steps1);
                     }
                     break;
                 case 27:
                     updateProgress(java.util.ResourceBundle.getBundle("intl/FindAllStepsProgressDialog").getString("FindAllStepsProgressDialog.progress_Score"), actStep);
                     // calculate progress measure
-                    SudokuSolver.getInstance().getProgressScore(sudoku, steps, dlg);
+                    SudokuSolverFactory.getDefaultSolverInstance().getProgressScore(sudoku, steps, dlg);
                     break;
                 default:
                     if (testTypes == null) {
@@ -343,11 +324,11 @@ public class FindAllSteps implements Runnable {
         this.testTypes = testStep;
     }
 
-    public Sudoku getSudoku() {
+    public Sudoku2 getSudoku() {
         return sudoku;
     }
 
-    public void setSudoku(Sudoku sudoku) {
+    public void setSudoku(Sudoku2 sudoku) {
         this.sudoku = sudoku;
     }
 }

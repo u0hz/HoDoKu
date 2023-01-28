@@ -60,7 +60,6 @@ class TestAppLogger
      * @param error an error that is related to the message; unless
      *   <code>null</code>, the name and stack trace of the error are logged
      * @throws Exception
-     * @todo Implement this net.sf.wraplog.AbstractLogger method
      */
     protected void reallyLog(int logLevel,
                              String message,

@@ -39,7 +39,6 @@ public class MacOs3_0BrowserLaunching
 
     public void initialize()
             throws BrowserLaunchingInitializingException {
-        //TODO Oct 10, 2003 (Markus Gebhard): Can anyone explain what this code is for??
         try {
             Class linker = Class.forName("com.apple.mrj.jdirect.Linker");
             Constructor constructor = linker.getConstructor(new Class[] {Class.class});

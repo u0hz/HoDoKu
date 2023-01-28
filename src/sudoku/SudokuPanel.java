@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008/09/10  Bernhard Hobiger
+ * Copyright (C) 2008-11  Bernhard Hobiger
  *
  * This file is part of HoDoKu.
  *
@@ -19,7 +19,8 @@
 
 package sudoku;
 
-import java.awt.AlphaComposite;
+import generator.SudokuGenerator;
+import generator.SudokuGeneratorFactory;
 import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Cursor;
@@ -34,7 +35,10 @@ import java.awt.Stroke;
 import java.awt.Toolkit;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseEvent;
+import java.awt.geom.AffineTransform;
 import java.awt.geom.CubicCurve2D;
+import java.awt.geom.PathIterator;
+import java.awt.geom.Point2D;
 import java.awt.image.BufferedImage;
 import java.awt.print.PageFormat;
 import java.awt.print.Printable;
@@ -53,6 +57,8 @@ import java.util.SortedSet;
 import java.util.Stack;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.imageio.IIOImage;
 import javax.imageio.ImageIO;
 import javax.imageio.ImageTypeSpecifier;
@@ -66,10 +72,13 @@ import javax.swing.ImageIcon;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import org.w3c.dom.Node;
+import solver.SudokuSolver;
+import solver.SudokuSolverFactory;
+import solver.SudokuStepFinder;
 
 /**
  *
- * @author  Bernhard Hobiger
+ * @author  hobiwan
  */
 public class SudokuPanel extends javax.swing.JPanel implements Printable {
     // Konstante
@@ -77,23 +86,27 @@ public class SudokuPanel extends javax.swing.JPanel implements Printable {
     private static final int DELTA_RAND = 5; // Abstand zu den Rändern
     // Konfigurationseigenschaften
     private boolean showCandidates = Options.getInstance().isShowCandidates(); // Alle möglichen Kandidaten anzeigen
-    private int candidateMode = SudokuCell.USER; // welche Kandidaten sollen gesetzt werden
     private boolean showWrongValues = Options.getInstance().isShowWrongValues();    // falsche Werte mit anderer Farbe
     private boolean showDeviations = Options.getInstance().isShowDeviations();  // Werte und Kandidaten, die von der Lösung abweichen
-    private boolean invalidCells = Options.getInstance().invalidCells; // true: ungültige Zellen, false: mögliche Zellen
+    private boolean invalidCells = Options.getInstance().isInvalidCells(); // true: ungültige Zellen, false: mögliche Zellen
     private boolean showInvalidOrPossibleCells = false;  // Ungültige/Mögliche Zellen für showHintCellValue mit anderem Hintergrund
-    private int showHintCellValue = 0;
+    /** An array for every candidate for which a filter is set; index 10 stands for "filter bivalue cells" */
+    private boolean[] showHintCellValues = new boolean[11];
+    //private int showHintCellValue = 0;
     private boolean showAllCandidatesAkt = false; // bei alle Kandidaten anzeigen (nur aktive Zelle)
     private boolean showAllCandidates = false; // bei alle Kandidaten anzeigen (alle Zellen)
     private int delta = DELTA; // Zwischenraum zwischen Blöcken
     private int deltaRand = DELTA_RAND; // Zwischenraum zu den Rändern
     private Font valueFont;    // Font für die Zellenwerte
     private Font candidateFont; // Font für die Kandidaten
+    /** Font used for printing: Since it has to be scaled according to the printer resolution, {@link Options#bigFont} cannot be iused directly. */
+    private Font bigFont;
+    /** Font used for printing: Since it has to be scaled according to the printer resolution, {@link Options#smallFont} cannot be iused directly. */
+    private Font smallFont;
     // interne Variable
-    private Sudoku sudoku; // Daten für das Sudoku
-    private Sudoku solvedSudoku; // Lösung für Anzeige von Fehlern
+    private Sudoku2 sudoku; // Daten für das Sudoku
     private SudokuSolver solver; // Lösung für das Sudoku
-    private SudokuCreator creator; // Lösung mit BruteForce (Dancing Links)
+    private SudokuGenerator generator; // Lösung mit BruteForce (Dancing Links)
     private MainFrame mainFrame; // für Oberfläche
     private CellZoomPanel cellZoomPanel; // active cell display and color chooser
     private SolutionStep step;   // für Anzeige der Hinweise
@@ -112,7 +125,7 @@ public class SudokuPanel extends javax.swing.JPanel implements Printable {
     private Stroke strongLinkStroke = new BasicStroke(1.5f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND); // strong links durchziehen
     private Stroke weakLinkStroke = new BasicStroke(1.5f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND,
             10.0f, new float[]{5.0f}, 0.0f); // weak links punkten
-    private List<Point> points = new ArrayList<Point>(200);
+    private List<Point2D.Double> points = new ArrayList<Point2D.Double>(200);
     private double arrowLengthFactor = 1.0 / 6.0;
     private double arrowHeightFactor = 1.0 / 3.0;
     private int aktLine = 4; // aktuell markiertes Feld (Zeile)
@@ -121,8 +134,8 @@ public class SudokuPanel extends javax.swing.JPanel implements Printable {
     private int shiftCol = -1; // second cell for creating regions with the keyboard (shift pressed)
 
     // Undo/Redo
-    private Stack<Sudoku> undoStack = new Stack<Sudoku>();
-    private Stack<Sudoku> redoStack = new Stack<Sudoku>();
+    private Stack<Sudoku2> undoStack = new Stack<Sudoku2>();
+    private Stack<Sudoku2> redoStack = new Stack<Sudoku2>();
     // coloring: contains cell index + index in coloringColors[]
     private SortedMap<Integer, Integer> coloringMap = new TreeMap<Integer, Integer>();
     // coloring canddiates: contains cell index * 10 + candidate + index in coloringColors[]
@@ -145,17 +158,20 @@ public class SudokuPanel extends javax.swing.JPanel implements Printable {
     private JMenuItem[] excludeItems = null;
     // Array containing all "Toggle color x" menu items from the popup menu
     private JMenuItem[] toggleColorItems = null;
+    /** for backgroundprogress checks */
+    private ProgressChecker progressChecker = null;
 
     /** Creates new form SudokuPanel */
     public SudokuPanel(MainFrame mf) {
         mainFrame = mf;
-        sudoku = new Sudoku();
-        sudoku.resetCandidates();
+        sudoku = new Sudoku2();
+        sudoku.clearSudoku();
         setShowCandidates(Options.getInstance().isShowCandidates());
-        creator = new SudokuCreator();
-        solver = SudokuSolver.getInstance();
+        generator = SudokuGeneratorFactory.getDefaultGeneratorInstance();
+        solver = SudokuSolverFactory.getDefaultSolverInstance();
         solver.setSudoku(sudoku.clone());
         solver.solve();
+        progressChecker = new ProgressChecker(mainFrame);
 
         initComponents();
 
@@ -494,6 +510,9 @@ public class SudokuPanel extends javax.swing.JPanel implements Printable {
             case KeyEvent.VK_ESCAPE:
                 mainFrame.coloringPanelClicked(-1);
                 clearRegion();
+                if (step != null) {
+                    mainFrame.abortStep();
+                }
                 break;
             default:
                 handleKeys(evt);
@@ -523,7 +542,11 @@ public class SudokuPanel extends javax.swing.JPanel implements Printable {
      * Context menu:<br>
      * The context menu for a single cell shows entries to set the cell to all remaining candidates, entries
      * to remove all remaining candidates (including one entry to remove multiple candidates in one move)
-     * and entries for coloring. If a region of cells is selected, setting cells is not possible.
+     * and entries for coloring.<br>
+     * <b>Alternative Mouse Mode:</b><br>
+     * Since v2.1a new alternative mouse mode is available: Left click on a candidate
+     * sets the candidate in the cell(s), right click toggles the candidate in the cell(s).
+     * Selection works as before.
      * 
      * @param evt
      */
@@ -536,14 +559,38 @@ public class SudokuPanel extends javax.swing.JPanel implements Printable {
         int line = getLine(evt.getPoint());
         int col = getCol(evt.getPoint());
         int cand = getCandidate(evt.getPoint(), line, col);
-        //System.out.println("line/col/cand " + line + "/" + col + "/" + cand);
+//        System.out.println("Mouse pressed: " + evt.getButton() + "/" + evt.getModifiersEx() + "/" + evt.getClickCount());
+//        System.out.println("    line/col/cand " + line + "/" + col + "/" + cand);
         boolean ctrlPressed = (evt.getModifiersEx() & MouseEvent.CTRL_DOWN_MASK) != 0;
         boolean shiftPressed = (evt.getModifiersEx() & MouseEvent.SHIFT_DOWN_MASK) != 0;
         if (line >= 0 && line <= 8 && col >= 0 && col <= 8) {
             //System.out.println((evt.getButton() == MouseEvent.BUTTON1) + "/" + (evt.getButton() == MouseEvent.BUTTON2) + "/" + (evt.getButton() == MouseEvent.BUTTON3));
             if (evt.getButton() == MouseEvent.BUTTON3) {
-                // bring up popup menu
-                showPopupMenu(line, col);
+                if (Options.getInstance().isAlternativeMouseMode()) {
+                    // toggle candidate in cell(s) (three state mode)
+                    if (selectedCells.contains(Sudoku2.getIndex(line, col))) {
+                        // a region select exists and the cells lies within: toggle candidate
+                        if (cand != -1) {
+                            changed = toggleCandidateInAktCells(cand);
+                        }
+                    } else {
+                        // no region or cell outside region -> change focus and toggle candidate
+                        aktLine = line;
+                        aktCol = col;
+                        clearRegion();
+                        int showHintCellValue = getShowHintCellValue();
+                        if ((cand == -1 || ! sudoku.isCandidate(line, col, cand, ! showCandidates)) && 
+                                showHintCellValue != 0) {
+                            toggleCandidateInCell(aktLine, aktCol, showHintCellValue);
+                        } else if (cand != -1) {
+                            toggleCandidateInCell(aktLine, aktCol, cand);
+                        }
+                        changed = true;
+                    }
+                } else {
+                    // bring up popup menu
+                    showPopupMenu(line, col);
+                }
             } else {
                 if (aktColorIndex != -1) {
                     // coloring is active
@@ -571,29 +618,26 @@ public class SudokuPanel extends javax.swing.JPanel implements Printable {
                 } else if (evt.getButton() == MouseEvent.BUTTON1) {
                     // in normal mode we only react to the left mouse button
                     //System.out.println("BUTTON1/" + evt.getClickCount() + "/" + ctrlPressed + "/" + cand);
-                    SudokuCell cell = sudoku.getCell(line, col);
+                    int index = Sudoku2.getIndex(line, col);
                     if (evt.getClickCount() == 2) {
                         if (ctrlPressed) {
                             if (cand != -1) {
                                 // toggle candidate
-                                if (cell.isCandidate(candidateMode, cand)) {
-                                    sudoku.setCandidate(line, col, candidateMode, cand, false);
+                                if (sudoku.isCandidate(index, cand, ! showCandidates)) {
+                                    sudoku.setCandidate(index, cand, false, ! showCandidates);
                                 } else {
-                                    sudoku.setCandidate(line, col, candidateMode, cand, true);
+                                    sudoku.setCandidate(index, cand, true, ! showCandidates);
                                 }
                                 clearRegion();
                                 changed = true;
                             }
                         } else {
-                            if (cell.getValue() == 0) {
-                                if (cell.getAnzCandidates(candidateMode) == 1) {
+                            if (sudoku.getValue(index) == 0) {
+                                int showHintCellValue = getShowHintCellValue();
+                                if (sudoku.getAnzCandidates(index, ! showCandidates) == 1) {
                                     // Naked single -> set it!
-                                    int actCand = cell.getAllCandidates(candidateMode)[0];
+                                    int actCand = sudoku.getAllCandidates(index, ! showCandidates)[0];
                                     setCell(line, col, actCand);
-//                                // if filters are applied, change digit to act digit
-//                                if (showHintCellValue != 0) {
-//                                    showHintCellValue = actCand;
-//                                }
                                     changed = true;
                                 } else if (showHintCellValue != 0 && isHiddenSingle(showHintCellValue, line, col)) {
                                     // Hidden Single -> it
@@ -602,7 +646,7 @@ public class SudokuPanel extends javax.swing.JPanel implements Printable {
                                 } else if (cand != -1) {
                                     // candidate double clicked -> set it
                                     // (only if that candidate is still set in the cell)
-                                    if (cell.isCandidate(candidateMode, cand)) {
+                                    if (sudoku.isCandidate(index, cand, ! showCandidates)) {
                                         setCell(line, col, cand);
                                     }
                                     changed = true;
@@ -614,31 +658,31 @@ public class SudokuPanel extends javax.swing.JPanel implements Printable {
                             // select additional cell
                             if (selectedCells.size() == 0) {
                                 // the last selected cell is not yet in the set
-                                selectedCells.add(Sudoku.getIndex(aktLine, aktCol));
-                                selectedCells.add(Sudoku.getIndex(line, col));
+                                selectedCells.add(Sudoku2.getIndex(aktLine, aktCol));
+                                selectedCells.add(Sudoku2.getIndex(line, col));
                                 aktLine = line;
                                 aktCol = col;
                             } else {
-                                int index = Sudoku.getIndex(line, col);
-                                if (selectedCells.contains(index)) {
-                                    selectedCells.remove(index);
+                                int index2 = Sudoku2.getIndex(line, col);
+                                if (selectedCells.contains(index2)) {
+                                    selectedCells.remove(index2);
                                 } else {
-                                    selectedCells.add(Sudoku.getIndex(line, col));
+                                    selectedCells.add(Sudoku2.getIndex(line, col));
                                 }
                                 aktLine = line;
                                 aktCol = col;
                             }
                         } else if (shiftPressed) {
-                            if (Options.getInstance().useShiftForRegionSelect) {
+                            if (Options.getInstance().isUseShiftForRegionSelect()) {
                                 // select range of cells
                                 selectRegion(line, col);
                             } else {
                                 if (cand != -1) {
                                     // toggle candidate
-                                    if (cell.isCandidate(candidateMode, cand)) {
-                                        sudoku.setCandidate(line, col, candidateMode, cand, false);
+                                    if (sudoku.isCandidate(index, cand, ! showCandidates)) {
+                                        sudoku.setCandidate(index, cand, false, ! showCandidates);
                                     } else {
-                                        sudoku.setCandidate(line, col, candidateMode, cand, true);
+                                        sudoku.setCandidate(index, cand, true, ! showCandidates);
                                     }
                                     clearRegion();
                                     changed = true;
@@ -646,15 +690,60 @@ public class SudokuPanel extends javax.swing.JPanel implements Printable {
                             }
                         } else {
                             // select single cell, delete old markings if available
-                            aktLine = line;
-                            aktCol = col;
-                            clearRegion();
+                            // in the alternative mouse mode a single cell is only
+                            // selected, if the cell is outside a selected region
+                            if (Options.getInstance().isAlternativeMouseMode() == false
+                                    || (Options.getInstance().isAlternativeMouseMode() == true
+                                    && selectedCells.contains(Sudoku2.getIndex(line, col)) == false)) {
+                                aktLine = line;
+                                aktCol = col;
+                                clearRegion();
+                            }
+                            if (Options.getInstance().isAlternativeMouseMode()) {
+                                // the selected cell(s) must be set to cand
+                                if (sudoku.getValue(index) == 0) {
+                                    if (selectedCells.isEmpty()) {
+                                        int showHintCellValue = getShowHintCellValue();
+                                        if (sudoku.getAnzCandidates(index, !showCandidates) == 1) {
+                                            // Naked single -> set it!
+                                            int actCand = sudoku.getAllCandidates(index, !showCandidates)[0];
+                                            setCell(line, col, actCand);
+                                            changed = true;
+                                        } else if (showHintCellValue != 0 && isHiddenSingle(showHintCellValue, line, col)) {
+                                            // Hidden Single -> it
+                                            setCell(line, col, showHintCellValue);
+                                            changed = true;
+                                        } else if (cand != -1) {
+                                            // set candidate
+                                            // (only if that candidate is still set in the cell)
+                                            if (sudoku.isCandidate(index, cand, !showCandidates)) {
+                                                setCell(line, col, cand);
+                                            }
+                                            changed = true;
+                                        }
+                                    } else {
+                                        for (int selIndex : selectedCells) {
+                                            if (cand != -1 && sudoku.getValue(selIndex) == 0 &&
+                                                    sudoku.isCandidate(selIndex, cand, !showCandidates)) {
+                                                setCell(Sudoku2.getLine(selIndex), Sudoku2.getCol(selIndex), cand);
+                                            }
+                                        }
+                                    }
+                                } else {
+                                    // clear selection
+                                    aktLine = line;
+                                    aktCol = col;
+                                    clearRegion();
+                                }
+                                changed = true;
+                            }
                         }
                     }
                 }
             }
             if (changed) {
                 redoStack.clear();
+                checkProgress();
             } else {
                 undoStack.pop();
             }
@@ -688,6 +777,7 @@ public class SudokuPanel extends javax.swing.JPanel implements Printable {
             }
             if (changed) {
                 redoStack.clear();
+                checkProgress();
             } else {
                 undoStack.pop();
             }
@@ -710,23 +800,19 @@ public class SudokuPanel extends javax.swing.JPanel implements Printable {
      */
     public void getState(GuiState state, boolean copy) {
         // items that dont have to be copied
-        state.chainIndex = chainIndex;
+        state.setChainIndex(chainIndex);
         // items that must be copied anyway
-        state.undoStack = (Stack<Sudoku>) undoStack.clone();
-        state.redoStack = (Stack<Sudoku>) redoStack.clone();
-        state.coloringMap = (SortedMap<Integer, Integer>) ((TreeMap) coloringMap).clone();
-        state.coloringCandidateMap = (SortedMap<Integer, Integer>) ((TreeMap) coloringCandidateMap).clone();
+        state.setUndoStack((Stack<Sudoku2>) undoStack.clone());
+        state.setRedoStack((Stack<Sudoku2>) redoStack.clone());
+        state.setColoringMap((SortedMap<Integer, Integer>) ((TreeMap) coloringMap).clone());
+        state.setColoringCandidateMap((SortedMap<Integer, Integer>) ((TreeMap) coloringCandidateMap).clone());
         // items that might be null (and therefore wont be copied)
-        state.sudoku = sudoku;
-        state.solvedSudoku = solvedSudoku;
-        state.step = step;
+        state.setSudoku(sudoku);
+        state.setStep(step);
         if (copy) {
-            state.sudoku = (Sudoku) sudoku.clone();
-            if (solvedSudoku != null) {
-                state.solvedSudoku = (Sudoku) solvedSudoku.clone();
-            }
+            state.setSudoku((Sudoku2) sudoku.clone());
             if (step != null) {
-                state.step = (SolutionStep) step.clone();
+                state.setStep((SolutionStep) step.clone());
             }
         }
     }
@@ -739,32 +825,32 @@ public class SudokuPanel extends javax.swing.JPanel implements Printable {
      * @param state
      */
     public void setState(GuiState state) {
-        chainIndex = state.chainIndex;
-        if (state.undoStack != null) {
-            undoStack = state.undoStack;
+        chainIndex = state.getChainIndex();
+        if (state.getUndoStack() != null) {
+            undoStack = state.getUndoStack();
         } else {
             undoStack.clear();
         }
-        if (state.redoStack != null) {
-            redoStack = state.redoStack;
+        if (state.getRedoStack() != null) {
+            redoStack = state.getRedoStack();
         } else {
             redoStack.clear();
         }
-        if (state.coloringMap != null) {
-            coloringMap = state.coloringMap;
+        if (state.getColoringMap() != null) {
+            coloringMap = state.getColoringMap();
         } else {
             coloringMap.clear();
         }
-        if (state.coloringCandidateMap != null) {
-            coloringCandidateMap = state.coloringCandidateMap;
+        if (state.getColoringCandidateMap() != null) {
+            coloringCandidateMap = state.getColoringCandidateMap();
         } else {
             coloringCandidateMap.clear();
         }
-        sudoku = state.sudoku;
-        sudoku.synchronizeSets();
-        solvedSudoku = state.solvedSudoku;
-        step = state.step;
+        sudoku = state.getSudoku();
+        sudoku.checkSudoku();
+        step = state.getStep();
         updateCellZoomPanel();
+        checkProgress();
         mainFrame.check();
         repaint();
     }
@@ -839,7 +925,6 @@ public class SudokuPanel extends javax.swing.JPanel implements Printable {
         }
 
         // "normale" Tastaturbehandlung
-        SudokuCell cell = sudoku.getCell(aktLine, aktCol);
         // bei keyPressed funktioniert getKeyChar() nicht zuverlässig, daher die Zahl selbst ermitteln
         int number = 0;
         boolean clearSelectedRegion = true;
@@ -847,24 +932,26 @@ public class SudokuPanel extends javax.swing.JPanel implements Printable {
             case KeyEvent.VK_DOWN:
                 if ((modifiers & KeyEvent.CTRL_DOWN_MASK) != 0 &&
                         (modifiers & KeyEvent.SHIFT_DOWN_MASK) != 0 &&
-                        showHintCellValue != 0) {
+                        getShowHintCellValue() != 0) {
                     // go to next filtered candidate
                     int index = findNextHintCandidate(aktLine, aktCol, keyCode);
-                    aktLine = Sudoku.getLine(index);
-                    aktCol = Sudoku.getCol(index);
+                    aktLine = Sudoku2.getLine(index);
+                    aktCol = Sudoku2.getCol(index);
                 } else if (aktLine < 8) {
                     // go to the next line
                     aktLine++;
                     if ((modifiers & KeyEvent.CTRL_DOWN_MASK) != 0) {
                         // go to the next unset cell
-                        while (aktLine < 8 && sudoku.getCell(aktLine, aktCol).getValue() != 0) {
+                        while (aktLine < 8 && sudoku.getValue(aktLine, aktCol) != 0) {
                             aktLine++;
                         }
                     } else if ((modifiers & KeyEvent.SHIFT_DOWN_MASK) != 0) {
                         // expand the selected region
                         aktLine--;
                         setShift();
-                        shiftLine++;
+                        if (shiftLine < 8) {
+                            shiftLine++;
+                        }
                         selectRegion(shiftLine, shiftCol);
                         clearSelectedRegion = false;
                     }
@@ -876,24 +963,26 @@ public class SudokuPanel extends javax.swing.JPanel implements Printable {
             case KeyEvent.VK_UP:
                 if ((modifiers & KeyEvent.CTRL_DOWN_MASK) != 0 &&
                         (modifiers & KeyEvent.SHIFT_DOWN_MASK) != 0 &&
-                        showHintCellValue != 0) {
+                        getShowHintCellValue() != 0) {
                     // go to next filtered candidate
                     int index = findNextHintCandidate(aktLine, aktCol, keyCode);
-                    aktLine = Sudoku.getLine(index);
-                    aktCol = Sudoku.getCol(index);
+                    aktLine = Sudoku2.getLine(index);
+                    aktCol = Sudoku2.getCol(index);
                 } else if (aktLine > 0) {
                     // go to the next line
                     aktLine--;
                     if ((modifiers & KeyEvent.CTRL_DOWN_MASK) != 0) {
                         // go to the next unset cell
-                        while (aktLine > 0 && sudoku.getCell(aktLine, aktCol).getValue() != 0) {
+                        while (aktLine > 0 && sudoku.getValue(aktLine, aktCol) != 0) {
                             aktLine--;
                         }
                     } else if ((modifiers & KeyEvent.SHIFT_DOWN_MASK) != 0) {
                         // expand the selected region
                         aktLine++;
                         setShift();
-                        shiftLine--;
+                        if (shiftLine > 0) {
+                            shiftLine--;
+                        }
                         selectRegion(shiftLine, shiftCol);
                         clearSelectedRegion = false;
                     }
@@ -905,24 +994,26 @@ public class SudokuPanel extends javax.swing.JPanel implements Printable {
             case KeyEvent.VK_RIGHT:
                 if ((modifiers & KeyEvent.CTRL_DOWN_MASK) != 0 &&
                         (modifiers & KeyEvent.SHIFT_DOWN_MASK) != 0 &&
-                        showHintCellValue != 0) {
+                        getShowHintCellValue() != 0) {
                     // go to next filtered candidate
                     int index = findNextHintCandidate(aktLine, aktCol, keyCode);
-                    aktLine = Sudoku.getLine(index);
-                    aktCol = Sudoku.getCol(index);
+                    aktLine = Sudoku2.getLine(index);
+                    aktCol = Sudoku2.getCol(index);
                 } else if (aktCol < 8) {
                     // go to the next line
                     aktCol++;
                     if ((modifiers & KeyEvent.CTRL_DOWN_MASK) != 0) {
                         // go to the next unset cell
-                        while (aktCol < 8 && sudoku.getCell(aktLine, aktCol).getValue() != 0) {
+                        while (aktCol < 8 && sudoku.getValue(aktLine, aktCol) != 0) {
                             aktCol++;
                         }
                     } else if ((modifiers & KeyEvent.SHIFT_DOWN_MASK) != 0) {
                         // expand the selected region
                         aktCol--;
                         setShift();
-                        shiftCol++;
+                        if (shiftCol < 8) {
+                            shiftCol++;
+                        }
                         selectRegion(shiftLine, shiftCol);
                         clearSelectedRegion = false;
                     }
@@ -934,24 +1025,26 @@ public class SudokuPanel extends javax.swing.JPanel implements Printable {
             case KeyEvent.VK_LEFT:
                 if ((modifiers & KeyEvent.CTRL_DOWN_MASK) != 0 &&
                         (modifiers & KeyEvent.SHIFT_DOWN_MASK) != 0 &&
-                        showHintCellValue != 0) {
+                        getShowHintCellValue() != 0) {
                     // go to next filtered candidate
                     int index = findNextHintCandidate(aktLine, aktCol, keyCode);
-                    aktLine = Sudoku.getLine(index);
-                    aktCol = Sudoku.getCol(index);
+                    aktLine = Sudoku2.getLine(index);
+                    aktCol = Sudoku2.getCol(index);
                 } else if (aktCol > 0) {
                     // go to the next col
                     aktCol--;
                     if ((modifiers & KeyEvent.CTRL_DOWN_MASK) != 0) {
                         // go to the next unset cell
-                        while (aktCol > 0 && sudoku.getCell(aktLine, aktCol).getValue() != 0) {
+                        while (aktCol > 0 && sudoku.getValue(aktLine, aktCol) != 0) {
                             aktCol--;
                         }
                     } else if ((modifiers & KeyEvent.SHIFT_DOWN_MASK) != 0) {
                         // expand the selected region
                         aktCol++;
                         setShift();
-                        shiftCol--;
+                        if (shiftCol > 0) {
+                            shiftCol--;
+                        }
                         selectRegion(shiftLine, shiftCol);
                         clearSelectedRegion = false;
                     }
@@ -1030,15 +1123,23 @@ public class SudokuPanel extends javax.swing.JPanel implements Printable {
             case KeyEvent.VK_NUMPAD1:
                 number++;
                 //int number = Character.digit(evt.getKeyChar(), 10);
-                if (selectedCells.isEmpty()) {
-                    if ((modifiers & KeyEvent.CTRL_DOWN_MASK) == 0) {
-                        // Zelle setzen
+                if ((modifiers & KeyEvent.CTRL_DOWN_MASK) == 0) {
+                    // Zelle setzen
+                    if (selectedCells.isEmpty()) {
                         setCell(aktLine, aktCol, number);
-                        changed = true;
-                    } else if ((modifiers & KeyEvent.SHIFT_DOWN_MASK) == 0) {
-                        // only when shift is NOT pressed (if pressed its a menu accelerator)
+                    } else {
+                        for (int index : selectedCells) {
+                            setCell(Sudoku2.getLine(index), Sudoku2.getCol(index), number);
+                        }
+                    }
+                    changed = true;
+                } else if ((modifiers & KeyEvent.SHIFT_DOWN_MASK) == 0) {
+                    // only when shift is NOT pressed (if pressed its a menu accelerator)
+                    if (selectedCells.isEmpty()) {
                         toggleCandidateInCell(aktLine, aktCol, number);
                         changed = true;
+                    } else {
+                        changed = toggleCandidateInAktCells(number);
                     }
                 }
                 break;
@@ -1048,7 +1149,7 @@ public class SudokuPanel extends javax.swing.JPanel implements Printable {
             case KeyEvent.VK_NUMPAD0:
                 if ((modifiers & KeyEvent.CTRL_DOWN_MASK) == 0) {
                     // Zelle löschen
-                    if (cell.getValue() != 0 && !cell.isFixed()) {
+                    if (sudoku.getValue(aktLine, aktCol) != 0 && !sudoku.isFixed(aktLine, aktCol)) {
                         sudoku.setCell(aktLine, aktCol, 0);
                         changed = true;
                     }
@@ -1074,36 +1175,27 @@ public class SudokuPanel extends javax.swing.JPanel implements Printable {
                 number++;
                 if ((modifiers & KeyEvent.ALT_DOWN_MASK) == 0) {
                     // pressing <Alt><F4> changes the selection ... not good
-                    if (getShowHintCellValue() == number && isShowInvalidOrPossibleCells()) {
-                        if ((modifiers & KeyEvent.CTRL_DOWN_MASK) == 0) {
-                            setShowHintCellValue(0);
-                            setShowInvalidOrPossibleCells(false);
-                        } else {
-                            invalidCells = !invalidCells;
-                        }
+                    // <fn> toggles the corresponding filter
+                    // <ctrl><fn> selects an additional candidate for filtering
+                    // <shift><fn> additionally toggles the filter mode
+                    if ((modifiers & KeyEvent.CTRL_DOWN_MASK) != 0) {
+                        // just toggle the candidate
+                        showHintCellValues[number] = ! showHintCellValues[number];
+                        // no bivalue cells!
+                        showHintCellValues[10] = false;
                     } else {
-                        setShowHintCellValue(number);
-                        setShowInvalidOrPossibleCells(true);
-                        if ((modifiers & KeyEvent.CTRL_DOWN_MASK) != 0) {
-                            invalidCells = !invalidCells;
+                        if ((modifiers & KeyEvent.SHIFT_DOWN_MASK) != 0) {
+                            invalidCells = ! invalidCells;
                         }
+                        setShowHintCellValue(number);
                     }
+                    checkIsShowInvalidOrPossibleCells();
                 }
                 break;
             case KeyEvent.VK_SPACE:
-                if (isShowInvalidOrPossibleCells() && selectedCells.isEmpty()) {
-                    int candidate = getShowHintCellValue();
-                    toggleCandidateInCell(aktLine, aktCol, candidate);
-                    changed = true;
-//                    if (cell.getValue() == 0) {
-//                        if (cell.isCandidate(candidateMode, candidate)) {
-//                            sudoku.setCandidate(aktLine, aktCol, candidateMode, candidate, false);
-//                            changed = true;
-//                        } else {
-//                            sudoku.setCandidate(aktLine, aktCol, candidateMode, candidate, true);
-//                            changed = true;
-//                        }
-//                    }
+                int candidate = getShowHintCellValue();
+                if (isShowInvalidOrPossibleCells() && candidate != 0) {
+                    changed = toggleCandidateInAktCells(candidate);
                 }
                 break;
             case KeyEvent.VK_E:
@@ -1151,17 +1243,29 @@ public class SudokuPanel extends javax.swing.JPanel implements Printable {
                 if (ch == '<' || ch == '>') {
                     boolean isUp = evt.getKeyChar() == '>';
                     if (isShowInvalidOrPossibleCells()) {
-                        if (isUp) {
-                            showHintCellValue++;
-                            if (showHintCellValue > 9) {
-                                showHintCellValue = 1;
-                            }
-                        } else {
-                            showHintCellValue--;
-                            if (showHintCellValue < 1) {
-                                showHintCellValue = 9;
+                        int cand = 0;
+                        for (int i = 1; i < showHintCellValues.length - 1; i++) {
+                            if (showHintCellValues[i]) {
+                                cand = i;
+                                if (! isUp) {
+                                    // get the first candidate
+                                    break;
+                                }
                             }
                         }
+                        if (isUp) {
+                            cand++;
+                            if (cand > 9) {
+                                cand = 1;
+                            }
+                        } else {
+                            cand--;
+                            if (cand < 1) {
+                                cand = 9;
+                            }
+                        }
+                        setShowHintCellValue(cand);
+                        checkIsShowInvalidOrPossibleCells();
                     }
                 }
                 break;
@@ -1169,6 +1273,7 @@ public class SudokuPanel extends javax.swing.JPanel implements Printable {
         if (changed) {
             // Undo wurde schon behandelt, Redo ist nicht mehr möglich
             redoStack.clear();
+            checkProgress();
         } else {
             // kein Undo nötig -> wieder entfernen
             undoStack.pop();
@@ -1214,7 +1319,7 @@ public class SudokuPanel extends javax.swing.JPanel implements Printable {
             int lStart = line < aktLine ? line : aktLine;
             for (int i = cStart; i <= cStart + Math.abs(col - aktCol); i++) {
                 for (int j = lStart; j <= lStart + Math.abs(line - aktLine); j++) {
-                    selectedCells.add(Sudoku.getIndex(j, i));
+                    selectedCells.add(Sudoku2.getIndex(j, i));
                 }
             }
         }
@@ -1230,7 +1335,8 @@ public class SudokuPanel extends javax.swing.JPanel implements Printable {
      * @return
      */
     private int findNextHintCandidate(int line, int col, int mode) {
-        int index = Sudoku.getIndex(line, col);
+        int index = Sudoku2.getIndex(line, col);
+        int showHintCellValue = getShowHintCellValue();
         if (showHintCellValue == 0) {
             return index;
         }
@@ -1248,9 +1354,9 @@ public class SudokuPanel extends javax.swing.JPanel implements Printable {
                 for (int i = col; i < 9; i++) {
                     int j = i == col ? line : 0;
                     for (; j < 9; j++) {
-                        if (sudoku.getCell(j, i).getValue() == 0 &&
-                                sudoku.getCell(j, i).isCandidate(candidateMode, showHintCellValue)) {
-                            return Sudoku.getIndex(j, i);
+                        if (sudoku.getValue(j, i) == 0 &&
+                                sudoku.isCandidate(j, i, showHintCellValue, ! showCandidates)) {
+                            return Sudoku2.getIndex(j, i);
                         }
                     }
                 }
@@ -1268,9 +1374,9 @@ public class SudokuPanel extends javax.swing.JPanel implements Printable {
                 for (int i = col; i >= 0; i--) {
                     int j = i == col ? line : 8;
                     for (; j >= 0; j--) {
-                        if (sudoku.getCell(j, i).getValue() == 0 &&
-                                sudoku.getCell(j, i).isCandidate(candidateMode, showHintCellValue)) {
-                            return Sudoku.getIndex(j, i);
+                        if (sudoku.getValue(j, i) == 0 &&
+                                sudoku.isCandidate(j, i, showHintCellValue, ! showCandidates)) {
+                            return Sudoku2.getIndex(j, i);
                         }
                     }
                 }
@@ -1282,14 +1388,14 @@ public class SudokuPanel extends javax.swing.JPanel implements Printable {
                     return index + 1;
                 }
                 while (index >= 0) {
-                    if (sudoku.getCell(index).getValue() == 0 &&
-                            sudoku.getCell(index).isCandidate(candidateMode, showHintCellValue)) {
+                    if (sudoku.getValue(index) == 0 &&
+                            sudoku.isCandidate(index, showHintCellValue, ! showCandidates)) {
                         return index;
                     }
                     index--;
                 }
                 if (index < 0) {
-                    index = Sudoku.getIndex(line, col);
+                    index = Sudoku2.getIndex(line, col);
                 }
                 break;
             case KeyEvent.VK_RIGHT:
@@ -1299,14 +1405,14 @@ public class SudokuPanel extends javax.swing.JPanel implements Printable {
                     return index - 1;
                 }
                 while (index < sudoku.getCells().length) {
-                    if (sudoku.getCell(index).getValue() == 0 &&
-                            sudoku.getCell(index).isCandidate(candidateMode, showHintCellValue)) {
+                    if (sudoku.getValue(index) == 0 &&
+                            sudoku.isCandidate(index, showHintCellValue, ! showCandidates)) {
                         return index;
                     }
                     index++;
                 }
                 if (index >= sudoku.getCells().length) {
-                    index = Sudoku.getIndex(line, col);
+                    index = Sudoku2.getIndex(line, col);
                 }
                 break;
         }
@@ -1335,7 +1441,7 @@ public class SudokuPanel extends javax.swing.JPanel implements Printable {
             handleColoring(aktLine, aktCol, candidate, colorNumber);
         } else {
             for (int index : selectedCells) {
-                handleColoring(Sudoku.getLine(index), Sudoku.getCol(index), candidate, colorNumber);
+                handleColoring(Sudoku2.getLine(index), Sudoku2.getCol(index), candidate, colorNumber);
             }
         }
     }
@@ -1357,15 +1463,21 @@ public class SudokuPanel extends javax.swing.JPanel implements Printable {
      * Handles the coloring of a cell or a candidate. If candidate equals -1, a cell
      * is to be coloured, else a candidate. If the target is already colored and the
      * new color matches the old one, coloring is removed, else it is set
-     * to the new color.
+     * to the new color.<br>
+     * {@link Options#colorValues} decides, whether cells, that have already been set,
+     * may be colored.
      * @param line
      * @param col
      * @param candidate
      * @param colorNumber
      */
     private void handleColoring(int line, int col, int candidate, int colorNumber) {
+        if (! Options.getInstance().isColorValues() && sudoku.getValue(line, col) != 0) {
+            // do nothing
+            return;
+        }
         SortedMap<Integer,Integer> map = coloringMap;
-        int key = Sudoku.getIndex(line, col);
+        int key = Sudoku2.getIndex(line, col);
         if (candidate != -1) {
             key = key * 10 + candidate;
             map = coloringCandidateMap;
@@ -1387,20 +1499,33 @@ public class SudokuPanel extends javax.swing.JPanel implements Printable {
      */
     public void setCellFromCellZoomPanel(int number) {
         undoStack.push(sudoku.clone());
-        setCell(aktLine, aktCol, number);
+        if (selectedCells.isEmpty()) {
+            setCell(aktLine, aktCol, number);
+        } else {
+            for (int index : selectedCells) {
+                setCell(Sudoku2.getLine(index), Sudoku2.getCol(index), number);
+            }
+        }
         updateCellZoomPanel();
         mainFrame.check();
         repaint();
     }
 
     private void setCell(int line, int col, int number) {
-        SudokuCell cell = sudoku.getCell(line, col);
-        if (!cell.isFixed() && cell.getValue() != number) {
+        //SudokuCell cell = sudoku.getCell(line, col);
+        int index = Sudoku2.getIndex(line, col);
+        if (!sudoku.isFixed(index) && sudoku.getValue(index) != number) {
             // Setzen ist möglich, auf löschen prüfen
-            if (cell.getValue() != 0) {
+            if (sudoku.getValue(index) != 0) {
                 sudoku.setCell(line, col, 0);
             }
             sudoku.setCell(line, col, number);
+            repaint();
+            if (sudoku.isSolved() && Options.getInstance().isShowSudokuSolved()) {
+                JOptionPane.showMessageDialog(this, java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.sudoku_solved"), 
+                        java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.congratulations"), 
+                        JOptionPane.INFORMATION_MESSAGE);
+            }
         }
     }
 
@@ -1409,17 +1534,38 @@ public class SudokuPanel extends javax.swing.JPanel implements Printable {
      * cell denoted by {@link #aktLine}/{@link #aktCol} if {@link #selectedCells} is
      * empty).<br>
      *
-     * Uses {@link #candidateMode} to determine the right type of candidate.
      * @param candidate
+     * @return <code>true</code>, if at least one cell was changed
      */
-    private void toggleCandidateInAktCells(int candidate) {
+    private boolean toggleCandidateInAktCells(int candidate) {
+        boolean changed = false;
         if (selectedCells.isEmpty()) {
             toggleCandidateInCell(aktLine, aktCol, candidate);
+            return true;
         } else {
+            boolean candPresent = false;
             for (int index : selectedCells) {
-                toggleCandidateInCell(Sudoku.getLine(index), Sudoku.getCol(index), candidate);
+                if (sudoku.getValue(index) == 0 && sudoku.isCandidate(index, candidate,! showCandidates)) {
+                    candPresent = true;
+                    break;
+                }
+            }
+            for (int index : selectedCells) {
+                if (candPresent) {
+                    if (sudoku.getValue(index) == 0 && sudoku.isCandidate(index, candidate,! showCandidates)) {
+                        sudoku.setCandidate(index, candidate, false, !showCandidates);
+                        changed = true;
+                    }
+                } else {
+                    if (sudoku.getValue(index) == 0 && ! sudoku.isCandidate(index, candidate,! showCandidates)) {
+                        sudoku.setCandidate(index, candidate, true, !showCandidates);
+                        changed = true;
+                    }
+                }
             }
         }
+        updateCellZoomPanel();
+        return changed;
     }
 
     /**
@@ -1429,12 +1575,12 @@ public class SudokuPanel extends javax.swing.JPanel implements Printable {
      * @param candidate
      */
     private void toggleCandidateInCell(int line, int col, int candidate) {
-        SudokuCell cell = sudoku.getCell(line, col);
-        if (cell.getValue() == 0) {
-            if (cell.isCandidate(candidateMode, candidate)) {
-                sudoku.setCandidate(line, col, candidateMode, candidate, false);
+        int index = Sudoku2.getIndex(line, col);
+        if (sudoku.getValue(index) == 0) {
+            if (sudoku.isCandidate(index, candidate, ! showCandidates)) {
+                sudoku.setCandidate(index, candidate, false, !showCandidates);
             } else {
-                sudoku.setCandidate(line, col, candidateMode, candidate, true);
+                sudoku.setCandidate(index, candidate, true, ! showCandidates);
             }
         }
         updateCellZoomPanel();
@@ -1447,13 +1593,47 @@ public class SudokuPanel extends javax.swing.JPanel implements Printable {
      * @return
      */
     public BufferedImage getSudokuImage(int size) {
+        return getSudokuImage(size, false);
+    }
+    
+    /**
+     * Creates an image of the current sudoku in the given size.
+     * 
+     * @param size
+     * @param allBlack
+     * @return
+     */
+    public BufferedImage getSudokuImage(int size, boolean allBlack) {
         BufferedImage fileImage = new BufferedImage(size, size, BufferedImage.TYPE_3BYTE_BGR);
         Graphics2D g = fileImage.createGraphics();
         this.g2 = g;
         g2.setColor(Color.WHITE);
         g2.fillRect(0, 0, size, size);
-        drawPage(size, size, true, false);
+        drawPage(size, size, true, false, allBlack, 1.0);
         return fileImage;
+    }
+
+    /**
+     * Prints the current sudoku into the graphics context <code>g</code> at the
+     * position <code>x</code>/<code>y</code> with size <code>size</code>.
+     * 
+     * @param g
+     * @param x
+     * @param y
+     * @param size
+     * @param allBlack 
+     * @param scale
+     */
+    public void printSudoku(Graphics2D g, int x, int y, int size, boolean allBlack, double scale) {
+        Graphics2D oldG2 = this.g2;
+        this.g2 = g;
+        AffineTransform trans = g.getTransform();
+        g.translate(x, y);
+        g2.setColor(Color.WHITE);
+        g2.fillRect(0, 0, size, size);
+        drawPage(size, size, true, true, allBlack, scale);
+        g.setTransform(trans);
+        this.g2 = oldG2;
     }
 
     /**
@@ -1477,13 +1657,31 @@ public class SudokuPanel extends javax.swing.JPanel implements Printable {
         }
 
         // Graphics2D-Objekt herrichten
+        // CAUTION: The Graphics2D object is created with the native printer
+        // resolution, but scaled down to 72dpi using an AffineTransform.
+        // To print in high resolution this downscaling has to be reverted.
         Graphics2D printG2 = (Graphics2D) graphics;
-        printG2.translate(pageFormat.getImageableX(), pageFormat.getImageableY());
-        int printWidth = (int) pageFormat.getImageableWidth();
-        int printHeight = (int) pageFormat.getImageableHeight();
+        double scale = SudokuUtil.adjustGraphicsForPrinting(printG2);
+//        AffineTransform at = printG2.getTransform();
+//        double scale = at.getScaleX();
+//        int resolution = (int)(72.0 * scale);
+//        AffineTransform newAt = new AffineTransform();
+//        newAt.translate(at.getTranslateX(), at.getTranslateY());
+//        newAt.shear(at.getShearX(), at.getShearY());
+//        printG2.setTransform(newAt);
+        printG2.translate((int)(pageFormat.getImageableX() * scale), (int)(pageFormat.getImageableY() * scale));
+        int printWidth = (int) (pageFormat.getImageableWidth() * scale);
+        int printHeight = (int) (pageFormat.getImageableHeight() * scale);
+//        printG2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+//        printG2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
 
         // Überschrift
-        printG2.setFont(Options.getInstance().getBigFont());
+        // scale fonts up too fit the printer resolution
+        Font tmpFont = Options.getInstance().getBigFont();
+        bigFont = new Font(tmpFont.getName(), tmpFont.getStyle(), (int)(tmpFont.getSize() * scale));
+        tmpFont = Options.getInstance().getSmallFont();
+        smallFont = new Font(tmpFont.getName(), tmpFont.getStyle(), (int)(tmpFont.getSize() * scale));
+        printG2.setFont(bigFont);
         String title = MainFrame.VERSION;
         FontMetrics metrics = printG2.getFontMetrics();
         int textWidth = metrics.stringWidth(title);
@@ -1492,7 +1690,7 @@ public class SudokuPanel extends javax.swing.JPanel implements Printable {
         printG2.drawString(title, (printWidth - textWidth) / 2, textHeight);
 
         // Level
-        printG2.setFont(Options.getInstance().getSmallFont());
+        printG2.setFont(smallFont);
         if (sudoku != null && sudoku.getLevel() != null) {
             title = sudoku.getLevel().getName() + " (" + sudoku.getScore() + ")";
             metrics = printG2.getFontMetrics();
@@ -1504,7 +1702,7 @@ public class SudokuPanel extends javax.swing.JPanel implements Printable {
 
         printG2.translate(0, y);
         this.g2 = printG2;
-        drawPage(printWidth, printHeight, true);
+        drawPage(printWidth, printHeight, true, true, false, scale);
         return Printable.PAGE_EXISTS;
     }
 
@@ -1516,14 +1714,14 @@ public class SudokuPanel extends javax.swing.JPanel implements Printable {
     }
 
     private void drawPage(int totalWidth, int totalHeight) {
-        drawPage(totalWidth, totalHeight, false, true);
+        drawPage(totalWidth, totalHeight, false, true, false, 1.0);
     }
 
     private void drawPage(int totalWidth, int totalHeight, boolean isPrint) {
-        drawPage(totalWidth, totalHeight, isPrint, true);
+        drawPage(totalWidth, totalHeight, isPrint, true, false, 1.0);
     }
 
-    private void drawPage(int totalWidth, int totalHeight, boolean isPrint, boolean mitRand) {
+    private void drawPage(int totalWidth, int totalHeight, boolean isPrint, boolean mitRand, boolean allBlack, double scale) {
         g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
         g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
 
@@ -1534,8 +1732,16 @@ public class SudokuPanel extends javax.swing.JPanel implements Printable {
         height = (width < height) ? width : height;
 
         // Zwischenräume nicht mehr konstant
+        float strokeWidth = 2.0f / 1000.0f * width;
+        if (width > 1000) {
+            strokeWidth *= 1.5f;
+        }
+        int strokeWidthInt = (int)Math.round(strokeWidth / 2);
         delta = DELTA;
         deltaRand = DELTA_RAND;
+        if (deltaRand < strokeWidthInt) {
+            deltaRand = strokeWidthInt;
+        }
 
         if (Options.getInstance().getDrawMode() == 1) {
             delta = 0;
@@ -1586,16 +1792,20 @@ public class SudokuPanel extends javax.swing.JPanel implements Printable {
         }
 
         // Zellen zeichnen
-        int dx = 0, dy = 0, dcx = 0, dcy = 0, ddx = 0, ddy = 0;
+        // dx, dy: Offset in a cell for drawing values
+        // dcx, dcy: Offset in onw ninth of a cell for drawing candidates
+        // ddx, ddy: Height and width of the background circle for a candidate
+        //      more specifically: ddy is the diameter of the background circle
+        double dx = 0, dy = 0, dcx = 0, dcy = 0, ddy = 0;
         for (int line = 0; line < 9; line++) {
             for (int col = 0; col < 9; col++) {
                 // Zelle holen
-                SudokuCell cell = sudoku.getCell(line, col);
+                //SudokuCell cell = sudoku.getCell(line, col);
 
-                // Hintergrund zeichnen
+                // Hintergrund zeichnen (ignore allBlack here!)
                 g2.setColor(Options.getInstance().getDefaultCellColor()); // normal ist weiß
 
-                int cellIndex = Sudoku.getIndex(line, col);
+                int cellIndex = Sudoku2.getIndex(line, col);
 //                if (line == aktLine && col == aktCol && !isPrint) {
 //                    g2.setColor(Options.getInstance().getAktCellColor());
 //                }
@@ -1603,95 +1813,102 @@ public class SudokuPanel extends javax.swing.JPanel implements Printable {
 //                    g2.setColor(Options.getInstance().getAktCellColor());
 //                }
                 boolean isSelected = (selectedCells.isEmpty() && line == aktLine && col == aktCol) || selectedCells.contains(cellIndex);
-                if (isSelected && ! isPrint) {
-                    g2.setColor(Options.getInstance().getAktCellColor());
+                // dont paint the whole cell yellow, just a small frame, if onlySmallCursors is set
+                if (isSelected && ! isPrint && ! Options.getInstance().isOnlySmallCursors()) {
+                    setColor(g2, allBlack, Options.getInstance().getAktCellColor());
                 }
                 // check if the candidate denoted by showHintCellValue is a valid candidate; if showCandidates == false,
                 // this can be done by SudokuCell.isCandidateValid(); if it is true, candidates entered by the user
                 // are highlighted, regardless of validity
                 boolean candidateValid = false;
-                if (showHintCellValue != 0) {
+                if (showInvalidOrPossibleCells) {
                     if (showCandidates) {
-                        candidateValid = cell.isCandidateValid(candidateMode, showHintCellValue);
-                    } else {
-                        candidateValid = cell.isCandidate(candidateMode, showHintCellValue);
+                        candidateValid = sudoku.areCandidatesValid(cellIndex, showHintCellValues, false);
+//                    } else {
+//                        candidateValid = sudoku.isCandidateValid(cellIndex, showHintCellValue, ! showCandidates);
                     }
                 }
                 if (isShowInvalidOrPossibleCells() && isInvalidCells() &&
-                        (cell.getValue() != 0 || (showHintCellValue != 0 && !candidateValid))) {
+                        (sudoku.getValue(cellIndex) != 0 || (showInvalidOrPossibleCells && !candidateValid))) {
 //                        (cell.getValue() != 0 || (getShowHintCellValue() != 0 && !cell.isCandidateValid(SudokuCell.PLAY, getShowHintCellValue())))) {
-                    g2.setColor(Options.getInstance().getInvalidCellColor());
+                    setColor(g2, allBlack, Options.getInstance().getInvalidCellColor());
                 }
-                if (isShowInvalidOrPossibleCells() && !isInvalidCells() && cell.getValue() == 0 &&
-                        showHintCellValue != 0 && candidateValid) {
+                if (isShowInvalidOrPossibleCells() && !isInvalidCells() && sudoku.getValue(cellIndex) == 0 &&
+                        showInvalidOrPossibleCells && candidateValid) {
 //                        getShowHintCellValue() != 0 && cell.isCandidateValid(SudokuCell.PLAY, getShowHintCellValue())) {
-                    g2.setColor(Options.getInstance().getPossibleCellColor());
+                    setColor(g2, allBlack, Options.getInstance().getPossibleCellColor());
                 }
                 //if (cell.getValue() == 0 && coloringMap.containsKey(cellIndex)) {
-                if (coloringMap.containsKey(cellIndex)) {
+                if (coloringMap.containsKey(cellIndex) && (sudoku.getValue(cellIndex) == 0 || Options.getInstance().isColorValues())) {
                     // coloring
-                    g2.setColor(Options.getInstance().getColoringColors()[coloringMap.get(cellIndex)]);
+                    setColor(g2, allBlack, Options.getInstance().getColoringColors()[coloringMap.get(cellIndex)]);
                 }
                 g2.fillRect(getX(line, col), getY(line, col), cellSize, cellSize);
                 if (isSelected && !isPrint && g2.getColor() != Options.getInstance().getAktCellColor()) {
-                    g2.setColor(Options.getInstance().getAktCellColor());
-                    g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.5f));
-                    g2.fillRect(getX(line, col), getY(line, col), cellSize, cellSize);
-                    g2.setPaintMode();
+                    setColor(g2, allBlack, Options.getInstance().getAktCellColor());
+                    int frameSize = (int)(cellSize * Options.getInstance().getCursorFrameSize());
+//                    g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.5f));
+//                    g2.fillRect(getX(line, col), getY(line, col), cellSize, cellSize);
+//                    g2.setPaintMode();
+                    int cx = getX(line, col);
+                    int cy = getY(line, col);
+                    g2.fillRect(cx, cy, cellSize, frameSize);
+                    g2.fillRect(cx, cy, frameSize, cellSize);
+                    g2.fillRect(cx + cellSize - frameSize, cy, frameSize, cellSize);
+                    g2.fillRect(cx, cy + cellSize - frameSize, cellSize, frameSize);
                 }
 
 
                 // Wert zeichnen
                 int startX = getX(line, col);
                 int startY = getY(line, col);
-                if (cell.getValue() != 0) {
+                if (sudoku.getValue(cellIndex) != 0) {
                     // Wert vorhanden: zeichnen
-                    g2.setColor(Options.getInstance().getCellValueColor());
-                    if (cell.isFixed()) {
-                        g2.setColor(Options.getInstance().getCellFixedValueColor());
-                    } else if (isShowWrongValues() == true && !sudoku.checkIsValidValue(line, col, cell.getValue())) {
-                        g2.setColor(Options.getInstance().getWrongValueColor());
-                    } else if (isShowDeviations() && solvedSudoku != null && cell.getValue() != solvedSudoku.getCell(line, col).getValue()) {
-                        g2.setColor(Options.getInstance().getDeviationColor());
+                    setColor(g2, allBlack, Options.getInstance().getCellValueColor());
+                    if (sudoku.isFixed(cellIndex)) {
+                        setColor(g2, allBlack, Options.getInstance().getCellFixedValueColor());
+                    } else if (isShowWrongValues() == true && !sudoku.isValidValue(line, col, sudoku.getValue(cellIndex))) {
+                        setColor(g2, allBlack, Options.getInstance().getWrongValueColor());
+                    } else if (isShowDeviations() && sudoku.isSolutionSet() && sudoku.getValue(cellIndex) != sudoku.getSolution(cellIndex)) {
+                        setColor(g2, allBlack, Options.getInstance().getDeviationColor());
                     }
                     g2.setFont(valueFont);
-                    dx = (cellSize - g2.getFontMetrics().stringWidth("8")) / 2;
-                    dy = (cellSize + g2.getFontMetrics().getAscent()) / 2;
-                    g2.drawString(Integer.toString(cell.getValue()), startX + dx, startY + dy);
+                    dx = (cellSize - g2.getFontMetrics().stringWidth("8")) / 2.0;
+                    dy = (cellSize + g2.getFontMetrics().getAscent() - g2.getFontMetrics().getDescent()) / 2.0;
+                    g2.drawString(Integer.toString(sudoku.getValue(cellIndex)), (int)(startX + dx), 
+                            (int)(startY + dy));
                 } else {
                     g2.setFont(candidateFont);
                     // alle vorhandenen Kandidaten gleichmäßig über die Zelle verteilen
                     // wird auch aufgerufen, wenn hoDrawMode gesetzt ist und <Shift>+<Ctrl> gedrückt
                     // ist; muss in diesem Fall alle Kandidaten anzeigen
-                    int type = candidateMode;
+                    ///*K*/ HIer werden nicht mehr alle Kandidaten angezeigt, wenn showCandidates true ist!
+                    boolean userCandidates = ! showCandidates;
                     if (showAllCandidates || showAllCandidatesAkt && line == aktLine && col == aktCol) {
-                        type = SudokuCell.ALL;
+                        userCandidates = false;
                     }
-                    if (showCandidates) {
-                        type = SudokuCell.PLAY;
-                    }
-                    int third = cellSize / 3;
-                    dcx = (third - g2.getFontMetrics().stringWidth("8")) / 2;
-                    dcy = (third + g2.getFontMetrics().getAscent()) / 2;
-                    ddx = (int) (g2.getFontMetrics().stringWidth("8") * Options.getInstance().getHintBackFactor());
-                    ddy = (int) (g2.getFontMetrics().getAscent() * Options.getInstance().getHintBackFactor());
+                    double third = cellSize / 3.0;
+                    dcx = (third - g2.getFontMetrics().stringWidth("8")) / 2.0;
+                    dcy = (third + g2.getFontMetrics().getAscent() - g2.getFontMetrics().getDescent()) / 2.0;
+//                    ddx = g2.getFontMetrics().stringWidth("8") * Options.getInstance().getHintBackFactor();
+                    ddy = (g2.getFontMetrics().getAscent() - g2.getFontMetrics().getDescent()) * Options.getInstance().getHintBackFactor();
                     for (int i = 1; i <= 9; i++) {
-                        if (cell.isCandidate(type, i) ||
-                                (isShowCandidates() && isShowDeviations() && solvedSudoku != null && i == solvedSudoku.getCell(line, col).getValue())) {
-                            g2.setColor(Options.getInstance().getCandidateColor());
-                            if (isShowWrongValues() == true && !cell.isCandidateValid(type, i)) {
-                                g2.setColor(Options.getInstance().getWrongValueColor());
+                        if (sudoku.isCandidate(cellIndex, i, userCandidates) ||
+                                (showCandidates && showDeviations && sudoku.isSolutionSet() && i == sudoku.getSolution(cellIndex))) {
+                            setColor(g2, allBlack, Options.getInstance().getCandidateColor());
+                            if (isShowWrongValues() == true && !sudoku.isCandidateValid(cellIndex, i, userCandidates)) {
+                                setColor(g2, allBlack, Options.getInstance().getWrongValueColor());
                             }
-                            if (!cell.isCandidate(type, i) && isShowDeviations() && solvedSudoku != null &&
-                                    i == solvedSudoku.getCell(line, col).getValue()) {
-                                g2.setColor(Options.getInstance().getDeviationColor());
+                            if (!sudoku.isCandidate(cellIndex, i, userCandidates) && isShowDeviations() && sudoku.isSolutionSet() &&
+                                    i == sudoku.getSolution(cellIndex)) {
+                                setColor(g2, allBlack, Options.getInstance().getDeviationColor());
                             }
-                            int shiftX = ((i - 1) % 3) * third;
-                            int shiftY = ((i - 1) / 3) * third;
+                            double shiftX = ((i - 1) % 3) * third;
+                            double shiftY = ((i - 1) / 3) * third;
                             Color hintColor = null;
                             Color candColor = null;
                             if (step != null) {
-                                int index = Sudoku.getIndex(line, col);
+                                int index = Sudoku2.getIndex(line, col);
                                 if (step.getIndices().indexOf(index) >= 0 && step.getValues().indexOf(i) >= 0) {
                                     hintColor = Options.getInstance().getHintCandidateBackColor();
                                     candColor = Options.getInstance().getHintCandidateColor();
@@ -1711,12 +1928,12 @@ public class SudokuPanel extends javax.swing.JPanel implements Printable {
                                         continue;
                                     }
                                     Chain chain = step.getChains().get(k);
-                                    for (int j = chain.start; j <= chain.end; j++) {
-                                        if (chain.chain[j] == Integer.MIN_VALUE) {
+                                    for (int j = chain.getStart(); j <= chain.getEnd(); j++) {
+                                        if (chain.getChain()[j] == Integer.MIN_VALUE) {
                                             // Trennmarker für mins -> ignorieren
                                             continue;
                                         }
-                                        int chainEntry = Math.abs(chain.chain[j]);
+                                        int chainEntry = Math.abs(chain.getChain()[j]);
                                         int index1 = -1, index2 = -1, index3 = -1;
                                         if (Chain.getSNodeType(chainEntry) == Chain.NORMAL_NODE) {
                                             index1 = Chain.getSCellIndex(chainEntry);
@@ -1771,20 +1988,25 @@ public class SudokuPanel extends javax.swing.JPanel implements Printable {
                             if (coloringCandidateMap.containsKey(cellIndex * 10 + i)) {
                                 //if (coloringMap.containsKey(cellIndex)) {
                                 // coloring
-                                coloringColor = Options.getInstance().coloringColors[coloringCandidateMap.get(cellIndex * 10 + i)];
+                                coloringColor = Options.getInstance().getColoringColors()[coloringCandidateMap.get(cellIndex * 10 + i)];
                             }
                             Color oldColor = g2.getColor();
                             if (coloringColor != null) {
-                                g2.setColor(coloringColor);
-                                g2.fillRect(startX + shiftX + dcx - 2 * (ddy - ddx) / 3, startY + shiftY + dcy - 4 * ddy / 5 - 1, ddy, ddy);
+                                setColor(g2, allBlack, coloringColor);
+                                //g2.fillRect(startX + shiftX + dcx - 2 * (ddy - ddx) / 3, startY + shiftY + dcy - 4 * ddy / 5 - 1, ddy, ddy);
                             }
                             if (hintColor != null) {
-                                g2.setColor(hintColor);
-                                g2.fillOval(startX + shiftX + dcx - 2 * (ddy - ddx) / 3, startY + shiftY + dcy - 4 * ddy / 5 - 1, ddy, ddy);
+                                setColor(g2, allBlack, hintColor);
+                                //g2.fillOval(startX + shiftX + dcx - 2 * (ddy - ddx) / 3, startY + shiftY + dcy - 4 * ddy / 5 - 1, ddy, ddy);
+                                g2.fillOval((int)Math.round(startX + shiftX + third / 2.0 - ddy / 2.0), 
+                                        (int)Math.round(startY + shiftY + third / 2.0 - ddy / 2.0), 
+                                        (int)Math.round(ddy), (int)Math.round(ddy));
                             }
                             //g2.setColor(candColor);
-                            g2.setColor(oldColor);
-                            g2.drawString(Integer.toString(i), startX + dcx + shiftX, startY + dcy + shiftY);
+                            setColor(g2, allBlack, oldColor);
+                            g2.drawString(Integer.toString(i), 
+                                    (int)Math.round(startX + dcx + shiftX), 
+                                    (int)Math.round(startY + dcy + shiftY));
                         }
                     }
                 }
@@ -1794,23 +2016,27 @@ public class SudokuPanel extends javax.swing.JPanel implements Printable {
         // Rahmen zeichnen: muss am Schluss sein, wegen der Hintergründe
         switch (Options.getInstance().getDrawMode()) {
             case 0:
-                g2.setStroke(new BasicStroke(2));
-                g2.setColor(Options.getInstance().getGridColor());
+                g2.setStroke(new BasicStroke((float)(2 * scale)));
+                setColor(g2, allBlack, Options.getInstance().getGridColor());
                 g2.drawRect(startSX, startSY, width, height);
                 drawBlockLine(delta + startSX, 1 * delta + startSY, true);
                 drawBlockLine(delta + startSX, 2 * delta + startSY + 3 * cellSize, true);
                 drawBlockLine(delta + startSX, 3 * delta + startSY + 6 * cellSize, true);
                 break;
             case 1:
-                g2.setStroke(new BasicStroke(2));
-                if (width > 1000) {
-                    g2.setStroke(new BasicStroke(4));
+                if (allBlack) {
+                    g2.setStroke(new BasicStroke(strokeWidth / 2));
+                } else {
+                    g2.setStroke(new BasicStroke(strokeWidth));
                 }
-                g2.setColor(Options.getInstance().getInnerGridColor());
+                setColor(g2, allBlack, Options.getInstance().getInnerGridColor());
                 drawBlockLine(delta + startSX, 1 * delta + startSY, false);
                 drawBlockLine(delta + startSX, 2 * delta + startSY + 3 * cellSize, false);
                 drawBlockLine(delta + startSX, 3 * delta + startSY + 6 * cellSize, false);
-                g2.setColor(Options.getInstance().getGridColor());
+                setColor(g2, allBlack, Options.getInstance().getGridColor());
+                if (allBlack) {
+                    g2.setStroke(new BasicStroke(strokeWidth));
+                }
                 g2.drawRect(startSX, startSY, width, height);
                 for (int i = 0; i < 3; i++) {
                     g2.drawLine(startSX, startSY + i * 3 * cellSize, startSX + 9 * cellSize, startSY + i * 3 * cellSize);
@@ -1820,7 +2046,7 @@ public class SudokuPanel extends javax.swing.JPanel implements Printable {
         }
 
         // Chains zeichnen, wenn vorhanden
-        if (step != null && step.getChains().size() != 0) {
+        if (step != null && !step.getChains().isEmpty()) {
             // es gibt mindestens eine Chain
             // zuerst alle Punkte sammeln (auch zu löschende Kandidaten und ALS)
             points.clear();
@@ -1833,23 +2059,23 @@ public class SudokuPanel extends javax.swing.JPanel implements Printable {
                     continue;
                 }
                 Chain chain = step.getChains().get(ci);
-                for (int i = chain.start; i <= chain.end; i++) {
-                    int che = Math.abs(chain.chain[i]);
-                    points.add(getChainPoint(Chain.getSCellIndex(che), Chain.getSCandidate(che), cellSize, dcx, dcy, ddx, ddy));
+                for (int i = chain.getStart(); i <= chain.getEnd(); i++) {
+                    int che = Math.abs(chain.getChain()[i]);
+                    points.add(getCandKoord(Chain.getSCellIndex(che), Chain.getSCandidate(che), cellSize));
                     if (Chain.getSNodeType(che) == Chain.GROUP_NODE) {
                         int indexC = Chain.getSCellIndex2(che);
                         if (indexC != -1) {
-                            points.add(getChainPoint(indexC, Chain.getSCandidate(che), cellSize, dcx, dcy, ddx, ddy));
+                            points.add(getCandKoord(indexC, Chain.getSCandidate(che), cellSize));
                         }
                         indexC = Chain.getSCellIndex3(che);
                         if (indexC != -1) {
-                            points.add(getChainPoint(indexC, Chain.getSCandidate(che), cellSize, dcx, dcy, ddx, ddy));
+                            points.add(getCandKoord(indexC, Chain.getSCandidate(che), cellSize));
                         }
                     }
                 }
             }
             for (Candidate cand : step.getCandidatesToDelete()) {
-                points.add(getChainPoint(cand.index, cand.value, cellSize, dcx, dcy, ddx, ddy));
+                points.add(getCandKoord(cand.getIndex(), cand.getValue(), cellSize));
             }
             //for (AlsInSolutionStep als : step.getAlses()) {
             for (int ai = 0; ai < step.getAlses().size(); ai++) {
@@ -1860,11 +2086,11 @@ public class SudokuPanel extends javax.swing.JPanel implements Printable {
                     continue;
                 }
                 AlsInSolutionStep als = step.getAlses().get(ai);
-                for (int i = 0; i < als.indices.size(); i++) {
-                    int index = als.indices.get(i);
-                    short[] cands = sudoku.getCell(index).getAllCandidates();
+                for (int i = 0; i < als.getIndices().size(); i++) {
+                    int index = als.getIndices().get(i);
+                    int[] cands = sudoku.getAllCandidates(index);
                     for (int j = 0; j < cands.length; j++) {
-                        points.add(getChainPoint(index, cands[j], cellSize, dcx, dcy, ddx, ddy));
+                        points.add(getCandKoord(index, cands[j], cellSize));
                     }
                 }
             }
@@ -1878,49 +2104,64 @@ public class SudokuPanel extends javax.swing.JPanel implements Printable {
                     continue;
                 }
                 Chain chain = step.getChains().get(ci);
-                drawChain(g2, chain, cellSize, dcx, dcy, ddx, ddy);
+                drawChain(g2, chain, cellSize, ddy, allBlack);
             }
         }
     }
-
-    private Point getChainPoint(int index, int cand, int cellSize, int dcx, int dcy, int ddx, int ddy) {
-        return new Point(getCandKoord(index, cand, cellSize, dcx, dcy, ddx, ddy, true),
-                getCandKoord(index, cand, cellSize, dcx, dcy, ddx, ddy, false));
+    
+    /**
+     * Convenience method to make printing in all black easier.
+     * 
+     * @param g2
+     * @param color
+     * @param allBlack 
+     */
+    private void setColor(Graphics2D g2, boolean allBlack, Color color) {
+        if (allBlack) {
+            g2.setColor(Color.BLACK);
+        } else {
+            g2.setColor(color);
+        }
     }
 
     /**
-     * Zuerst eine Liste mit den Koordinaten aller Knoten der Chain erstellen. Dann wird
-     * gezeichnet:
-     *   - Koordinaten der Endpunkte berechnen
-     *   - Prüfen, ob ein anderer Knoten auf der Strecke liegt
-     *   - Wenn ja, mit Bezier-Kurve zeichnen (Tangenten 45 Grad zur Gerade)
-     *       - Richtung zunächst einmal immer oben/links
-     *   - Zu kurze Strecken nicht berücksichtigen
+     * Draws a chain.
+     * <ul>
+     *  <li>Calculate the end points of each link</li>
+     *  <li>Check, if another node is on the direct line between the end points</li>
+     *  <li>If so, draw a Bezier curve instead of a line (tangents are 45 degrees of the direct line)</li>
+     *  <li>If the length is very small, the link is ommitted</li>
+     * </ul>
+     * @param g2
+     * @param chain
+     * @param cellSize
+     * @param ddy 
+     * @param allBlack
      */
-    private void drawChain(Graphics2D g2, Chain chain, int cellSize,
-            int dcx, int dcy, int ddx, int ddy) {
+    private void drawChain(Graphics2D g2, Chain chain, int cellSize, double ddy, boolean allBlack) {
+        // Calculate the coordinates of the startpoint for every link
         //System.out.println("Chain: " + chain.start + "/" + chain.end + "/" + chain.chain);
-        int[] ch = chain.chain;
+        int[] ch = chain.getChain();
         //List<Point> points1 = new ArrayList<Point>(chain.end - chain.start + 1);
-        List<Point> points1 = new ArrayList<Point>(chain.end + 1);
+        List<Point2D.Double> points1 = new ArrayList<Point2D.Double>(chain.getEnd() + 1);
         //for (int i = chain.start; i <= chain.end; i++) {
-        for (int i = 0; i <= chain.end; i++) {
-            if (i < chain.start) {
+        for (int i = 0; i <= chain.getEnd(); i++) {
+            if (i < chain.getStart()) {
+                // belongs to some other chain-> ignore!
                 points1.add(null);
                 continue;
             }
             int che = Math.abs(ch[i]);
-            points1.add(new Point(getCandKoord(Chain.getSCellIndex(che), Chain.getSCandidate(che), cellSize, dcx, dcy, ddx, ddy, true),
-                    getCandKoord(Chain.getSCellIndex(che), Chain.getSCandidate(che), cellSize, dcx, dcy, ddx, ddy, false)));
+            points1.add(getCandKoord(Chain.getSCellIndex(che), Chain.getSCandidate(che), cellSize));
         }
         Stroke oldStroke = g2.getStroke();
         int oldChe = 0;
         int oldIndex = 0;
         int index = 0;
-        for (int i = chain.start; i < chain.end; i++) {
-            // nur zeichnen, wenn zwischen zwei verschiedenen Zellen
+        for (int i = chain.getStart(); i < chain.getEnd(); i++) {
+            // link is only drawn between different cells
             if (ch[i + 1] == Integer.MIN_VALUE) {
-                // Trennmarker -> ignorieren
+                // end point of a net branch -> ignore
                 continue;
             }
             index = i;
@@ -1939,43 +2180,42 @@ public class SudokuPanel extends javax.swing.JPanel implements Printable {
                 index = oldIndex;
             }
             if (Chain.getSCellIndex(che) == Chain.getSCellIndex(che1)) {
+                // same cell -> ignore
                 continue;
             }
-            g2.setColor(Options.getInstance().getArrowColor());
+            setColor(g2, allBlack, Options.getInstance().getArrowColor());
             if (Chain.isSStrong(che1)) {
                 g2.setStroke(strongLinkStroke);
             } else {
                 g2.setStroke(weakLinkStroke);
             }
-            drawArrow(g2, index, Chain.getSCandidate(che), i + 1, Chain.getSCandidate(che1), cellSize, dcx, dcy, ddx, ddy, points1);
+            drawArrow(g2, index, i + 1, cellSize, ddy, points1);
         }
         g2.setStroke(oldStroke);
 
     }
 
-    private void drawArrow(Graphics2D g2, int index1, int cand1, int index2, int cand2, int cellSize,
-            int dcx, int dcy, int ddx, int ddy, List<Point> points1) {
-        // Start- und Endpunkte des Pfeils berechnen
-        Point p1 = new Point(points1.get(index1));
-        Point p2 = new Point(points1.get(index2));
-        int length = (int) Math.sqrt((p2.x - p1.x) * (p2.x - p1.x) + (p2.y - p1.y) * (p2.y - p1.y));
+    private void drawArrow(Graphics2D g2, int index1, int index2, int cellSize,
+            double ddy, List<Point2D.Double> points1) {
+        // calculate the start and end points for the arrow
+        Point2D.Double p1 = (Point2D.Double)(points1.get(index1).clone());
+        Point2D.Double p2 = (Point2D.Double)(points1.get(index2).clone());
+        double length = p1.distance(p2);
         double deltaX = p2.x - p1.x;
         double deltaY = p2.y - p1.y;
-        // Quadranten-Anpassung nicht vergessen
-        int quadrant = getQuadrant(deltaX, deltaY);
-        double alpha = getAlpha(deltaX, deltaY, quadrant);
-        adjustEndPoints(p1, p2, alpha, quadrant, ddy);
+        double alpha = Math.atan2(deltaY, deltaX);
+        adjustEndPoints(p1, p2, alpha, ddy);
 
-        // Prüfen, ob ein anderer Kandidat auf der direkten Linie liegt
+        // check, if another candidate lies on the direct line
         double epsilon = 0.1;
-        double dx1 = p2.x - p1.x;
-        double dy1 = p2.y - p1.y;
+        double dx1 = deltaX;
+        double dy1 = deltaY;
         boolean doesIntersect = false;
         for (int i = 0; i < points.size(); i++) {
             if (points.get(i).equals(points1.get(index1)) || points.get(i).equals(points1.get(index2))) {
                 continue;
             }
-            Point point = points.get(i);
+            Point2D.Double point = points.get(i);
             double dx2 = point.x - p1.x;
             double dy2 = point.y - p1.y;
             // Kontrolle mit Ähnlichkeitssatz
@@ -1989,46 +2229,41 @@ public class SudokuPanel extends javax.swing.JPanel implements Printable {
                 }
             }
         }
-        if (length < 2 * ddy) {
+        if (length < 2.0 * ddy) {
+            // line is very short, would not be seen if drawn directly
             doesIntersect = true;
         }
 
-        // Werte für Pfeilspitze vorbereiten
+        // values for arrow head
         double aAlpha = alpha;
-        int aQuadrant = quadrant;
 
-        // Grundlinie zeichnen
+        // draw the line of the arrow
         if (doesIntersect) {
-            int bezierLength = 20;
-            // Wenn die Punkte zu nahe beieinander sind, geht die Ausgangspunktberechnung schief
-            if (length < 2 * ddy) {
-                bezierLength = length / 4;
+            double bezierLength = 20.0;
+            // adjust for very short lines
+            if (length < 2.0 * ddy) {
+                bezierLength = length / 4.0;
             }
-            // Die Endpunkte müssen um 45 Grad gedreht werden: beim Startpunkt gegen den
-            // Uhrzeigersinn, beim Endpunkt im Uhrzeigersinn
+            // the end points are rotated 45 degrees (counter clockwise for the
+            // start point, clockwise for the end point)
             rotatePoint(points1.get(index1), p1, -Math.PI / 4.0);
             rotatePoint(points1.get(index2), p2, Math.PI / 4.0);
 
             aAlpha = alpha - Math.PI / 4.0;
-            if (quadrant == 2) {
-                aAlpha = alpha + Math.PI / 4.0;
-            }
-            int bX1 = (int) (p1.x + bezierLength * Math.cos(aAlpha));
-            int bY1 = (int) (p1.y + bezierLength * Math.sin(aAlpha));
+            double bX1 = p1.x + bezierLength * Math.cos(aAlpha);
+            double bY1 = p1.y + bezierLength * Math.sin(aAlpha);
             aAlpha = alpha + Math.PI / 4.0;
-            if (quadrant == 2) {
-                aAlpha = 5 * Math.PI / 4.0 - alpha;
-            }
-            int bX2 = (int) (p2.x - bezierLength * Math.cos(aAlpha));
-            int bY2 = (int) (p2.y - bezierLength * Math.sin(aAlpha));
-            if (quadrant == 2) {
-                bY2 = (int) (p2.y + bezierLength * Math.sin(aAlpha));
-            }
+            double bX2 = p2.x - bezierLength * Math.cos(aAlpha);
+            double bY2 = p2.y - bezierLength * Math.sin(aAlpha);
             cubicCurve.setCurve(p1.x, p1.y, bX1, bY1, bX2, bY2, p2.x, p2.y);
             g2.draw(cubicCurve);
+            
+//            g2.drawLine(p1.x, p1.y, bX1, bY1);
+//            g2.drawLine(p2.x, p2.y, bX2, bY2);
 
         } else {
-            g2.drawLine(p1.x, p1.y, p2.x, p2.y);
+            g2.drawLine((int)Math.round(p1.x), (int)Math.round(p1.y), 
+                    (int)Math.round(p2.x), (int)Math.round(p2.y));
         }
 
         // Pfeilspitzen zeichnen
@@ -2036,108 +2271,112 @@ public class SudokuPanel extends javax.swing.JPanel implements Printable {
         double arrowLength = cellSize * arrowLengthFactor;
         double arrowHeight = arrowLength * arrowHeightFactor;
         if (length > (arrowLength * 2 + ddy)) {
-            if (doesIntersect) {
-                double angleKorr = (length - 40.0) / 30.0 * 0.2;
-                if (angleKorr > 0.3) {
-                    angleKorr = 0.3;
-                }
-                if (quadrant == 2) {
-                    aAlpha += angleKorr;
-                } else {
-                    aAlpha -= angleKorr;
-                }
-            }
-            // Pfeilspitzen zeichnen
+            // calculate values for arrow head
             double sin = Math.sin(aAlpha);
             double cos = Math.cos(aAlpha);
-            if (aQuadrant == 2) {
-                sin = -sin;
+            double aX = p2.x - cos * arrowLength;
+            double aY = p2.y - sin * arrowLength;
+            if (doesIntersect) {
+                // try to calculate the real intersection point of
+                // the bezier curve with the arrows middle line
+                // the distance between p2 and aX/aY must be arrowLength
+                // aX/aY should lie on the cubic curve
+                double aXTemp = 0;
+                double aYTemp = 0;
+                double eps = Double.MAX_VALUE;
+                double[] tmpPoints = new double[6];
+                PathIterator pIt = cubicCurve.getPathIterator(null, 0.01);
+                while (! pIt.isDone()){
+                    int type = pIt.currentSegment(tmpPoints);
+                    double dist = p2.distance(tmpPoints[0], tmpPoints[1]);
+                    if (Math.abs(dist- arrowLength) < eps) {
+                        eps = Math.abs(dist - arrowLength);
+                        aXTemp = tmpPoints[0];
+                        aYTemp = tmpPoints[1];
+                    }
+                    pIt.next();
+                }
+                //ok, closest point is now in aXTemp/aYTemp
+                aX = aXTemp;
+                aY = aYTemp;
+                aAlpha = Math.atan2(p2.y-aY, p2.x-aX);
+                sin = Math.sin(aAlpha);
+                cos = Math.cos(aAlpha);
             }
-            int aX = p2.x - (int) (cos * arrowLength);
-            int aY = p2.y - (int) (sin * arrowLength);
-            int daX = (int) (sin * arrowHeight);
-            int daY = (int) (cos * arrowHeight);
+            double daX = sin * arrowHeight;
+            double daY = cos * arrowHeight;
             arrow.reset();
-            arrow.addPoint(aX - daX, aY + daY);
-            arrow.addPoint(p2.x, p2.y);
-            arrow.addPoint(aX + daX, aY - daY);
+            arrow.addPoint((int)Math.round(aX - daX), (int)Math.round(aY + daY));
+            arrow.addPoint((int)Math.round(p2.x), (int)Math.round(p2.y));
+            arrow.addPoint((int)Math.round(aX + daX), (int)Math.round(aY - daY));
             g2.fill(arrow);
             g2.draw(arrow);
         }
     }
 
     /**
-     * p2 wird um angle Grad um p1 gedreht
+     * Rotate <code>p2</code> <code>angle</code> degrees counterclockwise
+     * around <code>p1</code>.
+     * 
+     * @param p1
+     * @param p2
+     * @param angle 
      */
-    private void rotatePoint(Point p1, Point p2, double angle) {
-        // in den Nullpunkt verschieben
+    private void rotatePoint(Point2D.Double p1, Point2D.Double p2, double angle) {
+        // translate p2 to 0/0
         p2.x -= p1.x;
         p2.y -= p1.y;
 
-        // um angle rotieren
+        // rotate angle degrees
         double sinAngle = Math.sin(angle);
         double cosAngle = Math.cos(angle);
         double xact = p2.x;
         double yact = p2.y;
-        p2.x = (int) (xact * cosAngle - yact * sinAngle);
-        p2.y = (int) (xact * sinAngle + yact * cosAngle);
+        p2.x = xact * cosAngle - yact * sinAngle;
+        p2.y = xact * sinAngle + yact * cosAngle;
 
         // und zurückschieben
         p2.x += p1.x;
         p2.y += p1.y;
     }
 
-    private void adjustEndPoints(Point p1, Point p2, double alpha, int quadrant, int ddy) {
-        double tmpDelta = ddy / 2 + 4;
+    /**
+     * Adjust the end points of an arrow: the arrow
+     * should start and end outside the circular
+     * background of the candidate.
+     * 
+     * @param p1
+     * @param p2
+     * @param alpha
+     * @param ddy 
+     */
+    private void adjustEndPoints(Point2D.Double p1, Point2D.Double p2, double alpha, double ddy) {
+        double tmpDelta = ddy / 2.0 + 4.0;
         int pX = (int) (tmpDelta * Math.cos(alpha));
         int pY = (int) (tmpDelta * Math.sin(alpha));
-        if (quadrant == 2) {
-            pY = -pY;
-        }
         p1.x += pX;
         p1.y += pY;
         p2.x -= pX;
         p2.y -= pY;
     }
 
-    private double getAlpha(double deltaX, double deltaY, int quadrant) {
-        double alpha = Math.atan(deltaY / deltaX);
-        // Quadranten-Anpassung nicht vergessen
-        if (quadrant == 2) {
-            alpha = Math.PI - alpha;
-        } else if (quadrant == 3) {
-            alpha += Math.PI;
-        }
-        return alpha;
-    }
-
-    private int getQuadrant(double deltaX, double deltaY) {
-        int quadrant = 1;
-        if (deltaX < 0.0) {
-            if (deltaY < 0.0) {
-                quadrant = 2;
-            } else {
-                quadrant = 3;
-            }
-        } else {
-            if (deltaY > 0.0) {
-                quadrant = 4;
-            }
-        }
-        return quadrant;
-    }
-
-    private int getCandKoord(int index, int cand, int cellSize, int dcx, int dcy, int ddx, int ddy, boolean isX) {
-        int third = cellSize / 3;
-        int startX = getX(Sudoku.getLine(index), Sudoku.getCol(index));
-        int startY = getY(Sudoku.getLine(index), Sudoku.getCol(index));
-        int shiftX = ((cand - 1) % 3) * third;
-        int shiftY = ((cand - 1) / 3) * third;
-        if (isX) {
-            return startX + shiftX + dcx - 2 * (ddy - ddx) / 3 + ddy / 2;
-        } else {
-            return startY + shiftY + dcy - 4 * ddy / 5 - 1 + ddy / 2;
-        }
+    /** 
+     * Returns the center of the position of a candidate in the grid.
+     * 
+     * @param index
+     * @param cand
+     * @param cellSize
+     * @return 
+     */
+    private Point2D.Double getCandKoord(int index, int cand, int cellSize) {
+        double third = cellSize / 3;
+        double startX = getX(Sudoku2.getLine(index), Sudoku2.getCol(index));
+        double startY = getY(Sudoku2.getLine(index), Sudoku2.getCol(index));
+        double shiftX = ((cand - 1) % 3) * third;
+        double shiftY = ((cand - 1) / 3) * third;
+        double x = startX + shiftX + third / 2.0;
+        double y = startY + shiftY + third / 2.0;
+        return new Point2D.Double(x, y);
     }
 
     private int getX(int line, int col) {
@@ -2331,29 +2570,16 @@ public class SudokuPanel extends javax.swing.JPanel implements Printable {
     private javax.swing.JMenuItem make9MenuItem;
     // End of variables declaration//GEN-END:variables
 
-    public Sudoku getSudoku() {
+    public Sudoku2 getSudoku() {
         return sudoku;
-    }
-
-    public Sudoku getSolvedSudoku() {
-        return solvedSudoku;
-    }
-
-    public int getCandidateMode() {
-        return candidateMode;
     }
 
     public boolean isShowCandidates() {
         return showCandidates;
     }
 
-    public void setShowCandidates(boolean showCandidates) {
+    public final void setShowCandidates(boolean showCandidates) {
         this.showCandidates = showCandidates;
-        if (showCandidates) {
-            candidateMode = SudokuCell.PLAY;
-        } else {
-            candidateMode = SudokuCell.USER;
-        }
         repaint();
     }
 
@@ -2381,6 +2607,7 @@ public class SudokuPanel extends javax.swing.JPanel implements Printable {
             redoStack.push(sudoku);
             sudoku = undoStack.pop();
             updateCellZoomPanel();
+            checkProgress();
             mainFrame.check();
             repaint();
         }
@@ -2391,6 +2618,7 @@ public class SudokuPanel extends javax.swing.JPanel implements Printable {
             undoStack.push(sudoku);
             sudoku = redoStack.pop();
             updateCellZoomPanel();
+            checkProgress();
             mainFrame.check();
             repaint();
         }
@@ -2405,12 +2633,12 @@ public class SudokuPanel extends javax.swing.JPanel implements Printable {
         redoStack.clear();
     }
 
-    public void setSudoku(Sudoku newSudoku) {
-        setSudoku(newSudoku.getSudoku(), false);
+    public void setSudoku(Sudoku2 newSudoku) {
+        setSudoku(newSudoku.getSudoku(ClipboardMode.PM_GRID, null), false);
     }
 
-    public void setSudoku(Sudoku newSudoku, boolean alreadySolved) {
-        setSudoku(newSudoku.getSudoku(), alreadySolved);
+    public void setSudoku(Sudoku2 newSudoku, boolean alreadySolved) {
+        setSudoku(newSudoku.getSudoku(ClipboardMode.PM_GRID, null), alreadySolved);
     }
 
     public void setSudoku(String init) {
@@ -2424,42 +2652,53 @@ public class SudokuPanel extends javax.swing.JPanel implements Printable {
         redoStack.clear();
         coloringMap.clear();
         if (init == null || init.length() == 0) {
-            sudoku = new Sudoku();
-            solvedSudoku = new Sudoku();
+            sudoku = new Sudoku2();
         } else {
             sudoku.setSudoku(init);
             // the sudoku must be set in the solver to reset the step list
             // (otherwise the result panels are not updated correctly)
             sudoku.setLevel(Options.getInstance().getDifficultyLevels()[DifficultyType.EASY.ordinal()]);
             sudoku.setScore(0);
-            Sudoku tmpSudoku = sudoku.clone();
+            Sudoku2 tmpSudoku = sudoku.clone();
             if (! alreadySolved) {
                 getSolver().setSudoku(tmpSudoku);
             }
-            solvedSudoku = sudoku.clone();
-            boolean unique = true;
-            boolean sudokuCompleted = solvedSudoku.isSolved();
-            if (! sudokuCompleted) {
-                unique = creator.validSolution(solvedSudoku);
-            }
-            if (!unique) {
+            //boolean unique = generator.validSolution(sudoku);
+            int anzSolutions = generator.getNumberOfSolutions(sudoku);
+            if (anzSolutions == 0) {
+                JOptionPane.showMessageDialog(this,
+                        java.util.ResourceBundle.getBundle("intl/SudokuPanel").getString("SudokuPanel.no_solution"),
+                        java.util.ResourceBundle.getBundle("intl/SudokuPanel").getString("SudokuPanel.invalid_puzzle"),
+                        JOptionPane.ERROR_MESSAGE);
+                sudoku.setStatus(SudokuStatus.INVALID);
+            } else if (anzSolutions > 1) {
                 JOptionPane.showMessageDialog(this,
                         java.util.ResourceBundle.getBundle("intl/SudokuPanel").getString("SudokuPanel.multiple_solutions"),
                         java.util.ResourceBundle.getBundle("intl/SudokuPanel").getString("SudokuPanel.invalid_puzzle"),
                         JOptionPane.ERROR_MESSAGE);
+                sudoku.setStatus(SudokuStatus.MULTIPLE_SOLUTIONS);
             } else {
-                if (! sudokuCompleted) {
-                    solvedSudoku = creator.getSolvedSudoku().clone();
-                }
-                if (!sudoku.checkSudoku(solvedSudoku)) {
+                if (!sudoku.checkSudoku()) {
                     JOptionPane.showMessageDialog(this,
                             java.util.ResourceBundle.getBundle("intl/SudokuPanel").getString("SudokuPanel.wrong_values"),
                             java.util.ResourceBundle.getBundle("intl/SudokuPanel").getString("SudokuPanel.invalid_puzzle"),
                             JOptionPane.ERROR_MESSAGE);
+                    sudoku.setStatus(SudokuStatus.INVALID);
                 } else {
+                    sudoku.setStatus(SudokuStatus.VALID);
+                    if (sudoku.getFixedCellsAnz() > 17) {
+                        Sudoku2 fixedOnly = new Sudoku2();
+                        fixedOnly.setSudoku(sudoku.getSudoku(ClipboardMode.CLUES_ONLY));
+                        int anzFixedSol = generator.getNumberOfSolutions(fixedOnly);
+                        sudoku.setStatusGivens(anzFixedSol);
+                    }
+
                     if (!alreadySolved) {
                         //Sudoku tmpSudoku = sudoku.clone();
                         //getSolver().setSudoku(tmpSudoku);
+                        tmpSudoku.setStatus(SudokuStatus.VALID);
+                        tmpSudoku.setStatusGivens(sudoku.getStatusGivens());
+                        tmpSudoku.setSolution(sudoku.getSolution());
                         getSolver().solve(true);
                     }
 //                sudoku.setLevel(tmpSudoku.getLevel());
@@ -2471,6 +2710,8 @@ public class SudokuPanel extends javax.swing.JPanel implements Printable {
         }
         updateCellZoomPanel();
         if (mainFrame != null) {
+            mainFrame.setCurrentLevel(sudoku.getLevel());
+            mainFrame.setCurrentScore(sudoku.getScore());
             mainFrame.check();
         }
         repaint();
@@ -2484,8 +2725,55 @@ public class SudokuPanel extends javax.swing.JPanel implements Printable {
         return solver;
     }
 
+    /**
+     * Solves the sudoku to a certain point: if game mode
+     * is playing, the sudoku is solved until the first
+     * non progress step is reached; in all other modes
+     * the solving stops, when the first training step
+     * has been reached.
+     */
+    public void solveUpTo() {
+        SolutionStep actStep = null;
+        boolean changed = false;
+        undoStack.push(sudoku.clone());
+        GameMode gm = Options.getInstance().getGameMode();
+        while ((actStep = solver.getHint(sudoku, false)) != null) {
+            if (gm == GameMode.PLAYING) {
+                if (! actStep.getType().getStepConfig().isEnabledProgress()) {
+                    // solving stops
+                    break;
+                }
+            } else {
+                if (actStep.getType().getStepConfig().isEnabledTraining()) {
+                    // solving stops
+                    break;
+                }
+            }
+            // still here? do the step
+            getSolver().doStep(sudoku, actStep);
+            changed = true;
+        }
+        if (changed) {
+            redoStack.clear();
+        } else {
+            undoStack.pop();
+        }
+        step = null;
+        setChainInStep(-1);
+        updateCellZoomPanel();
+        checkProgress();
+        mainFrame.check();
+        repaint();
+    }
+    
+    /**
+     * When solving manually, the sudoku can be in an invalid state. This should
+     * be handled here: 
+     * @param singlesOnly
+     * @return 
+     */
     public SolutionStep getNextStep(boolean singlesOnly) {
-        step = getSolver().getHint(sudoku, singlesOnly);
+        step = solver.getHint(sudoku, singlesOnly);
         setChainInStep(-1);
         repaint();
         return step;
@@ -2515,9 +2803,9 @@ public class SudokuPanel extends javax.swing.JPanel implements Printable {
         alsToShow.clear();
         if (chainIndex != -1) {
             Chain chain = step.getChains().get(chainIndex);
-            for (int i = chain.start; i <= chain.end; i++) {
+            for (int i = chain.getStart(); i <= chain.getEnd(); i++) {
                 if (chain.getNodeType(i) == Chain.ALS_NODE) {
-                    alsToShow.add(Chain.getSAlsIndex(chain.chain[i]));
+                    alsToShow.add(Chain.getSAlsIndex(chain.getChain()[i]));
                 }
             }
         }
@@ -2538,8 +2826,14 @@ public class SudokuPanel extends javax.swing.JPanel implements Printable {
             step = null;
             setChainInStep(-1);
             updateCellZoomPanel();
+            checkProgress();
             mainFrame.check();
             repaint();
+            if (sudoku.isSolved() && Options.getInstance().isShowSudokuSolved()) {
+                JOptionPane.showMessageDialog(this, java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.sudoku_solved"), 
+                        java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.congratulations"), 
+                        JOptionPane.INFORMATION_MESSAGE);
+            }
         }
     }
 
@@ -2549,8 +2843,8 @@ public class SudokuPanel extends javax.swing.JPanel implements Printable {
         repaint();
     }
 
-    public int getAnzFilled() {
-        return sudoku.getAnzFilled();
+    public int getSolvedCellsAnz() {
+        return sudoku.getSolvedCellsAnz();
     }
 
     public void setNoClues() {
@@ -2574,12 +2868,38 @@ public class SudokuPanel extends javax.swing.JPanel implements Printable {
         this.showInvalidOrPossibleCells = showInvalidOrPossibleCells;
     }
 
-    public int getShowHintCellValue() {
-        return showHintCellValue;
+    public boolean[] getShowHintCellValues() {
+        return showHintCellValues;
     }
 
-    public void setShowHintCellValue(int showHintCellValue) {
-        this.showHintCellValue = showHintCellValue;
+    public void setShowHintCellValues(boolean[] showHintCellValues) {
+        this.showHintCellValues = showHintCellValues;
+    }
+    
+    public void setShowHintCellValue(int candidate) {
+        if (candidate == 10) {
+            // filter bivalue cells
+            for (int i = 0; i < showHintCellValues.length - 1; i++) {
+                showHintCellValues[i] = false;
+            }
+            showHintCellValues[10] = ! showHintCellValues[10];
+        } else {
+            showHintCellValues[10] = false;
+            for (int i = 0; i < showHintCellValues.length - 1; i++) {
+                if (i == candidate) {
+                    showHintCellValues[i] = !showHintCellValues[i];
+                } else {
+                    showHintCellValues[i] = false;
+                }
+            }
+        }
+    }
+    
+    public void resetShowHintCellValues() {
+        for (int i = 1; i <showHintCellValues.length; i++) {
+            showHintCellValues[i] = false;
+        }
+        showInvalidOrPossibleCells = false;
     }
 
     public boolean isShowDeviations() {
@@ -2687,7 +3007,7 @@ public class SudokuPanel extends javax.swing.JPanel implements Printable {
             Point cursorHotSpot = new Point(2, 4);
             BufferedImage img1 = ImageIO.read(getClass().getResource("/img/c_color.png"));
             Graphics2D gImg1 = (Graphics2D) img1.getGraphics();
-            gImg1.setColor(Options.getInstance().coloringColors[aktColorIndex]);
+            gImg1.setColor(Options.getInstance().getColoringColors()[aktColorIndex]);
             gImg1.fillRect(19, 18, 12, 12);
             //System.out.println(aktColorIndex + "/" + Options.getInstance().coloringColors[aktColorIndex]);
             colorCursor = Toolkit.getDefaultToolkit().createCustomCursor(img1, cursorHotSpot, "c_strong");
@@ -2695,15 +3015,15 @@ public class SudokuPanel extends javax.swing.JPanel implements Printable {
             BufferedImage img2 = ImageIO.read(getClass().getResource("/img/c_color.png"));
             Graphics2D gImg2 = (Graphics2D) img2.getGraphics();
             if (aktColorIndex % 2 == 0) {
-                gImg2.setColor(Options.getInstance().coloringColors[aktColorIndex + 1]);
+                gImg2.setColor(Options.getInstance().getColoringColors()[aktColorIndex + 1]);
             } else {
-                gImg2.setColor(Options.getInstance().coloringColors[aktColorIndex - 1]);
+                gImg2.setColor(Options.getInstance().getColoringColors()[aktColorIndex - 1]);
             }
             //System.out.println(aktColorIndex + "/" + Options.getInstance().coloringColors[aktColorIndex + 1]);
             gImg2.fillRect(19, 18, 12, 12);
             colorCursorShift = Toolkit.getDefaultToolkit().createCustomCursor(img2, cursorHotSpot, "c_weak");
         } catch (Exception ex) {
-            ex.printStackTrace();
+            Logger.getLogger(getClass().getName()).log(Level.SEVERE, "Error creating color cursors", ex);
         }
     }
 
@@ -2716,11 +3036,11 @@ public class SudokuPanel extends javax.swing.JPanel implements Printable {
      * @return
      */
     private boolean isHiddenSingle(int candidate, int line, int col) {
-        SimpleSolver ss = (SimpleSolver) solver.getSpecialisedSolver(SimpleSolver.class);
-        List<SolutionStep> steps = ss.findAllHiddenXle(sudoku, 1, true);
+        SudokuStepFinder finder = SudokuSolverFactory.getDefaultSolverInstance().getStepFinder();
+        List<SolutionStep> steps = finder.findAllHiddenSingles(sudoku);
         for (SolutionStep act : steps) {
             if (act.getType() == SolutionType.HIDDEN_SINGLE && act.getValues().get(0) == candidate &&
-                    act.getIndices().get(0) == Sudoku.getIndex(line, col)) {
+                    act.getIndices().get(0) == Sudoku2.getIndex(line, col)) {
                 return true;
             }
         }
@@ -2730,17 +3050,17 @@ public class SudokuPanel extends javax.swing.JPanel implements Printable {
     /**
      * Sets all the color icons in the popup menu.
      */
-    public void setColorIconsInPopupMenu() {
-        setColorIconInPopupMenu(color1aMenuItem, Options.getInstance().coloringColors[0]);
-        setColorIconInPopupMenu(color1bMenuItem, Options.getInstance().coloringColors[1]);
-        setColorIconInPopupMenu(color2aMenuItem, Options.getInstance().coloringColors[2]);
-        setColorIconInPopupMenu(color2bMenuItem, Options.getInstance().coloringColors[3]);
-        setColorIconInPopupMenu(color3aMenuItem, Options.getInstance().coloringColors[4]);
-        setColorIconInPopupMenu(color3bMenuItem, Options.getInstance().coloringColors[5]);
-        setColorIconInPopupMenu(color4aMenuItem, Options.getInstance().coloringColors[6]);
-        setColorIconInPopupMenu(color4bMenuItem, Options.getInstance().coloringColors[7]);
-        setColorIconInPopupMenu(color5aMenuItem, Options.getInstance().coloringColors[8]);
-        setColorIconInPopupMenu(color5bMenuItem, Options.getInstance().coloringColors[9]);
+    public final void setColorIconsInPopupMenu() {
+        setColorIconInPopupMenu(color1aMenuItem, Options.getInstance().getColoringColors()[0]);
+        setColorIconInPopupMenu(color1bMenuItem, Options.getInstance().getColoringColors()[1]);
+        setColorIconInPopupMenu(color2aMenuItem, Options.getInstance().getColoringColors()[2]);
+        setColorIconInPopupMenu(color2bMenuItem, Options.getInstance().getColoringColors()[3]);
+        setColorIconInPopupMenu(color3aMenuItem, Options.getInstance().getColoringColors()[4]);
+        setColorIconInPopupMenu(color3bMenuItem, Options.getInstance().getColoringColors()[5]);
+        setColorIconInPopupMenu(color4aMenuItem, Options.getInstance().getColoringColors()[6]);
+        setColorIconInPopupMenu(color4bMenuItem, Options.getInstance().getColoringColors()[7]);
+        setColorIconInPopupMenu(color5aMenuItem, Options.getInstance().getColoringColors()[8]);
+        setColorIconInPopupMenu(color5bMenuItem, Options.getInstance().getColoringColors()[9]);
     }
 
     /**
@@ -2756,7 +3076,7 @@ public class SudokuPanel extends javax.swing.JPanel implements Printable {
             gImg.fillRect(1, 1, 12, 12);
             item.setIcon(new ImageIcon(img));
         } catch (Exception ex) {
-            ex.printStackTrace();
+            Logger.getLogger(getClass().getName()).log(Level.SEVERE, "Error setting color icons in popup menu", ex);
         }
     }
 
@@ -2773,9 +3093,9 @@ public class SudokuPanel extends javax.swing.JPanel implements Printable {
             resultSet.setAll();
         }
         if (selectedCells.isEmpty()) {
-            if (sudoku.getCell(aktLine, aktCol).getValue() == 0) {
+            if (sudoku.getValue(aktLine, aktCol) == 0) {
                 // get candidates only when cell is not set!
-                sudoku.getCell(aktLine, aktCol).getCandidateSet(tmpSet, candidateMode);
+                sudoku.getCandidateSet(aktLine, aktCol, tmpSet);
                 if (intersection) {
                     resultSet.and(tmpSet);
                 } else {
@@ -2783,16 +3103,23 @@ public class SudokuPanel extends javax.swing.JPanel implements Printable {
                 }
             }
         } else {
+            // BUG: if all cells in the selection are set,
+            // all candidates becomevalid for intersection == true
+            boolean emptyCellsOnly = true;
             for (int index : selectedCells) {
-                if (sudoku.getCell(index).getValue() == 0) {
+                if (sudoku.getValue(index) == 0) {
+                    emptyCellsOnly = false;
                     // get candidates only when cell is not set!
-                    sudoku.getCell(index).getCandidateSet(tmpSet, candidateMode);
+                    sudoku.getCandidateSet(index, tmpSet);
                     if (intersection) {
                         resultSet.and(tmpSet);
                     } else {
                         resultSet.or(tmpSet);
                     }
                 }
+            }
+            if (intersection && emptyCellsOnly) {
+                resultSet.clear();
             }
         }
         return resultSet;
@@ -2810,8 +3137,7 @@ public class SudokuPanel extends javax.swing.JPanel implements Printable {
      */
     private void showPopupMenu(int line, int col) {
         jSeparator2.setVisible(true);
-        SudokuCell cell = sudoku.getCell(line, col);
-        if (cell.getValue() != 0 && selectedCells.isEmpty()) {
+        if (sudoku.getValue(line, col) != 0 && selectedCells.isEmpty()) {
             // cell is already set -> no popup!
             return;
         }
@@ -2859,20 +3185,21 @@ public class SudokuPanel extends javax.swing.JPanel implements Printable {
             undoStack.push(sudoku.clone());
             boolean changed = false;
             if (selectedCells.isEmpty()) {
-                if (sudoku.getCell(aktLine, aktCol).getValue() == 0) {
+                if (sudoku.getValue(aktLine, aktCol) == 0) {
                     setCell(aktLine, aktCol, candidate);
                     changed = true;
                 }
             } else {
                 for (int index : selectedCells) {
-                    if (sudoku.getCell(index).getValue() == 0) {
-                        setCell(Sudoku.getLine(index), Sudoku.getCol(index), candidate);
+                    if (sudoku.getValue(index) == 0) {
+                        sudoku.setCell(index, candidate);
                         changed = true;
                     }
                 }
             }
             if (changed) {
                 redoStack.clear();
+                checkProgress();
             } else {
                 undoStack.pop();
             }
@@ -2890,16 +3217,15 @@ public class SudokuPanel extends javax.swing.JPanel implements Printable {
     private boolean removeCandidateFromActiveCells(int candidate) {
         boolean changed = false;
         if (selectedCells.isEmpty()) {
-            SudokuCell cell = sudoku.getCell(aktLine, aktCol);
-            if (cell.getValue() == 0 && cell.isCandidate(candidateMode, candidate)) {
-                sudoku.setCandidate(aktLine, aktCol, candidateMode, candidate, false);
+            int index = Sudoku2.getIndex(aktLine, aktCol);
+            if (sudoku.getValue(index) == 0 && sudoku.isCandidate(index, candidate, ! showCandidates)) {
+                sudoku.setCandidate(index, candidate, false, ! showCandidates);
                 changed = true;
             }
         } else {
             for (int index : selectedCells) {
-                SudokuCell cell = sudoku.getCell(index);
-                if (cell.getValue() == 0 && cell.isCandidate(candidateMode, candidate)) {
-                    sudoku.setCandidate(index, candidateMode, candidate, false);
+                if (sudoku.getValue(index) == 0 && sudoku.isCandidate(index, candidate, ! showCandidates)) {
+                    sudoku.setCandidate(index, candidate, false, ! showCandidates);
                     changed = true;
                 }
             }
@@ -2917,11 +3243,11 @@ public class SudokuPanel extends javax.swing.JPanel implements Printable {
             undoStack.push(sudoku.clone());
             boolean changed = false;
             if (selectedCells.isEmpty()) {
-                SudokuCell cell = sudoku.getCell(aktLine, aktCol);
-                if (cell.isCandidate(candidateMode, candidate)) {
-                    sudoku.setCandidate(aktLine, aktCol, candidateMode, candidate, false);
+                int index = Sudoku2.getIndex(aktLine, aktCol);
+                if (sudoku.isCandidate(index, candidate, ! showCandidates)) {
+                    sudoku.setCandidate(index, candidate, false, ! showCandidates);
                 } else {
-                    sudoku.setCandidate(aktLine, aktCol, candidateMode, candidate, true);
+                    sudoku.setCandidate(index, candidate, true, ! showCandidates);
                 }
                 changed = true;
             } else {
@@ -2929,6 +3255,7 @@ public class SudokuPanel extends javax.swing.JPanel implements Printable {
             }
             if (changed) {
                 redoStack.clear();
+                checkProgress();
             } else {
                 undoStack.pop();
             }
@@ -2956,6 +3283,7 @@ public class SudokuPanel extends javax.swing.JPanel implements Printable {
             boolean changed = removeCandidateFromActiveCells(candidate);
             if (changed) {
                 redoStack.clear();
+                checkProgress();
             } else {
                 undoStack.pop();
             }
@@ -3008,12 +3336,11 @@ public class SudokuPanel extends javax.swing.JPanel implements Printable {
      */
     private void updateCellZoomPanel() {
         if (cellZoomPanel != null) {
-            SudokuCell cell = sudoku.getCell(aktLine, aktCol);
-            boolean singleCell = selectedCells.isEmpty() && cell.getValue() == 0;
-            int index = Sudoku.getIndex(aktLine, aktCol);
+            int index = Sudoku2.getIndex(aktLine, aktCol);
+            boolean singleCell = selectedCells.isEmpty() && sudoku.getValue(index) == 0;
             if (aktColorIndex == -1) {
                 // normal operation -> collect candidates for selected cell(s)
-                if (cell.getValue() != 0 && selectedCells.isEmpty()) {
+                if (sudoku.getValue(index) != 0 && selectedCells.isEmpty()) {
                     // cell is already set -> nothing can be selected
                     cellZoomPanel.update(SudokuSetBase.EMPTY_SET, SudokuSetBase.EMPTY_SET, -1, index, false, singleCell, null, null);
                     return;
@@ -3024,7 +3351,7 @@ public class SudokuPanel extends javax.swing.JPanel implements Printable {
                     return;
                 }
             } else {
-                if (! selectedCells.isEmpty() || (selectedCells.isEmpty() && cell.getValue() != 0)) {
+                if (! selectedCells.isEmpty() || (selectedCells.isEmpty() && sudoku.getValue(index) != 0)) {
                     // no coloring, when set of cells is selected
                     cellZoomPanel.update(SudokuSetBase.EMPTY_SET, SudokuSetBase.EMPTY_SET, aktColorIndex, index, colorCells, singleCell, null, null);
                     return;
@@ -3051,4 +3378,63 @@ public class SudokuPanel extends javax.swing.JPanel implements Printable {
         repaint();
         mainFrame.check();
     }
+    
+    /**
+     * Checks the progress of the current {@link #sudoku}. If the
+     * Sudoku is not yet valid, only the status of the sudoku
+     * is updated. If it is valid, a background progress check is scheduled.<br>
+     */
+    public void checkProgress() {
+        int anz = sudoku.getSolvedCellsAnz();
+        if (anz == 0) {
+            sudoku.setStatus(SudokuStatus.EMPTY);
+            sudoku.setStatusGivens(SudokuStatus.EMPTY);
+        } else if (anz <= 17) {
+            sudoku.setStatus(SudokuStatus.INVALID);
+            sudoku.setStatusGivens(SudokuStatus.INVALID);
+        } else {
+            // we have to check!
+            int anzSol = generator.getNumberOfSolutions(sudoku);
+            sudoku.setStatus(anzSol);
+            // the status of the givens is not changed here; it only changes
+            // when the givens themselved are changed
+            //sudoku.setStatusGivens(anzSol);
+            if (anzSol == 1) {
+                // the sudoku is valid -> check the progress
+                progressChecker.startCheck(sudoku);
+            }
+        }
+    }
+    
+    /**
+     * Checks the array {@link #showHintCellValues}. If only one value is
+     * selected, that value is returned. If no or more than one values
+     * are selected, 0 is returned.
+     * 
+     * @return 
+     */
+    private int getShowHintCellValue() {
+        int value = 0;
+        for (int i = 1; i < showHintCellValues.length - 1; i++) {
+            if (showHintCellValues[i]) {
+                if (value == 0) {
+                    value = i;
+                } else {
+                    // more than one value
+                    return 0;
+                }
+            }
+        }
+        return value;
+    }
+    
+    public void checkIsShowInvalidOrPossibleCells() {
+        showInvalidOrPossibleCells = false;
+        for (int i = 1; i < showHintCellValues.length; i++) {
+            if (showHintCellValues[i]) {
+                showInvalidOrPossibleCells = true;
+            }
+        }
+    }
+    
 }

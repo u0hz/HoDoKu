@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008/09/10  Bernhard Hobiger
+ * Copyright (C) 2008-11  Bernhard Hobiger
  *
  * This file is part of HoDoKu.
  *
@@ -23,9 +23,9 @@ import java.awt.Color;
 
 /**
  *
- * @author Bernhard Hobiger
+ * @author hobiwan
  */
-public class DifficultyLevel {
+public final class DifficultyLevel {
     private DifficultyType type;
     private int ordinal;
     private int maxScore;

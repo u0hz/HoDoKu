@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008/09/10  Bernhard Hobiger
+ * Copyright (C) 2008-11  Bernhard Hobiger
  *
  * This file is part of HoDoKu.
  *
@@ -30,7 +30,6 @@ import java.awt.datatransfer.Clipboard;
 import java.awt.datatransfer.StringSelection;
 import java.awt.event.ActionEvent;
 import java.awt.event.KeyEvent;
-import java.awt.geom.AffineTransform;
 import java.awt.image.BufferedImage;
 import java.awt.print.PageFormat;
 import java.awt.print.Printable;
@@ -45,7 +44,6 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.AbstractAction;
 import javax.swing.Action;
-import javax.swing.DefaultListModel;
 import javax.swing.JCheckBox;
 import javax.swing.JComponent;
 import javax.swing.JList;
@@ -54,6 +52,8 @@ import javax.swing.KeyStroke;
 import javax.swing.ListCellRenderer;
 import javax.swing.ListSelectionModel;
 import javax.swing.UIManager;
+import solver.SudokuSolver;
+import solver.SudokuSolverFactory;
 
 /**
  *
@@ -74,8 +74,8 @@ public class PrintSolutionDialog extends javax.swing.JDialog implements Printabl
     private Font smallFont;
     private int imagePrintSize;
     private SudokuPanel panel;
-    private Sudoku sudoku;
-    private Sudoku oldSudoku;
+    private Sudoku2 sudoku;
+    private Sudoku2 oldSudoku;
     private SudokuSolver solver;
     private int printIndex;
     private boolean compressedStarted;
@@ -423,10 +423,10 @@ public class PrintSolutionDialog extends javax.swing.JDialog implements Printabl
             out.println(title);
             out.println();
         }
-        // Construct Sudoku
-        sudoku = new Sudoku();
+        // Construct Sudoku2
+        sudoku = new Sudoku2();
         sudoku.setSudoku(initialState);
-        solver = SudokuSolver.getInstance();
+        solver = SudokuSolverFactory.getDefaultSolverInstance();
         oldSudoku = solver.getSudoku();
         solver.setSudoku(sudoku);
         // Givens
@@ -540,16 +540,19 @@ public class PrintSolutionDialog extends javax.swing.JDialog implements Printabl
         // resolution, but scaled down to 72dpi using an AffineTransform.
         // To print in high resolution this downscaling has to be reverted.
         Graphics2D printG2 = (Graphics2D) graphics;
-        AffineTransform at = printG2.getTransform();
-        double scale = at.getScaleX();
+        double scale = SudokuUtil.adjustGraphicsForPrinting(printG2);
+//        AffineTransform at = printG2.getTransform();
+//        double scale = at.getScaleX();
         int resolution = (int)(72.0 * scale);
-        AffineTransform newAt = new AffineTransform();
-        newAt.translate(at.getTranslateX(), at.getTranslateY());
-        newAt.shear(at.getShearX(), at.getShearY());
-        printG2.setTransform(newAt);
+//        AffineTransform newAt = new AffineTransform();
+//        newAt.translate(at.getTranslateX(), at.getTranslateY());
+//        newAt.shear(at.getShearX(), at.getShearY());
+//        printG2.setTransform(newAt);
         printG2.translate((int)(pageFormat.getImageableX() * scale), (int)(pageFormat.getImageableY() * scale));
         int printWidth = (int) (pageFormat.getImageableWidth() * scale);
         int printHeight = (int) (pageFormat.getImageableHeight() * scale);
+//        printG2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+//        printG2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
 
         int y = 0;
         if (pageIndex == 0) {
@@ -561,7 +564,7 @@ public class PrintSolutionDialog extends javax.swing.JDialog implements Printabl
             smallFont = new Font(tmpFont.getName(), tmpFont.getStyle(), (int)(tmpFont.getSize() * scale));
             // size of images
             imagePrintSize = (int) (imageSize * resolution / 25.4);
-            // Construct Sudoku
+            // Construct Sudoku2
             panel = new SudokuPanel(null);
             panel.setSudoku(initialState, true);
             sudoku = panel.getSudoku();

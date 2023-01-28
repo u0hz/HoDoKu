@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008/09/10  Bernhard Hobiger
+ * Copyright (C) 2008-11  Bernhard Hobiger
  *
  * This file is part of HoDoKu.
  *
@@ -33,7 +33,7 @@ import javax.swing.UIManager;
 
 /**
  *
- * @author  Bernhard Hobiger
+ * @author  hobiwan
  */
 public class ConfigDialog extends javax.swing.JDialog {
     private ConfigSolverPanel myConfigSolverPanel;
@@ -43,6 +43,7 @@ public class ConfigDialog extends javax.swing.JDialog {
     private ConfigFindAllStepsPanel myConfigFindAllStepsPanel;
     private ConfigProgressPanel myConfigProgressPanel;
     private ConfigTrainigPanel myConfigTrainingPanel;
+    private ConfigGeneratorPanel myConfigGeneratorPanel;
 
     /** Creates new form ConfigDialog */
     public ConfigDialog(java.awt.Frame parent, boolean modal, int tabIndex) {
@@ -82,6 +83,11 @@ public class ConfigDialog extends javax.swing.JDialog {
         myConfigTrainingPanel = new ConfigTrainigPanel();
         trainingPanel.add(myConfigTrainingPanel, BorderLayout.CENTER);
         
+        myConfigGeneratorPanel = new ConfigGeneratorPanel();
+        generatorPanel.add(myConfigGeneratorPanel, BorderLayout.CENTER);
+        // temporarily remove the pattern tab - not suitable for production use yet
+        tabbedPane.remove(7);
+        
         if (tabIndex != -1) {
             tabbedPane.setSelectedIndex(tabIndex);
         }
@@ -103,6 +109,7 @@ public class ConfigDialog extends javax.swing.JDialog {
         stepConfigPanel = new javax.swing.JPanel();
         trainingPanel = new javax.swing.JPanel();
         colorPanel = new javax.swing.JPanel();
+        generatorPanel = new javax.swing.JPanel();
         okButton = new javax.swing.JButton();
         cancelButton = new javax.swing.JButton();
 
@@ -135,6 +142,9 @@ public class ConfigDialog extends javax.swing.JDialog {
 
         colorPanel.setLayout(new java.awt.BorderLayout());
         tabbedPane.addTab(bundle.getString("ConfigDialog.colorPanel.TabConstraints.tabTitle"), colorPanel); // NOI18N
+
+        generatorPanel.setLayout(new java.awt.BorderLayout());
+        tabbedPane.addTab(bundle.getString("ConfigDialog.generatorPanel.TabConstraints.tabTitle"), generatorPanel); // NOI18N
 
         okButton.setMnemonic(java.util.ResourceBundle.getBundle("intl/ConfigDialog").getString("ConfigDialog.okButton.mnemonic").charAt(0));
         okButton.setText(bundle.getString("ConfigDialog.okButton.text")); // NOI18N
@@ -192,6 +202,7 @@ public class ConfigDialog extends javax.swing.JDialog {
         myConfigFindAllStepsPanel.okPressed();
         myConfigProgressPanel.okPressed();
         myConfigTrainingPanel.okPressed();
+        myConfigGeneratorPanel.okPressed();
         try {
             Options.getInstance().writeOptions();
         } catch (FileNotFoundException ex) {
@@ -246,6 +257,7 @@ public class ConfigDialog extends javax.swing.JDialog {
     private javax.swing.JPanel colorPanel;
     private javax.swing.JPanel findAllStepsPanel;
     private javax.swing.JPanel generalPanel;
+    private javax.swing.JPanel generatorPanel;
     private javax.swing.JPanel heuristicsPanel;
     private javax.swing.JButton okButton;
     private javax.swing.JPanel solverPanel;

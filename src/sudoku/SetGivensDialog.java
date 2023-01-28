@@ -1,12 +1,20 @@
 /*
- * To change this template, choose Tools | Templates
- * and open the template in the editor.
- */
-
-/*
- * SetGivensDialog.java
+ * Copyright (C) 2008-11  Bernhard Hobiger
  *
- * Created on 23.03.2010, 20:51:23
+ * This file is part of HoDoKu.
+ *
+ * HoDoKu is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * HoDoKu is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with HoDoKu. If not, see <http://www.gnu.org/licenses/>.
  */
 
 package sudoku;
@@ -22,7 +30,7 @@ import javax.swing.KeyStroke;
 
 /**
  *
- * @author Bernhard_2
+ * @author hobiwan
  */
 public class SetGivensDialog extends javax.swing.JDialog {
     private boolean okPressed = false;
@@ -144,7 +152,7 @@ public class SetGivensDialog extends javax.swing.JDialog {
             lines = new String[1];
             lines[0] = text;
         }
-        StringBuffer output = new StringBuffer();
+        StringBuilder output = new StringBuilder();
         for (int i = 0; i < lines.length; i++) {
             if (lines[i] != null) {
                 // remove border lines (all lines that contain "---")
@@ -188,9 +196,11 @@ public class SetGivensDialog extends javax.swing.JDialog {
     */
     public static void main(String args[]) {
         java.awt.EventQueue.invokeLater(new Runnable() {
+            @Override
             public void run() {
                 SetGivensDialog dialog = new SetGivensDialog(new javax.swing.JFrame(), true);
                 dialog.addWindowListener(new java.awt.event.WindowAdapter() {
+                    @Override
                     public void windowClosing(java.awt.event.WindowEvent e) {
                         System.exit(0);
                     }

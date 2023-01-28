@@ -19,5 +19,7 @@
     <maxVersion></maxVersion>
     <jdkPreference>preferJre</jdkPreference>
     <maxHeapSize>512</maxHeapSize>
+    <opt>-Dlaunch4j.exedir=&quot;%EXEDIR%&quot;</opt>
+    <opt>-Dlaunch4j.exefile=&quot;%EXEFILE%&quot;</opt>
   </jre>
 </launch4jConfig>

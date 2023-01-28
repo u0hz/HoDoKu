@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008/09/10  Bernhard Hobiger
+ * Copyright (C) 2008-11  Bernhard Hobiger
  *
  * This file is part of HoDoKu.
  *
@@ -30,7 +30,7 @@ import java.util.logging.StreamHandler;
 
 /**
  *
- * @author  Bernhard Hobiger
+ * @author  hobiwan
  */
 public class SudokuConsoleFrame extends javax.swing.JFrame {
     private StreamHandler consoleHandler = null;
@@ -176,6 +176,7 @@ private void closeButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-F
     class ConsoleInputStream extends InputStream {
 
         @Override
+        @SuppressWarnings("SleepWhileInLoop")
         public int read() throws IOException {
             while (true) {
                 try {

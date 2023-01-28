@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008/09/10  Bernhard Hobiger
+ * Copyright (C) 2008-11  Bernhard Hobiger
  *
  * This file is part of HoDoKu.
  *
@@ -21,7 +21,7 @@ package sudoku;
 
 /**
  *
- * @author zhobigbe
+ * @author hobiwan
  */
 public enum ClipboardMode {
     CLUES_ONLY,

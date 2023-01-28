@@ -160,7 +160,6 @@ public class UnixNetscapeBrowserLaunching
      * The available browsers are put into the unixBrowsers map
      * using displayName => StandardUnixBrowser mappings.
      *
-     * @todo what do we do if there are no browsers available?
      * @throws BrowserLaunchingInitializingException
      */
     public void initialize()

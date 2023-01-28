@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008/09/10  Bernhard Hobiger
+ * Copyright (C) 2008-11  Bernhard Hobiger
  *
  * This file is part of HoDoKu.
  *
@@ -19,16 +19,17 @@
 
 package sudoku;
 
+import solver.Als;
 import java.util.ArrayList;
 import java.util.List;
 
 /**
  *
- * @author Bernhard Hobiger
+ * @author hobiwan
  */
 public class AlsInSolutionStep implements Cloneable {
-    public List<Integer> indices = new ArrayList<Integer>();
-    public List<Integer> candidates = new ArrayList<Integer>();
+    private List<Integer> indices = new ArrayList<Integer>();
+    private List<Integer> candidates = new ArrayList<Integer>();
     private int chainPenalty = -1;
     
     public AlsInSolutionStep() {

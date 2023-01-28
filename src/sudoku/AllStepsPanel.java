@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008/09/10  Bernhard Hobiger
+ * Copyright (C) 2008-11  Bernhard Hobiger
  *
  * This file is part of HoDoKu.
  *
@@ -40,18 +40,19 @@ import javax.swing.tree.TreeSelectionModel;
 
 /**
  *
- * @author  Bernhard Hobiger
+ * @author  hobiwan
  */
-public class AllStepsPanel extends javax.swing.JPanel implements TreeSelectionListener, Runnable {
+public final class AllStepsPanel extends javax.swing.JPanel implements TreeSelectionListener, Runnable {
 
-    private Sudoku sudoku;
+    private Sudoku2 sudoku;
     private MainFrame mainFrame;
     private DefaultTreeModel model;
     private List<SolutionStep> steps;
     private JToggleButton[] toggleButtons = null;
 
     /** Creates new form AllStepsPanel */
-    public AllStepsPanel(MainFrame mainFrame, Sudoku sudoku) {
+    @SuppressWarnings("LeakingThisInConstructor")
+    public AllStepsPanel(MainFrame mainFrame, Sudoku2 sudoku) {
         this.mainFrame = mainFrame;
         this.setSudoku(sudoku);
 
@@ -94,6 +95,7 @@ public class AllStepsPanel extends javax.swing.JPanel implements TreeSelectionLi
         findButton.setMnemonic(java.util.ResourceBundle.getBundle("intl/AllStepsPanel").getString("AllStepsPanel.findButton.mnemonic").charAt(0));
         java.util.ResourceBundle bundle = java.util.ResourceBundle.getBundle("intl/AllStepsPanel"); // NOI18N
         findButton.setText(bundle.getString("AllStepsPanel.findButton.text")); // NOI18N
+        findButton.setToolTipText(bundle.getString("AllStepsPanel.findButton.toolTipText")); // NOI18N
         findButton.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 findButtonActionPerformed(evt);
@@ -102,6 +104,7 @@ public class AllStepsPanel extends javax.swing.JPanel implements TreeSelectionLi
 
         addToSolutionButton.setMnemonic(java.util.ResourceBundle.getBundle("intl/AllStepsPanel").getString("AllStepsPanel.addToSolution.mnemonic").charAt(0));
         addToSolutionButton.setText(bundle.getString("AllStepsPanel.addToSolutionButton.text")); // NOI18N
+        addToSolutionButton.setToolTipText(bundle.getString("AllStepsPanel.addToSolutionButton.toolTipText")); // NOI18N
         addToSolutionButton.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 addToSolutionButtonActionPerformed(evt);
@@ -141,6 +144,7 @@ public class AllStepsPanel extends javax.swing.JPanel implements TreeSelectionLi
         jToolBar1.setRollover(true);
 
         configureButton.setIcon(new javax.swing.ImageIcon(getClass().getResource("/img/settings.png"))); // NOI18N
+        configureButton.setToolTipText(bundle.getString("AllStepsPanel.configureButton.toolTipText")); // NOI18N
         configureButton.setFocusable(false);
         configureButton.setHorizontalTextPosition(javax.swing.SwingConstants.CENTER);
         configureButton.setMaximumSize(new java.awt.Dimension(36, 36));
@@ -154,6 +158,7 @@ public class AllStepsPanel extends javax.swing.JPanel implements TreeSelectionLi
         jToolBar1.add(jSeparator1);
 
         directSingleSortToggleButton.setIcon(new javax.swing.ImageIcon(getClass().getResource("/img/search_d1.png"))); // NOI18N
+        directSingleSortToggleButton.setToolTipText(bundle.getString("AllStepsPanel.directSingleSortToggleButton.toolTipText")); // NOI18N
         directSingleSortToggleButton.setFocusable(false);
         directSingleSortToggleButton.setHorizontalTextPosition(javax.swing.SwingConstants.CENTER);
         directSingleSortToggleButton.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
@@ -165,6 +170,7 @@ public class AllStepsPanel extends javax.swing.JPanel implements TreeSelectionLi
         jToolBar1.add(directSingleSortToggleButton);
 
         singleSortToggleButton.setIcon(new javax.swing.ImageIcon(getClass().getResource("/img/search_s1.png"))); // NOI18N
+        singleSortToggleButton.setToolTipText(bundle.getString("AllStepsPanel.singleSortToggleButton.toolTipText")); // NOI18N
         singleSortToggleButton.setFocusable(false);
         singleSortToggleButton.setHorizontalTextPosition(javax.swing.SwingConstants.CENTER);
         singleSortToggleButton.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
@@ -176,6 +182,7 @@ public class AllStepsPanel extends javax.swing.JPanel implements TreeSelectionLi
         jToolBar1.add(singleSortToggleButton);
 
         cellSortToggleButton.setIcon(new javax.swing.ImageIcon(getClass().getResource("/img/search_c1.png"))); // NOI18N
+        cellSortToggleButton.setToolTipText(bundle.getString("AllStepsPanel.cellSortToggleButton.toolTipText")); // NOI18N
         cellSortToggleButton.setFocusable(false);
         cellSortToggleButton.setHorizontalTextPosition(javax.swing.SwingConstants.CENTER);
         cellSortToggleButton.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
@@ -187,6 +194,7 @@ public class AllStepsPanel extends javax.swing.JPanel implements TreeSelectionLi
         jToolBar1.add(cellSortToggleButton);
 
         eliminationSortToggleButton.setIcon(new javax.swing.ImageIcon(getClass().getResource("/img/search_e1.png"))); // NOI18N
+        eliminationSortToggleButton.setToolTipText(bundle.getString("AllStepsPanel.eliminationSortToggleButton.toolTipText")); // NOI18N
         eliminationSortToggleButton.setFocusable(false);
         eliminationSortToggleButton.setHorizontalTextPosition(javax.swing.SwingConstants.CENTER);
         eliminationSortToggleButton.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
@@ -198,6 +206,7 @@ public class AllStepsPanel extends javax.swing.JPanel implements TreeSelectionLi
         jToolBar1.add(eliminationSortToggleButton);
 
         typeSortToggleButton.setIcon(new javax.swing.ImageIcon(getClass().getResource("/img/search_t1.png"))); // NOI18N
+        typeSortToggleButton.setToolTipText(bundle.getString("AllStepsPanel.typeSortToggleButton.toolTipText")); // NOI18N
         typeSortToggleButton.setFocusable(false);
         typeSortToggleButton.setHorizontalTextPosition(javax.swing.SwingConstants.CENTER);
         typeSortToggleButton.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
@@ -276,7 +285,7 @@ public class AllStepsPanel extends javax.swing.JPanel implements TreeSelectionLi
         FindAllStepsProgressDialog dlg = new FindAllStepsProgressDialog(mainFrame, true, sudoku);
         dlg.setVisible(true);
         steps = dlg.getSteps();
-        createTreeNodes(Options.getInstance().allStepsSortMode);
+        createTreeNodes(Options.getInstance().getAllStepsSortMode());
     }
 
     public void resetPanel() {
@@ -284,7 +293,7 @@ public class AllStepsPanel extends javax.swing.JPanel implements TreeSelectionLi
         steps = null;
         stepsTree.setModel(model);
         adjustToggleButtons();
-        createTreeNodes(Options.getInstance().allStepsSortMode);
+        createTreeNodes(Options.getInstance().getAllStepsSortMode());
     }
 
     private void adjustToggleButtons() {
@@ -292,7 +301,7 @@ public class AllStepsPanel extends javax.swing.JPanel implements TreeSelectionLi
             return;
         }
         for (int i = 0; i < toggleButtons.length; i++) {
-            if (i == Options.getInstance().allStepsSortMode) {
+            if (i == Options.getInstance().getAllStepsSortMode()) {
                 toggleButtons[i].setSelected(true);
             } else {
                 toggleButtons[i].setSelected(false);
@@ -301,9 +310,9 @@ public class AllStepsPanel extends javax.swing.JPanel implements TreeSelectionLi
     }
 
     private void setSortMode(int sortMode) {
-        Options.getInstance().allStepsSortMode = sortMode;
+        Options.getInstance().setAllStepsSortMode(sortMode);
         adjustToggleButtons();
-        createTreeNodes(Options.getInstance().allStepsSortMode);
+        createTreeNodes(Options.getInstance().getAllStepsSortMode());
     }
 
     private void resetTreeNodes() {
@@ -319,7 +328,7 @@ public class AllStepsPanel extends javax.swing.JPanel implements TreeSelectionLi
         // reset everything and check for errors
         DefaultMutableTreeNode root = (DefaultMutableTreeNode) model.getRoot();
         root.removeAllChildren();
-        if (steps == null || steps.size() == 0) {
+        if (steps == null || steps.isEmpty()) {
             root.setUserObject(java.util.ResourceBundle.getBundle("intl/AllStepsPanel").getString("AllStepsPanel.no_solution"));
             stepsTree.setRootVisible(true);
             model.reload();
@@ -349,7 +358,7 @@ public class AllStepsPanel extends javax.swing.JPanel implements TreeSelectionLi
                 createTreeNodesTypes(root);
                 break;
             default:
-                Logger.getLogger(AllStepsPanel.class.getName()).log(Level.SEVERE, "Invalid sort mode (" + sortMode + ")");
+                Logger.getLogger(AllStepsPanel.class.getName()).log(Level.SEVERE, "Invalid sort mode ({0})", sortMode);
                 break;
         }
         // show it
@@ -416,7 +425,7 @@ public class AllStepsPanel extends javax.swing.JPanel implements TreeSelectionLi
         SortedMap<Integer, List<SolutionStep>> map = new TreeMap<Integer, List<SolutionStep>>();
         for (SolutionStep step : steps) {
             for (Candidate delCand : step.getCandidatesToDelete()) {
-                int candIndex = delCand.index * 10 + delCand.value;
+                int candIndex = delCand.getIndex() * 10 + delCand.getValue();
                 List<SolutionStep> stepList = map.get(candIndex);
                 if (stepList == null) {
                     stepList = new ArrayList<SolutionStep>();
@@ -861,7 +870,7 @@ public class AllStepsPanel extends javax.swing.JPanel implements TreeSelectionLi
         }
     }
 
-    public void setSudoku(Sudoku sudoku) {
+    public void setSudoku(Sudoku2 sudoku) {
         this.sudoku = sudoku;
     }
     // Variables declaration - do not modify//GEN-BEGIN:variables

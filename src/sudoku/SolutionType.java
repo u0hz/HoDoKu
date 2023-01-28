@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008/09/10  Bernhard Hobiger
+ * Copyright (C) 2008-11  Bernhard Hobiger
  *
  * This file is part of HoDoKu.
  *
@@ -20,7 +20,7 @@ package sudoku;
 
 /**
  *
- * @author Bernhard Hobiger
+ * @author hobiwan
  */
 public enum SolutionType {
 
@@ -183,7 +183,7 @@ public enum SolutionType {
         return s1.getIndex() - s2.getIndex();
     }
 
-    private int getFishSize() {
+    public int getFishSize() {
         switch (this) {
             case X_WING:
             case FINNED_X_WING:
@@ -256,6 +256,18 @@ public enum SolutionType {
 
     public boolean isSSTS() {
         return isSSTS(this);
+    }
+
+    public static boolean isHiddenSubset(SolutionType type) {
+        if (type.isSingle() ||
+                type == HIDDEN_PAIR || type == HIDDEN_TRIPLE || type == HIDDEN_QUADRUPLE) {
+            return true;
+        }
+        return false;
+    }
+
+    public boolean isHiddenSubset() {
+        return isHiddenSubset(this);
     }
 
     public StepConfig getStepConfig() {
@@ -393,6 +405,18 @@ public enum SolutionType {
     
     public boolean isKrakenFish() {
         return isKrakenFish(this);
+    }
+
+    public static boolean isSashimiFish(SolutionType type) {
+        if (type == SASHIMI_X_WING || type == SASHIMI_SWORDFISH || type == SASHIMI_JELLYFISH ||
+                type == SASHIMI_SQUIRMBAG || type == SASHIMI_LEVIATHAN || type == SASHIMI_WHALE) {
+            return true;
+        }
+        return false;
+    }
+
+    public boolean isSashimiFish() {
+        return isSashimiFish(this);
     }
 
     public static boolean isSimpleChainOrLoop(SolutionType type) {

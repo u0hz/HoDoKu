@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008/09/10  Bernhard Hobiger
+ * Copyright (C) 2008-11  Bernhard Hobiger
  *
  * This file is part of HoDoKu.
  *
@@ -18,6 +18,8 @@
  */
 package sudoku;
 
+import generator.BackgroundGeneratorThread;
+import generator.GeneratorPattern;
 import java.awt.Color;
 import java.awt.Font;
 import java.awt.GraphicsEnvironment;
@@ -38,11 +40,11 @@ import java.util.logging.Logger;
 
 /**
  *
- * @author zhobigbe
+ * @author hobiwan
  */
-public class Options {
+public final class Options {
 
-    private static final String FILE_NAME = "hodoku.hcfg";
+    public static final String FILE_NAME = "hodoku.hcfg";
     private static final ProgressComparator progressComparator = new ProgressComparator();
 
     // Schwierigkeitsstufen
@@ -54,7 +56,7 @@ public class Options {
         new DifficultyLevel(DifficultyType.UNFAIR, 5000, java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.unfair"), new Color(255, 150, 80), Color.BLACK),
         new DifficultyLevel(DifficultyType.EXTREME, Integer.MAX_VALUE, java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.extreme"), new Color(255, 100, 100), Color.BLACK)
     };
-    public DifficultyLevel[] difficultyLevels = null;
+    private DifficultyLevel[] difficultyLevels = null;
     // Reihenfolge und Konfiguration der SolutionSteps
     // ACHTUNG: New solver steps must be added at the end of the array! The position is determined by "index"
     public static final StepConfig[] DEFAULT_SOLVER_STEPS = {
@@ -103,7 +105,7 @@ public class Options {
         new StepConfig(5000, SolutionType.SASHIMI_WHALE, DifficultyType.UNFAIR.ordinal(), SolutionCategory.FINNED_BASIC_FISH, 470, 0, false, false, 5000, false, false),
         new StepConfig(5100, SolutionType.FINNED_LEVIATHAN, DifficultyType.UNFAIR.ordinal(), SolutionCategory.FINNED_BASIC_FISH, 470, 0, false, false, 5100, false, false),
         new StepConfig(5200, SolutionType.SASHIMI_LEVIATHAN, DifficultyType.UNFAIR.ordinal(), SolutionCategory.FINNED_BASIC_FISH, 470, 0, false, false, 5200, false, false),
-        new StepConfig(5300, SolutionType.SUE_DE_COQ, DifficultyType.UNFAIR.ordinal(), SolutionCategory.MISCELLANEOUS, 100, 0, true, true, 5300, false, false),
+        new StepConfig(5300, SolutionType.SUE_DE_COQ, DifficultyType.UNFAIR.ordinal(), SolutionCategory.MISCELLANEOUS, 250, 0, true, true, 5300, false, false),
         new StepConfig(5400, SolutionType.X_CHAIN, DifficultyType.UNFAIR.ordinal(), SolutionCategory.CHAINS_AND_LOOPS, 260, 0, true, true, 5400, false, false),
         new StepConfig(5500, SolutionType.XY_CHAIN, DifficultyType.UNFAIR.ordinal(), SolutionCategory.CHAINS_AND_LOOPS, 260, 0, true, true, 5500, false, false),
         new StepConfig(5600, SolutionType.NICE_LOOP, DifficultyType.UNFAIR.ordinal(), SolutionCategory.CHAINS_AND_LOOPS, 280, 0, true, true, 5600, false, false),
@@ -151,18 +153,24 @@ public class Options {
         new StepConfig(3120, SolutionType.TURBOT_FISH, DifficultyType.HARD.ordinal(), SolutionCategory.SINGLE_DIGIT_PATTERNS, 120, 0, true, true, 3120, false, false)
     };
     // nicht sortierte steps mit allen Änderungen -> wird so in *.cfg-File geschrieben
-    public StepConfig[] orgSolverSteps = null;
+    private StepConfig[] orgSolverSteps = null;
     // sortierte Kopie, wird intern verwendet, darf aber nicht im *.cfg-File landen
     public StepConfig[] solverSteps = null;
     // sortierte Kopie für Step-Progress, wird intern verwendet, darf aber nicht im *.cfg-File landen
     public StepConfig[] solverStepsProgress = null;
+    // internal cache for background creation
+    public static final int CACHE_SIZE = 10;
+    private String[][] normalPuzzles = new String[5][CACHE_SIZE]; // 10 puzzles per DifficultyLevel
+    private String[] learningPuzzles = new String[CACHE_SIZE];    // 10 puzzles for training
+    private String[] practisingPuzzles = new String[CACHE_SIZE];  // 10 puzzles for practising
+    private int practisingPuzzlesLevel = -1;                      // the DifficultyLevel, for which the practising puzzles have been created
     // ChainSolver
     public static final int RESTRICT_CHAIN_LENGTH = 20;      // maximale Länge von X-/XY-Chains, wenn restrictChainSize gesetzt ist
     public static final int RESTRICT_NICE_LOOP_LENGTH = 10;  // maximale Länge von Nice-Loops, wenn restrictChainSize gesetzt ist
     public static final boolean RESTRICT_CHAIN_SIZE = true;  // Länge der chains beschränken?
-    public int restrictChainLength = RESTRICT_CHAIN_LENGTH;
-    public int restrictNiceLoopLength = RESTRICT_NICE_LOOP_LENGTH;
-    public boolean restrictChainSize = RESTRICT_CHAIN_SIZE;
+    private int restrictChainLength = RESTRICT_CHAIN_LENGTH;
+    private int restrictNiceLoopLength = RESTRICT_NICE_LOOP_LENGTH;
+    private boolean restrictChainSize = RESTRICT_CHAIN_SIZE;
     // TablingSolver
     public static final int MAX_TABLE_ENTRY_LENGTH = 1000;
 //    public static final int MAX_TABLE_ENTRY_LENGTH = 400;
@@ -170,20 +178,20 @@ public class Options {
     public static final boolean ONLY_ONE_CHAIN_PER_STEP = true;
     public static final boolean ALLOW_ALS_IN_TABLING_CHAINS = false;
     public static final boolean ALL_STEPS_ALLOW_ALS_IN_TABLING_CHAINS = true;
-    public int maxTableEntryLength = MAX_TABLE_ENTRY_LENGTH;
-    public int anzTableLookAhead = ANZ_TABLE_LOOK_AHEAD;
-    public boolean onlyOneChainPerStep = ONLY_ONE_CHAIN_PER_STEP;
-    public boolean allowAlsInTablingChains = ALLOW_ALS_IN_TABLING_CHAINS;
-    public boolean allStepsAllowAlsInTablingChains = ALL_STEPS_ALLOW_ALS_IN_TABLING_CHAINS;
+    private int maxTableEntryLength = MAX_TABLE_ENTRY_LENGTH;
+    private int anzTableLookAhead = ANZ_TABLE_LOOK_AHEAD;
+    private boolean onlyOneChainPerStep = ONLY_ONE_CHAIN_PER_STEP;
+    private boolean allowAlsInTablingChains = ALLOW_ALS_IN_TABLING_CHAINS;
+    private boolean allStepsAllowAlsInTablingChains = ALL_STEPS_ALLOW_ALS_IN_TABLING_CHAINS;
     // AlsSolver
     public static final boolean ONLY_ONE_ALS_PER_STEP = true; // only one step in every ALS elimination
     public static final boolean ALLOW_ALS_OVERLAP = false;    // allow ALS steps with overlap (runtime!)
     public static final boolean ALL_STEPS_ONLY_ONE_ALS_PER_STEP = true; // only one step in every ALS elimination
     public static final boolean ALL_STEPS_ALLOW_ALS_OVERLAP = true;    // allow ALS steps with overlap (runtime!)
-    public boolean onlyOneAlsPerStep = ONLY_ONE_ALS_PER_STEP;
-    public boolean allowAlsOverlap = ALLOW_ALS_OVERLAP;
-    public boolean allStepsOnlyOneAlsPerStep = ALL_STEPS_ONLY_ONE_ALS_PER_STEP;
-    public boolean allStepsAllowAlsOverlap = ALL_STEPS_ALLOW_ALS_OVERLAP;
+    private boolean onlyOneAlsPerStep = ONLY_ONE_ALS_PER_STEP;
+    private boolean allowAlsOverlap = ALLOW_ALS_OVERLAP;
+    private boolean allStepsOnlyOneAlsPerStep = ALL_STEPS_ONLY_ONE_ALS_PER_STEP;
+    private boolean allStepsAllowAlsOverlap = ALL_STEPS_ALLOW_ALS_OVERLAP;
     // FishSolver
     public static final int MAX_FINS = 5;                 // Maximale Anzahl Fins
     public static final int MAX_ENDO_FINS = 2;            // Maximale Anzahl Endo-Fins
@@ -194,15 +202,15 @@ public class Options {
     public static final int MAX_KRAKEN_ENDO_FINS = 0;     // Maximale Anzahl Endo-Fins für Kraken-Suche
     public static final boolean ONLY_ONE_FISH_PER_STEP = true; // only the smallest fish for every elimination
     public static final int FISH_DISPLAY_MODE = 0;        // 0: normal; 1: statistics numbers; 2: statistics cells
-    public int maxFins = MAX_FINS;
-    public int maxEndoFins = MAX_ENDO_FINS;
-    public boolean checkTemplates = CHECK_TEMPLATES;
-    public int krakenMaxFishType = KRAKEN_MAX_FISH_TYPE;
-    public int krakenMaxFishSize = KRAKEN_MAX_FISH_SIZE;
-    public int maxKrakenFins = MAX_KRAKEN_FINS;
-    public int maxKrakenEndoFins = MAX_KRAKEN_ENDO_FINS;
-    public boolean onlyOneFishPerStep = ONLY_ONE_FISH_PER_STEP;
-    public int fishDisplayMode = FISH_DISPLAY_MODE;
+    private int maxFins = MAX_FINS;
+    private int maxEndoFins = MAX_ENDO_FINS;
+    private boolean checkTemplates = CHECK_TEMPLATES;
+    private int krakenMaxFishType = KRAKEN_MAX_FISH_TYPE;
+    private int krakenMaxFishSize = KRAKEN_MAX_FISH_SIZE;
+    private int maxKrakenFins = MAX_KRAKEN_FINS;
+    private int maxKrakenEndoFins = MAX_KRAKEN_ENDO_FINS;
+    private boolean onlyOneFishPerStep = ONLY_ONE_FISH_PER_STEP;
+    private int fishDisplayMode = FISH_DISPLAY_MODE;
     // Search all steps
     public static final boolean ALL_STEPS_SEARCH_FISH = true; // search for Fish in "All Steps" panel
     public static final int ALL_STEPS_MAX_FISH_TYPE = 1;     // 0: nur basic, 1: basic+franken, 2: basic+franken+mutant
@@ -219,21 +227,21 @@ public class Options {
     public static final String ALL_STEPS_FISH_CANDIDATES = "111111111";        // 1 for every candidate that should be searched, 0 otherwise
     public static final String ALL_STEPS_KRAKEN_FISH_CANDIDATES = "111111111"; // see above
     public static final int ALL_STEPS_SORT_MODE = 4; // sort by StepType
-    public boolean allStepsSearchFish = ALL_STEPS_SEARCH_FISH;
-    public int allStepsMaxFishType = ALL_STEPS_MAX_FISH_TYPE;
-    public int allStepsMinFishSize = ALL_STEPS_MIN_FISH_SIZE;
-    public int allStepsMaxFishSize = ALL_STEPS_MAX_FISH_SIZE;
-    public int allStepsMaxFins = ALL_STEPS_MAX_FINS;
-    public int allStepsMaxEndoFins = ALL_STEPS_MAX_ENDO_FINS;
-    public boolean allStepsCheckTemplates = ALL_STEPS_CHECK_TEMPLATES;
-    public int allStepsKrakenMaxFishType = ALL_STEPS_MAX_KRAKEN_FISH_TYPE;
-    public int allStepsKrakenMinFishSize = ALL_STEPS_MIN_KRAKEN_FISH_SIZE;
-    public int allStepsKrakenMaxFishSize = ALL_STEPS_MAX_KRAKEN_FISH_SIZE;
-    public int allStepsMaxKrakenFins = ALL_STEPS_MAX_KRAKEN_FINS;
-    public int allStepsMaxKrakenEndoFins = ALL_STEPS_MAX_KRAKEN_ENDO_FINS;
-    public String allStepsFishCandidates = ALL_STEPS_FISH_CANDIDATES;
-    public String allStepsKrakenFishCandidates = ALL_STEPS_KRAKEN_FISH_CANDIDATES;
-    public int allStepsSortMode = ALL_STEPS_SORT_MODE;
+    private boolean allStepsSearchFish = ALL_STEPS_SEARCH_FISH;
+    private int allStepsMaxFishType = ALL_STEPS_MAX_FISH_TYPE;
+    private int allStepsMinFishSize = ALL_STEPS_MIN_FISH_SIZE;
+    private int allStepsMaxFishSize = ALL_STEPS_MAX_FISH_SIZE;
+    private int allStepsMaxFins = ALL_STEPS_MAX_FINS;
+    private int allStepsMaxEndoFins = ALL_STEPS_MAX_ENDO_FINS;
+    private boolean allStepsCheckTemplates = ALL_STEPS_CHECK_TEMPLATES;
+    private int allStepsKrakenMaxFishType = ALL_STEPS_MAX_KRAKEN_FISH_TYPE;
+    private int allStepsKrakenMinFishSize = ALL_STEPS_MIN_KRAKEN_FISH_SIZE;
+    private int allStepsKrakenMaxFishSize = ALL_STEPS_MAX_KRAKEN_FISH_SIZE;
+    private int allStepsMaxKrakenFins = ALL_STEPS_MAX_KRAKEN_FINS;
+    private int allStepsMaxKrakenEndoFins = ALL_STEPS_MAX_KRAKEN_ENDO_FINS;
+    private String allStepsFishCandidates = ALL_STEPS_FISH_CANDIDATES;
+    private String allStepsKrakenFishCandidates = ALL_STEPS_KRAKEN_FISH_CANDIDATES;
+    private int allStepsSortMode = ALL_STEPS_SORT_MODE;
     //SudokuPanel
     // Coloring Solver
     public static final Color[] COLORING_COLORS = {
@@ -258,12 +266,17 @@ public class Options {
     //        new Color(168, 255, 168),   // 'e' - first color of fifth color pair
     //        new Color(215, 255, 215)    // 'E' - second color of fifth color pair
     };
-    public Color[] coloringColors = null;
+    public static final boolean COLOR_VALUES = true;
+    private Color[] coloringColors = null;
+    private boolean colorValues = COLOR_VALUES;
     // Single Digit Pattern Solver
     public static final boolean ALLOW_ERS_WITH_ONLY_TWO_CANDIDATES = false; // as it sais...
-    public boolean allowErsWithOnlyTwoCandidates = ALLOW_ERS_WITH_ONLY_TWO_CANDIDATES;
+    private boolean allowErsWithOnlyTwoCandidates = ALLOW_ERS_WITH_ONLY_TWO_CANDIDATES;
     public static final boolean ALLOW_DUALS_AND_SIAMESE = false; // Dual 2-String-Kites, Dual Skyscrapers && Siamese Fish
-    public boolean allowDualsAndSiamese = ALLOW_DUALS_AND_SIAMESE;
+    private boolean allowDualsAndSiamese = ALLOW_DUALS_AND_SIAMESE;
+    // Uniqueness Solver
+    public static final boolean ALLOW_UNIQUENESS_MISSING_CANDIDATES = true; // allow missing candidates in cells with additional candidates
+    private boolean allowUniquenessMissingCandidates = ALLOW_UNIQUENESS_MISSING_CANDIDATES;
     // Allgemeines
     public static final boolean SHOW_CANDIDATES = true;    // alle Kandidaten anzeigen
     public static final boolean SHOW_WRONG_VALUES = true;  // Ungültige Zellen-/Kandidatenwerte anzeigen (Constraint-Verletzungen)
@@ -271,6 +284,7 @@ public class Options {
     public static final boolean INVALID_CELLS = false;     // show possible cells
     public static final boolean SAVE_WINDOW_LAYOUT = true; // save window layout at shutdown
     public static final boolean USE_SHIFT_FOR_REGION_SELECT = true; // use shift for selecting cells or toggeling candidates
+    public static final boolean ALTERNATIVE_MOUSE_MODE = false; // use simpler mouse mode (less clicks required)
     public static final int DRAW_MODE = 1;
     //public static final int INITIAL_HEIGHT = 728;           // used to store window layout at shutdown
     public static final int INITIAL_HEIGHT = 844;           // used to store window layout at shutdown
@@ -282,23 +296,32 @@ public class Options {
     public static final int INITIAL_DISP_MODE = 0;          // 0 .. sudoku only, 1 .. summary, 2 .. solution, 3 .. all steps
     public static final int INITIAL_X_POS = -1;             // used to store window layout at shutdown
     public static final int INITIAL_Y_POS = -1;             // used to store window layout at shutdown
-    public boolean showCandidates = SHOW_CANDIDATES;
-    public boolean showWrongValues = SHOW_WRONG_VALUES;
-    public boolean showDeviations = SHOW_DEVIATIONS;
-    public boolean invalidCells = INVALID_CELLS;
-    public boolean saveWindowLayout = SAVE_WINDOW_LAYOUT;
-    public boolean useShiftForRegionSelect = USE_SHIFT_FOR_REGION_SELECT;
-    public int drawMode = DRAW_MODE;
-    public int initialHeight = INITIAL_HEIGHT;
-    public int initialWidth = INITIAL_WIDTH;
-    public int initialVertDividerLoc = INITIAL_VERT_DIVIDER_LOC;
-    public int initialHorzDividerLoc = INITIAL_HORZ_DIVIDER_LOC;
-    public int initialDisplayMode = INITIAL_DISP_MODE;
-    public int initialXPos = INITIAL_X_POS;
-    public int initialYPos = INITIAL_Y_POS;
+    public static final boolean INITIAL_SHOW_HINT_PANEL = true;
+    public static final boolean INITIAL_SHOW_TOOLBAR = true;
+    public static final int ACT_LEVEL = DEFAULT_DIFFICULTY_LEVELS[1].getOrdinal(); // Standard is EASY
+    public static final boolean SHOW_SUDOKU_SOLVED = false;
+    private boolean showCandidates = SHOW_CANDIDATES;
+    private boolean showWrongValues = SHOW_WRONG_VALUES;
+    private boolean showDeviations = SHOW_DEVIATIONS;
+    private boolean invalidCells = INVALID_CELLS;
+    private boolean saveWindowLayout = SAVE_WINDOW_LAYOUT;
+    private boolean useShiftForRegionSelect = USE_SHIFT_FOR_REGION_SELECT;
+    private boolean alternativeMouseMode = ALTERNATIVE_MOUSE_MODE;
+    private int drawMode = DRAW_MODE;
+    private int initialHeight = INITIAL_HEIGHT;
+    private int initialWidth = INITIAL_WIDTH;
+    private int initialVertDividerLoc = INITIAL_VERT_DIVIDER_LOC;
+    private int initialHorzDividerLoc = INITIAL_HORZ_DIVIDER_LOC;
+    private int initialDisplayMode = INITIAL_DISP_MODE;
+    private int initialXPos = INITIAL_X_POS;
+    private int initialYPos = INITIAL_Y_POS;
+    private boolean showHintPanel = INITIAL_SHOW_HINT_PANEL;
+    private boolean showToolBar = INITIAL_SHOW_TOOLBAR;
+    private int actLevel = ACT_LEVEL;
+    private boolean showSudokuSolved = SHOW_SUDOKU_SOLVED;
     // Clipboard
     public static final boolean USE_ZERO_INSTEAD_OF_DOT = false; // as the name says...
-    public boolean useZeroInsteadOfDot = USE_ZERO_INSTEAD_OF_DOT;
+    private boolean useZeroInsteadOfDot = USE_ZERO_INSTEAD_OF_DOT;
     // Farben und Fonts
     public static final Color GRID_COLOR = Color.BLACK;                                       // Zeichenfarbe für den Rahmen
     public static final Color INNER_GRID_COLOR = Color.LIGHT_GRAY;                            // Linien innerhalb des Rahmens
@@ -340,61 +363,76 @@ public class Options {
     public static final Color ARROW_COLOR = Color.RED;                                        // Farbe für Pfeile
     public static final double VALUE_FONT_FACTOR = 0.6;      // Zellengröße * valueFontFactor gibt Schriftgröße für Zellenwerte
     public static final double CANDIDATE_FONT_FACTOR = 0.25; // Zellengröße * candidateFontFactor gibt Schriftgröße für Kandidaten
-    public static final double HINT_BACK_FACTOR = 1.3;       // um wie viel der Kreis beim Hint größer ist als die Zahl
+    public static final double HINT_BACK_FACTOR = 1.6;       // um wie viel der Kreis beim Hint größer ist als die Zahl
     public static Font DEFAULT_VALUE_FONT = new Font("Tahoma", Font.PLAIN, 10);     // Standard für Zellenwerte (Größe wird ignoriert)
     public static Font DEFAULT_CANDIDATE_FONT = new Font("Tahoma", Font.PLAIN, 10); // Standard für Kandidaten (Größe wird ignoriert)
     public static Font BIG_FONT = new Font("Arial", Font.BOLD, 16);    // Font für Ausdruck Überschrift
     public static Font SMALL_FONT = new Font("Arial", Font.PLAIN, 10); // Font für Ausdruck Rating
-    public Color gridColor = GRID_COLOR;
-    public Color innerGridColor = INNER_GRID_COLOR;
-    public Color wrongValueColor = WRONG_VALUE_COLOR;
-    public Color deviationColor = DEVIATION_COLOR;
-    public Color cellFixedValueColor = CELL_FIXED_VALUE_COLOR;
-    public Color cellValueColor = CELL_VALUE_COLOR;
-    public Color candidateColor = CANDIDATE_COLOR;
-    public Color defaultCellColor = DEFAULT_CELL_COLOR;
-    public Color aktCellColor = AKT_CELL_COLOR;
-    public Color invalidCellColor = INVALID_CELL_COLOR;
-    public Color possibleCellColor = POSSIBLE_CELL_COLOR;
-    public Color hintCandidateBackColor = HINT_CANDIDATE_BACK_COLOR;
-    public Color hintCandidateDeleteBackColor = HINT_CANDIDATE_DELETE_BACK_COLOR;
-    public Color hintCandidateCannibalisticBackColor = HINT_CANDIDATE_CANNIBALISTIC_BACK_COLOR;
-    public Color hintCandidateFinBackColor = HINT_CANDIDATE_FIN_BACK_COLOR;
-    public Color hintCandidateEndoFinBackColor = HINT_CANDIDATE_ENDO_FIN_BACK_COLOR;
-    public Color hintCandidateColor = HINT_CANDIDATE_COLOR;
-    public Color hintCandidateDeleteColor = HINT_CANDIDATE_DELETE_COLOR;
-    public Color hintCandidateCannibalisticColor = HINT_CANDIDATE_CANNIBALISTIC_COLOR;
-    public Color hintCandidateFinColor = HINT_CANDIDATE_FIN_COLOR;
-    public Color hintCandidateEndoFinColor = HINT_CANDIDATE_ENDO_FIN_COLOR;
-    public Color[] hintCandidateAlsBackColors = null;
-    public Color[] hintCandidateAlsColors = null;
-    public Color arrowColor = ARROW_COLOR;
-    public double valueFontFactor = VALUE_FONT_FACTOR;
-    public double candidateFontFactor = CANDIDATE_FONT_FACTOR;
-    public double hintBackFactor = HINT_BACK_FACTOR;
-    public Font defaultValueFont = new Font(DEFAULT_VALUE_FONT.getName(), DEFAULT_VALUE_FONT.getStyle(), DEFAULT_VALUE_FONT.getSize());
-    public Font defaultCandidateFont = new Font(DEFAULT_CANDIDATE_FONT.getName(), DEFAULT_CANDIDATE_FONT.getStyle(), DEFAULT_CANDIDATE_FONT.getSize());
-    public Font bigFont = new Font(BIG_FONT.getName(), BIG_FONT.getStyle(), BIG_FONT.getSize());
-    public Font smallFont = new Font(SMALL_FONT.getName(), SMALL_FONT.getStyle(), SMALL_FONT.getSize());
+    private Color gridColor = GRID_COLOR;
+    private Color innerGridColor = INNER_GRID_COLOR;
+    private Color wrongValueColor = WRONG_VALUE_COLOR;
+    private Color deviationColor = DEVIATION_COLOR;
+    private Color cellFixedValueColor = CELL_FIXED_VALUE_COLOR;
+    private Color cellValueColor = CELL_VALUE_COLOR;
+    private Color candidateColor = CANDIDATE_COLOR;
+    private Color defaultCellColor = DEFAULT_CELL_COLOR;
+    private Color aktCellColor = AKT_CELL_COLOR;
+    private Color invalidCellColor = INVALID_CELL_COLOR;
+    private Color possibleCellColor = POSSIBLE_CELL_COLOR;
+    private Color hintCandidateBackColor = HINT_CANDIDATE_BACK_COLOR;
+    private Color hintCandidateDeleteBackColor = HINT_CANDIDATE_DELETE_BACK_COLOR;
+    private Color hintCandidateCannibalisticBackColor = HINT_CANDIDATE_CANNIBALISTIC_BACK_COLOR;
+    private Color hintCandidateFinBackColor = HINT_CANDIDATE_FIN_BACK_COLOR;
+    private Color hintCandidateEndoFinBackColor = HINT_CANDIDATE_ENDO_FIN_BACK_COLOR;
+    private Color hintCandidateColor = HINT_CANDIDATE_COLOR;
+    private Color hintCandidateDeleteColor = HINT_CANDIDATE_DELETE_COLOR;
+    private Color hintCandidateCannibalisticColor = HINT_CANDIDATE_CANNIBALISTIC_COLOR;
+    private Color hintCandidateFinColor = HINT_CANDIDATE_FIN_COLOR;
+    private Color hintCandidateEndoFinColor = HINT_CANDIDATE_ENDO_FIN_COLOR;
+    private Color[] hintCandidateAlsBackColors = null;
+    private Color[] hintCandidateAlsColors = null;
+    private Color arrowColor = ARROW_COLOR;
+    private double valueFontFactor = VALUE_FONT_FACTOR;
+    private double candidateFontFactor = CANDIDATE_FONT_FACTOR;
+    private double hintBackFactor = HINT_BACK_FACTOR;
+    private Font defaultValueFont = new Font(DEFAULT_VALUE_FONT.getName(), DEFAULT_VALUE_FONT.getStyle(), DEFAULT_VALUE_FONT.getSize());
+    private Font defaultCandidateFont = new Font(DEFAULT_CANDIDATE_FONT.getName(), DEFAULT_CANDIDATE_FONT.getStyle(), DEFAULT_CANDIDATE_FONT.getSize());
+    private Font bigFont = new Font(BIG_FONT.getName(), BIG_FONT.getStyle(), BIG_FONT.getSize());
+    private Font smallFont = new Font(SMALL_FONT.getName(), SMALL_FONT.getStyle(), SMALL_FONT.getSize());
     public static final String DEFAULT_FILE_DIR = System.getProperty("user.home");
-    public String defaultFileDir = DEFAULT_FILE_DIR;
+    private String defaultFileDir = DEFAULT_FILE_DIR;
     public static final String DEFAULT_LANGUAGE = "";
-    public String language = DEFAULT_LANGUAGE;
+    private String language = DEFAULT_LANGUAGE;
     public static final String DEFAULT_LAF = "";
-    public String laf = DEFAULT_LAF;
+    private String laf = DEFAULT_LAF;
+    // paint cursor only as small frame around cell
+    public static final boolean ONLY_SMALL_CURSORS = false;
+    public static final double CURSOR_FRAME_SIZE = 0.08;
+    private boolean onlySmallCursors = ONLY_SMALL_CURSORS;
+    private double cursorFrameSize = CURSOR_FRAME_SIZE;
+    // game mode
+    public static final GameMode GAME_MODE = GameMode.PLAYING;
+    private GameMode gameMode = GAME_MODE;
+    // show hint buttons in toolbar
+    public static final boolean SHOW_HINT_BUTTONS_IN_TOOLBAR = false;
+    private boolean showHintButtonsInToolbar = SHOW_HINT_BUTTONS_IN_TOOLBAR;
     // history of created puzzles and savepoints
     public static final int HISTORY_SIZE = 20;
     public static final boolean HISTORY_PREVIEW = true;
-    public int historySize = HISTORY_SIZE;
-    public boolean historyPreview = HISTORY_PREVIEW;
-    public List<String> historyOfCreatedPuzzles = new ArrayList<String>(historySize);
+    private int historySize = HISTORY_SIZE;
+    private boolean historyPreview = HISTORY_PREVIEW;
+    private List<String> historyOfCreatedPuzzles = new ArrayList<String>(historySize);
     // BackdoorSearchDialog
     public static final boolean BDS_SEARCH_FOR_CELLS = true;       // Search for possible backdoor cells (or combinations of cells)
     public static final boolean BDS_SEARCH_FOR_CANDIDATES = false; // Search for possible backdoor candidates (or combinations of candidates)
     public static final int BDS_SEARCH_CANDIDATES_ANZ = 0;         // only single candidates
-    public boolean bdsSearchForCells = BDS_SEARCH_FOR_CELLS;
-    public boolean bdsSearchForCandidates = BDS_SEARCH_FOR_CANDIDATES;
-    public int bdsSearchCandidatesAnz = BDS_SEARCH_CANDIDATES_ANZ;
+    private boolean bdsSearchForCells = BDS_SEARCH_FOR_CELLS;
+    private boolean bdsSearchForCandidates = BDS_SEARCH_FOR_CANDIDATES;
+    private int bdsSearchCandidatesAnz = BDS_SEARCH_CANDIDATES_ANZ;
+    // Generator Patterns: List is empty per default
+    public static final int GENERATOR_PATTERN_INDEX = -1;
+    private ArrayList<GeneratorPattern> generatorPatterns = new ArrayList<GeneratorPattern>();
+    private int generatorPatternIndex = GENERATOR_PATTERN_INDEX;
     //Singleton
     public static Options instance = null;
 
@@ -542,6 +580,7 @@ public class Options {
      * allerdings weiterhin unsortiert (für XmlWriter)
      */
     public void adjustOrgSolverSteps() {
+        boolean somethingChanged = false;
         for (StepConfig step : solverSteps) {
             StepConfig orgStep = null;
             for (int i = 0; i < orgSolverSteps.length; i++) {
@@ -554,6 +593,14 @@ public class Options {
                 Logger.getLogger(getClass().getName()).log(Level.WARNING, "StepConfig not found!");
                 continue;
             }
+            if (step.getAdminScore() != orgStep.getAdminScore() ||
+                    step.getBaseScore() != orgStep.getBaseScore() ||
+                    step.getCategory() != orgStep.getCategory()||
+                    step.isEnabled() != orgStep.isEnabled() ||
+                    step.getIndex() != orgStep.getIndex() ||
+                    step.getLevel() != orgStep.getLevel()) {
+                somethingChanged = true;
+            }
             orgStep.setAdminScore(step.getAdminScore());
             orgStep.setBaseScore(step.getBaseScore());
             orgStep.setCategory(step.getCategory());
@@ -563,6 +610,9 @@ public class Options {
             // values for allStepsEnabled, indexHeuristics, enabledHeuristics and
             // enableTraining are not set here, is done manually in the
             // corresponding config panel
+        }
+        if (somethingChanged) {
+            BackgroundGeneratorThread.getInstance().resetAll();
         }
     }
 
@@ -622,7 +672,7 @@ public class Options {
      * @return
      */
     public String getTrainingStepsString(StepConfig[] stepArray, boolean ellipsis) {
-        StringBuffer tmp = new StringBuffer();
+        StringBuilder tmp = new StringBuilder();
         boolean first = true;
         for (StepConfig step : stepArray) {
             if (step.isEnabledTraining()) {
@@ -647,6 +697,7 @@ public class Options {
     }
 
     public void writeOptions(String fileName) throws FileNotFoundException {
+        Logger.getLogger(Options.class.getName()).log(Level.INFO, "Writing options to {0}", fileName);
         XMLEncoder out = new XMLEncoder(new BufferedOutputStream(new FileOutputStream(fileName)));
         out.writeObject(this);
         out.close();
@@ -657,6 +708,7 @@ public class Options {
     }
 
     public static void readOptions(String fileName) {
+        Logger.getLogger(Options.class.getName()).log(Level.INFO, "Reading options from {0}", fileName);
         try {
             XMLDecoder in = new XMLDecoder(new BufferedInputStream(new FileInputStream(fileName)));
             instance = (Options) in.readObject();
@@ -679,6 +731,7 @@ public class Options {
         instance.solverStepsProgress = instance.copyStepConfigs(instance.orgSolverSteps, false, false, false, true);
     }
 
+    @SuppressWarnings("CallToThreadDumpStack")
     public static void main(String[] args) {
         Options options = new Options();
         try {
@@ -827,6 +880,220 @@ public class Options {
      */
     public void setUseShiftForRegionSelect(boolean useShiftForRegionSelect) {
         this.useShiftForRegionSelect = useShiftForRegionSelect;
+    }
+
+    /**
+     * @return the allowUniquenessMissingCandidates
+     */
+    public boolean isAllowUniquenessMissingCandidates() {
+        return allowUniquenessMissingCandidates;
+    }
+
+    /**
+     * @param allowUniquenessMissingCandidates the allowUniquenessMissingCandidates to set
+     */
+    public void setAllowUniquenessMissingCandidates(boolean allowUniquenessMissingCandidates) {
+        this.allowUniquenessMissingCandidates = allowUniquenessMissingCandidates;
+    }
+
+    /**
+     * @return the onlySmallCursors
+     */
+    public boolean isOnlySmallCursors() {
+        return onlySmallCursors;
+    }
+
+    /**
+     * @param onlySmallCursors the onlySmallCursors to set
+     */
+    public void setOnlySmallCursors(boolean onlySmallCursors) {
+        this.onlySmallCursors = onlySmallCursors;
+    }
+
+    /**
+     * @return the cursorFrameSize
+     */
+    public double getCursorFrameSize() {
+        return cursorFrameSize;
+    }
+
+    /**
+     * @param cursorFrameSize the cursorFrameSize to set
+     */
+    public void setCursorFrameSize(double cursorFrameSize) {
+        this.cursorFrameSize = cursorFrameSize;
+    }
+
+    /**
+     * @return the gameMode
+     */
+    public GameMode getGameMode() {
+        return gameMode;
+    }
+
+    /**
+     * @param gameMode the gameMode to set
+     */
+    public void setGameMode(GameMode gameMode) {
+        this.gameMode = gameMode;
+    }
+
+    /**
+     * @return the showHintButtonsInToolbar
+     */
+    public boolean isShowHintButtonsInToolbar() {
+        return showHintButtonsInToolbar;
+    }
+
+    /**
+     * @param showHintButtonsInToolbar the showHintButtonsInToolbar to set
+     */
+    public void setShowHintButtonsInToolbar(boolean showHintButtonsInToolbar) {
+        this.showHintButtonsInToolbar = showHintButtonsInToolbar;
+    }
+
+    /**
+     * @return the colorValues
+     */
+    public boolean isColorValues() {
+        return colorValues;
+    }
+
+    /**
+     * @param colorValues the colorValues to set
+     */
+    public void setColorValues(boolean colorValues) {
+        this.colorValues = colorValues;
+    }
+
+    /**
+     * @return the alternativeMouseMode
+     */
+    public boolean isAlternativeMouseMode() {
+        return alternativeMouseMode;
+    }
+
+    /**
+     * @param alternativeMouseMode the alternativeMouseMode to set
+     */
+    public void setAlternativeMouseMode(boolean alternativeMouseMode) {
+        this.alternativeMouseMode = alternativeMouseMode;
+    }
+
+    /**
+     * @return the actLevel
+     */
+    public int getActLevel() {
+//        System.out.println("getActLevel(" + actLevel + ")");
+//        Thread.dumpStack();
+        return actLevel;
+    }
+
+    /**
+     * @param actLevel the actLevel to set
+     */
+    public void setActLevel(int actLevel) {
+//        System.out.println("setActLevel(" + actLevel + ")");
+//        Thread.dumpStack();
+        this.actLevel = actLevel;
+    }
+
+    /**
+     * @return the normalPuzzles
+     */
+    public String[][] getNormalPuzzles() {
+        return normalPuzzles;
+    }
+
+    /**
+     * @param normalPuzzles the normalPuzzles to set
+     */
+    public void setNormalPuzzles(String[][] normalPuzzles) {
+        this.normalPuzzles = normalPuzzles;
+    }
+
+    /**
+     * @return the learningPuzzles
+     */
+    public String[] getLearningPuzzles() {
+        return learningPuzzles;
+    }
+
+    /**
+     * @param learningPuzzles the learningPuzzles to set
+     */
+    public void setLearningPuzzles(String[] learningPuzzles) {
+        this.learningPuzzles = learningPuzzles;
+    }
+
+    /**
+     * @return the practisingPuzzles
+     */
+    public String[] getPractisingPuzzles() {
+        return practisingPuzzles;
+    }
+
+    /**
+     * @param practisingPuzzles the practisingPuzzles to set
+     */
+    public void setPractisingPuzzles(String[] practisingPuzzles) {
+        this.practisingPuzzles = practisingPuzzles;
+    }
+
+    /**
+     * @return the practisingPuzzlesLevel
+     */
+    public int getPractisingPuzzlesLevel() {
+        return practisingPuzzlesLevel;
+    }
+
+    /**
+     * @param practisingPuzzlesLevel the practisingPuzzlesLevel to set
+     */
+    public void setPractisingPuzzlesLevel(int practisingPuzzlesLevel) {
+        this.practisingPuzzlesLevel = practisingPuzzlesLevel;
+    }
+
+    /**
+     * @return the generatorPatterns
+     */
+    public ArrayList<GeneratorPattern> getGeneratorPatterns() {
+        return generatorPatterns;
+    }
+
+    /**
+     * @param generatorPatterns the generatorPatterns to set
+     */
+    public void setGeneratorPatterns(ArrayList<GeneratorPattern> generatorPatterns) {
+        this.generatorPatterns = generatorPatterns;
+    }
+
+    /**
+     * @return the generatorPatternIndex
+     */
+    public int getGeneratorPatternIndex() {
+        return generatorPatternIndex;
+    }
+
+    /**
+     * @param generatorPatternIndex the generatorPatternIndex to set
+     */
+    public void setGeneratorPatternIndex(int generatorPatternIndex) {
+        this.generatorPatternIndex = generatorPatternIndex;
+    }
+
+    /**
+     * @return the showSudokuSolved
+     */
+    public boolean isShowSudokuSolved() {
+        return showSudokuSolved;
+    }
+
+    /**
+     * @param showSudokuSolved the showSudokuSolved to set
+     */
+    public void setShowSudokuSolved(boolean showSudokuSolved) {
+        this.showSudokuSolved = showSudokuSolved;
     }
 
     private static class ProgressComparator implements Comparator<StepConfig> {
@@ -1318,6 +1585,34 @@ public class Options {
         this.initialYPos = initialYPos;
     }
 
+    /**
+     * @return the showHintPanel
+     */
+    public boolean isShowHintPanel() {
+        return showHintPanel;
+    }
+
+    /**
+     * @param showHintPanel the showHintPanel to set
+     */
+    public void setShowHintPanel(boolean showHintPanel) {
+        this.showHintPanel = showHintPanel;
+    }
+
+    /**
+     * @return the showToolBar
+     */
+    public boolean isShowToolBar() {
+        return showToolBar;
+    }
+
+    /**
+     * @param showToolBar the showToolBar to set
+     */
+    public void setShowToolBar(boolean showToolBar) {
+        this.showToolBar = showToolBar;
+    }
+
     public boolean isSaveWindowLayout() {
         return saveWindowLayout;
     }
@@ -1532,6 +1827,14 @@ public class Options {
 
     public void setAllStepsKrakenFishCandidates(String allStepsKrakenFishCandidates) {
         this.allStepsKrakenFishCandidates = allStepsKrakenFishCandidates;
+    }
+
+    public boolean isOnlyOneChainPerStep() {
+        return onlyOneChainPerStep;
+    }
+
+    public void setOnlyOneChainPerStep(boolean onlyOneChainPerStep) {
+        this.onlyOneChainPerStep = onlyOneChainPerStep;
     }
 
     public boolean isAllowAlsInTablingChains() {

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008/09/10  Bernhard Hobiger
+ * Copyright (C) 2008-11  Bernhard Hobiger
  *
  * This file is part of HoDoKu.
  *
@@ -19,10 +19,10 @@
 
 package sudoku;
 
+import generator.BackgroundGenerator;
 import java.awt.EventQueue;
 import java.awt.event.ActionEvent;
 import java.awt.event.KeyEvent;
-import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.AbstractAction;
@@ -31,17 +31,29 @@ import javax.swing.JComponent;
 import javax.swing.KeyStroke;
 
 /**
- *
- * @author  Bernhard Hobiger
+ * Creates a new sudoku while displaying a progress dialog. The creation is really
+ * delegated to {@link #generator}.
+ * 
+ * @author  hobiwan
  */
 public class GenerateSudokuProgressDialog extends javax.swing.JDialog implements Runnable {
-    private Sudoku sudoku;
-    private int anz;
+    /** The newly generated sudoku. */
+    private Sudoku2 sudoku;
+    /** The background thread, that is used to run the {@link #generator}. */
     private Thread thread;
+    /** The {@link DifficultyLevel} of the new sudoku. */
     private DifficultyLevel level;
+    /** The {@link GameMode}for the new sudoku. */
     private GameMode mode;
+    /** The real generator. */
+    private BackgroundGenerator generator;
     
-    /** Creates new form GenerateSudokuProgressDialog */
+   /**
+     * Creates a new instance.
+     * @param parent
+     * @param modal
+     * @param level 
+     */
     public GenerateSudokuProgressDialog(java.awt.Frame parent, boolean modal, DifficultyLevel level,
             GameMode mode) {
         super(parent, modal);
@@ -60,7 +72,7 @@ public class GenerateSudokuProgressDialog extends javax.swing.JDialog implements
         this.level = level;
         this.mode = mode;
         thread = new Thread(this);
-        thread.start();
+        // start the thread only when window is shown (formWindowOpened)
     }
     
     /** This method is called from within the constructor to
@@ -84,6 +96,9 @@ public class GenerateSudokuProgressDialog extends javax.swing.JDialog implements
         addWindowListener(new java.awt.event.WindowAdapter() {
             public void windowClosing(java.awt.event.WindowEvent evt) {
                 formWindowClosing(evt);
+            }
+            public void windowOpened(java.awt.event.WindowEvent evt) {
+                formWindowOpened(evt);
             }
         });
 
@@ -137,42 +152,23 @@ public class GenerateSudokuProgressDialog extends javax.swing.JDialog implements
     private void formWindowClosing(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_formWindowClosing
         cancelButtonActionPerformed(null);
     }//GEN-LAST:event_formWindowClosing
+
+    private void formWindowOpened(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_formWindowOpened
+        // progress window is open -> start the Thread (important, because
+        // some JRE implementations are so slow that the creation is complete before the
+        // window has been drawn; the setVisible(false) will then be useless
+        // and the window will not be closed
+        thread.start();
+//        System.out.println("formWindowOpened!");
+    }//GEN-LAST:event_formWindowOpened
     
+    /**
+     * The thread: creates a puzzle and closes the dialog.
+     */
     @Override
     public void run() {
-        SudokuCreator creator = new SudokuCreator();
-        SudokuSolver solver = SudokuSolver.getInstance();
-        while (! thread.isInterrupted()) {
-            sudoku = creator.generateSudoku(level, true);
-            Sudoku solvedSudoku = sudoku.clone();
-            boolean ok = solver.solve(level, solvedSudoku, true, null);
-            boolean containsTrainingStep = true;
-            if (mode != GameMode.PLAYING) {
-                containsTrainingStep = false;
-                List<SolutionStep> steps = solver.getSteps();
-                for (SolutionStep step : steps) {
-                    if (step.getType().getStepConfig().isEnabledTraining()) {
-                        containsTrainingStep = true;
-                        break;
-                    }
-                }
-            }
-            if (ok && containsTrainingStep && solvedSudoku.getLevel().getOrdinal() == level.getOrdinal()) {
-                sudoku.setLevel(solvedSudoku.getLevel());
-                sudoku.setScore(solvedSudoku.getScore());
-                break;
-            }
-            setAnz(getAnz() + 1);
-            EventQueue.invokeLater(new Runnable() {
-                @Override
-                public void run() {
-                    progressLabel.setText(Integer.toString(getAnz()));
-                }
-            });
-//            if (getAnz() >= 1) {
-//                break;
-//            }
-        }
+        generator = new BackgroundGenerator();
+        sudoku = generator.generate(level, mode, this);
         EventQueue.invokeLater(new Runnable() {
             @Override
             public void run() {
@@ -181,7 +177,19 @@ public class GenerateSudokuProgressDialog extends javax.swing.JDialog implements
         });
     }
     
-    public Sudoku getSudoku() {
+    /**
+     * Updates the {@link #progressLabel}.
+     */
+    public void updateProgressLabel() {
+        progressLabel.setText(Integer.toString(generator.getAnz()));
+    }
+    
+    /**
+     * Delivers the newsudoku back to the caller.
+     * 
+     * @return 
+     */
+    public Sudoku2 getSudoku() {
         return sudoku;
     }
     
@@ -197,14 +205,6 @@ public class GenerateSudokuProgressDialog extends javax.swing.JDialog implements
                         GameMode.PLAYING).setVisible(true);
             }
         });
-    }
-    
-    private synchronized int getAnz() {
-        return anz;
-    }
-    
-    private synchronized void setAnz(int anz) {
-        this.anz = anz;
     }
     
     // Variables declaration - do not modify//GEN-BEGIN:variables

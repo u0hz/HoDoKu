@@ -311,7 +311,6 @@ public class BrowserLauncher {
     /**
      * Attempts to open a browser and direct it to the passed url.
      *
-     * @todo what to do if the url is null or empty?
      * @param urlString String
      */
     public void openURLinBrowser(String urlString) {

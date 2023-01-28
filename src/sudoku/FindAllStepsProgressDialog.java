@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008/09/10  Bernhard Hobiger
+ * Copyright (C) 2008-11  Bernhard Hobiger
  *
  * This file is part of HoDoKu.
  *
@@ -33,16 +33,17 @@ import javax.swing.KeyStroke;
 
 /**
  *
- * @author  Bernhard Hobiger
+ * @author  hobiwan
  */
 public class FindAllStepsProgressDialog extends javax.swing.JDialog {
     private static final int MAX_STEPS = 27;
     
     private List<SolutionStep> steps;
     private Thread thread;
+    private long ticks;
     
     /** Creates new form FindAllStepsProgressDialog */
-    public FindAllStepsProgressDialog(java.awt.Frame parent, boolean modal, Sudoku sudoku) {
+    public FindAllStepsProgressDialog(java.awt.Frame parent, boolean modal, Sudoku2 sudoku) {
         super(parent, modal);
         
         initComponents();
@@ -66,7 +67,6 @@ public class FindAllStepsProgressDialog extends javax.swing.JDialog {
         FindAllSteps findAllSteps = new FindAllSteps(steps, sudoku, this);
         thread = new Thread(findAllSteps);
         thread.setPriority(Thread.MAX_PRIORITY);
-        thread.start();
     }
     
     /** This method is called from within the constructor to
@@ -89,6 +89,9 @@ public class FindAllStepsProgressDialog extends javax.swing.JDialog {
         addWindowListener(new java.awt.event.WindowAdapter() {
             public void windowClosing(java.awt.event.WindowEvent evt) {
                 formWindowClosing(evt);
+            }
+            public void windowOpened(java.awt.event.WindowEvent evt) {
+                formWindowOpened(evt);
             }
         });
 
@@ -157,6 +160,10 @@ public class FindAllStepsProgressDialog extends javax.swing.JDialog {
         }
         setVisible(false);
     }//GEN-LAST:event_abbrechenButtonActionPerformed
+
+    private void formWindowOpened(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_formWindowOpened
+        thread.start();
+    }//GEN-LAST:event_formWindowOpened
     
     public void updateProgress(final String label, final int step) {
         EventQueue.invokeLater(new Runnable() {
@@ -179,12 +186,16 @@ public class FindAllStepsProgressDialog extends javax.swing.JDialog {
     }
     
     public void updateFishProgressBar(final int actValue) {
-        EventQueue.invokeLater(new Runnable() {
-            @Override
-            public void run() {
-                fishProgressBar.setValue(actValue);
-            }
-        });
+        if ((System.currentTimeMillis() - ticks) > 1000) {
+            ticks = System.currentTimeMillis();
+            EventQueue.invokeLater(new Runnable() {
+
+                @Override
+                public void run() {
+                    fishProgressBar.setValue(actValue);
+                }
+            });
+        }
     }
     
     /**

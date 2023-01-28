@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008/09/10  Bernhard Hobiger
+ * Copyright (C) 2008-11  Bernhard Hobiger
  *
  * This file is part of HoDoKu.
  *
@@ -33,7 +33,7 @@ import javax.swing.UIManager;
 
 /**
  *
- * @author  Bernhard Hobiger
+ * @author  hobiwan
  */
 public class ConfigTrainingDialog extends javax.swing.JDialog {
     private ConfigTrainigPanel myConfigTrainingPanel;

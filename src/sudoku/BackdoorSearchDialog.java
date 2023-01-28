@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008/09/10  Bernhard Hobiger
+ * Copyright (C) 2008-11  Bernhard Hobiger
  *
  * This file is part of HoDoKu.
  *
@@ -28,10 +28,11 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.DefaultListModel;
 import javax.swing.JOptionPane;
+import solver.SudokuSolver;
 
 /**
  *
- * @author Bernhard_2
+ * @author hobiwan
  */
 public class BackdoorSearchDialog extends javax.swing.JDialog implements Runnable {
 
@@ -39,9 +40,9 @@ public class BackdoorSearchDialog extends javax.swing.JDialog implements Runnabl
     private DefaultListModel singlesListModel;
     private DefaultListModel progressListModel;
     private SudokuPanel sudokuPanel;
-    private Sudoku sudoku;
-    private Sudoku orgSudoku;
-    private Sudoku solvedSudoku;
+    private Sudoku2 sudoku;
+    private Sudoku2 orgSudoku;
+//    private Sudoku2 solvedSudoku;
     private SudokuSolver solver;
     private List<Candidate> candidates = new ArrayList<Candidate>();
     private BlockingQueue<String> singlesQueue = new ArrayBlockingQueue<String>(20);
@@ -83,12 +84,12 @@ public class BackdoorSearchDialog extends javax.swing.JDialog implements Runnabl
         progressListModel = new DefaultListModel();
         progressResultList.setModel(progressListModel);
 
-        if (Options.getInstance().bdsSearchCandidatesAnz < 0) {
-            Options.getInstance().bdsSearchCandidatesAnz = 0;
+        if (Options.getInstance().getBdsSearchCandidatesAnz() < 0) {
+            Options.getInstance().setBdsSearchCandidatesAnz(0);
         }
-        cellsCheckBox.setSelected(Options.getInstance().bdsSearchForCells);
-        candidatesCheckBox.setSelected(Options.getInstance().bdsSearchForCandidates);
-        candComboBox.setSelectedIndex(Options.getInstance().bdsSearchCandidatesAnz);
+        cellsCheckBox.setSelected(Options.getInstance().isBdsSearchForCells());
+        candidatesCheckBox.setSelected(Options.getInstance().isBdsSearchForCandidates());
+        candComboBox.setSelectedIndex(Options.getInstance().getBdsSearchCandidatesAnz());
         candComboBox.setEnabled(candidatesCheckBox.isSelected());
 
     }
@@ -132,6 +133,7 @@ public class BackdoorSearchDialog extends javax.swing.JDialog implements Runnabl
         cellsCheckBox.setMnemonic(java.util.ResourceBundle.getBundle("intl/BackdoorSearchDialog").getString("BackdoorSearchPanel.cellsCheckBox.mnemonic").charAt(0));
         cellsCheckBox.setSelected(true);
         cellsCheckBox.setText(bundle.getString("BackdoorSearchPanel.cellsCheckBox.text")); // NOI18N
+        cellsCheckBox.setToolTipText(bundle.getString("BackdoorSearchDialog.cellsCheckBox.toolTipText")); // NOI18N
         cellsCheckBox.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 cellsCheckBoxActionPerformed(evt);
@@ -140,6 +142,7 @@ public class BackdoorSearchDialog extends javax.swing.JDialog implements Runnabl
 
         candidatesCheckBox.setMnemonic(java.util.ResourceBundle.getBundle("intl/BackdoorSearchDialog").getString("BackdoorSearchPanel.candidatesCheckBox.mnemonic").charAt(0));
         candidatesCheckBox.setText(bundle.getString("BackdoorSearchPanel.candidatesCheckBox.text")); // NOI18N
+        candidatesCheckBox.setToolTipText(bundle.getString("BackdoorSearchDialog.candidatesCheckBox.toolTipText")); // NOI18N
         candidatesCheckBox.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 candidatesCheckBoxActionPerformed(evt);
@@ -354,16 +357,16 @@ public class BackdoorSearchDialog extends javax.swing.JDialog implements Runnabl
     }// </editor-fold>//GEN-END:initComponents
 
     private void cellsCheckBoxActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_cellsCheckBoxActionPerformed
-        Options.getInstance().bdsSearchForCells = cellsCheckBox.isSelected();
+        Options.getInstance().setBdsSearchForCells(cellsCheckBox.isSelected());
     }//GEN-LAST:event_cellsCheckBoxActionPerformed
 
     private void candidatesCheckBoxActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_candidatesCheckBoxActionPerformed
-        Options.getInstance().bdsSearchForCandidates = candidatesCheckBox.isSelected();
+        Options.getInstance().setBdsSearchForCandidates(candidatesCheckBox.isSelected());
         candComboBox.setEnabled(candidatesCheckBox.isSelected());
     }//GEN-LAST:event_candidatesCheckBoxActionPerformed
 
     private void candComboBoxActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_candComboBoxActionPerformed
-        Options.getInstance().bdsSearchCandidatesAnz = candComboBox.getSelectedIndex();
+        Options.getInstance().setBdsSearchCandidatesAnz(candComboBox.getSelectedIndex());
     }//GEN-LAST:event_candComboBoxActionPerformed
 
     private void closeButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_closeButtonActionPerformed
@@ -404,13 +407,7 @@ public class BackdoorSearchDialog extends javax.swing.JDialog implements Runnabl
     public void setVisible(boolean visible) {
         if (visible) {
             // check if a sudoku is set (more than 16 clues)
-            SudokuCell[] cells = sudokuPanel.getSudoku().getCells();
-            int anz = 0;
-            for (int i = 0; i < cells.length; i++) {
-                if (cells[i].getValue() != 0) {
-                    anz++;
-                }
-            }
+            int anz = sudokuPanel.getSudoku().getSolvedCellsAnz();
             if (anz <= 16) {
                 JOptionPane.showMessageDialog(this, ResourceBundle.getBundle("intl/BackdoorSearchDialog").getString("BackdoorSearchDialog.error.message") + " (" + anz + ")",
                         ResourceBundle.getBundle("intl/BackdoorSearchDialog").getString("BackdoorSearchDialog.error.title"), JOptionPane.ERROR_MESSAGE);
@@ -428,31 +425,25 @@ public class BackdoorSearchDialog extends javax.swing.JDialog implements Runnabl
     public void run() {
         System.out.println("Thread started!");
         orgSudoku = sudokuPanel.getSudoku().clone();
-        solvedSudoku = sudokuPanel.getSolvedSudoku();
+        //solvedSudoku = sudokuPanel.getSolvedSudoku();
         sudoku = orgSudoku.clone();
         solver = sudokuPanel.getSolver();
         // makes sure the GUI is correctly displayed
         EventQueue.invokeLater(updateRunnable);
         try {
             // search for singles first
-            if (Options.getInstance().bdsSearchForCells) {
+            if (Options.getInstance().isBdsSearchForCells()) {
                 // we need the number of unsolved cells
-                int anz = 0;
-                SudokuCell[] cells = orgSudoku.getCells();
-                for (int i = 0; i < cells.length; i++) {
-                    if (cells[i].getValue() == 0) {
-                        anz++;
-                    }
-                }
+                int anz = orgSudoku.getUnsolvedCellsAnz();
                 //System.out.println("thread: search 1");
                 // singles backdoor: singles only
                 anzFound = 0;
                 if (!checkSingles(1, anz, null)) {
-                    int maxAnz = AbstractSolver.combinations(anz, 2);
+                    int maxAnz = SudokuUtil.combinations(anz, 2);
                     //System.out.println("thread: search 2");
                     if (!checkSingles(2, maxAnz, null)) {
                         //System.out.println("thread: search 3");
-                        maxAnz = AbstractSolver.combinations(anz, 3);
+                        maxAnz = SudokuUtil.combinations(anz, 3);
                         checkSingles(3, maxAnz, null);
                         //System.out.println("Thread: done");
                     }
@@ -460,27 +451,27 @@ public class BackdoorSearchDialog extends javax.swing.JDialog implements Runnabl
                 // singles backdoor: progress measure
                 anzFound = 0;
                 if (!checkSingles(1, anz, Options.getInstance().solverStepsProgress)) {
-                    int maxAnz = AbstractSolver.combinations(anz, 2);
+                    int maxAnz = SudokuUtil.combinations(anz, 2);
                     //System.out.println("thread: search 2");
                     if (!checkSingles(2, maxAnz, Options.getInstance().solverStepsProgress)) {
                         //System.out.println("thread: search 3");
-                        maxAnz = AbstractSolver.combinations(anz, 3);
+                        maxAnz = SudokuUtil.combinations(anz, 3);
                         checkSingles(3, maxAnz, Options.getInstance().solverStepsProgress);
                         //System.out.println("Thread: done");
                     }
                 }
             }
             // now for candidates
-            if (Options.getInstance().bdsSearchForCandidates) {
+            if (Options.getInstance().isBdsSearchForCandidates()) {
                 // collect all candidates
                 int anz = 0;
-                SudokuCell[] cells = orgSudoku.getCells();
+                //SudokuCell[] cells = orgSudoku.getCells();
                 candidates.clear();
-                for (int i = 0; i < cells.length; i++) {
-                    if (cells[i].getValue() == 0) {
-                        short[] cands = cells[i].getAllCandidates(SudokuCell.PLAY);
+                for (int i = 0; i < Sudoku2.LENGTH; i++) {
+                    if (sudoku.getValue(i) == 0) {
+                        int[] cands = sudoku.getAllCandidates(i);
                         for (int j = 0; j < cands.length; j++) {
-                            if (cands[j] != solvedSudoku.getCell(i).getValue()) {
+                            if (cands[j] != sudoku.getSolution(i)) {
                                 candidates.add(new Candidate(i, cands[j]));
                                 anz++;
                             }
@@ -489,12 +480,12 @@ public class BackdoorSearchDialog extends javax.swing.JDialog implements Runnabl
                 }
                 // candidates backdoor: singles only
                 anzFound = 0;
-                int maxDepth = Options.getInstance().bdsSearchCandidatesAnz + 1;
+                int maxDepth = Options.getInstance().getBdsSearchCandidatesAnz() + 1;
                 if (!checkCandidates(1, anz, candidates, null) && maxDepth > 1) {
-                    int maxAnz = AbstractSolver.combinations(anz, 2);
+                    int maxAnz = SudokuUtil.combinations(anz, 2);
                     //System.out.println("thread: search 2 (" + maxAnz + ")");
                     if (!checkCandidates(2, maxAnz, candidates, null) && maxDepth > 2) {
-                        maxAnz = AbstractSolver.combinations(anz, 3);
+                        maxAnz = SudokuUtil.combinations(anz, 3);
                         //System.out.println("thread: search 3 (" + maxAnz + ")");
                         checkCandidates(3, maxAnz, candidates, null);
                         //System.out.println("Thread: done");
@@ -503,10 +494,10 @@ public class BackdoorSearchDialog extends javax.swing.JDialog implements Runnabl
                 // candidates backdoor: progress measure
                 anzFound = 0;
                 if (!checkCandidates(1, anz, candidates, Options.getInstance().solverStepsProgress) && maxDepth > 1) {
-                    int maxAnz = AbstractSolver.combinations(anz, 2);
+                    int maxAnz = SudokuUtil.combinations(anz, 2);
                     //System.out.println("thread: search 2 (" + maxAnz + ")");
                     if (!checkCandidates(2, maxAnz, candidates, Options.getInstance().solverStepsProgress) && maxDepth > 2) {
-                        maxAnz = AbstractSolver.combinations(anz, 3);
+                        maxAnz = SudokuUtil.combinations(anz, 3);
                         //System.out.println("thread: search 3 (" + maxAnz + ")");
                         checkCandidates(3, maxAnz, candidates, Options.getInstance().solverStepsProgress);
                         //System.out.println("Thread: done");
@@ -695,7 +686,7 @@ public class BackdoorSearchDialog extends javax.swing.JDialog implements Runnabl
         }
         label += ")";
         for (int i = 0; i < end; i++) {
-            if (orgSudoku.getCell(i).getValue() != 0) {
+            if (orgSudoku.getValue(i) != 0) {
                 // cell already set
                 continue;
             }
@@ -710,7 +701,7 @@ public class BackdoorSearchDialog extends javax.swing.JDialog implements Runnabl
                 triggerUpdateProgressbar(label, max, ++counter);
             } else {
                 for (int j = i + 1; j < end; j++) {
-                    if (orgSudoku.getCell(j).getValue() != 0) {
+                    if (orgSudoku.getValue(j) != 0) {
                         // cell already set
                         continue;
                     }
@@ -725,7 +716,7 @@ public class BackdoorSearchDialog extends javax.swing.JDialog implements Runnabl
                         triggerUpdateProgressbar(label, max, ++counter);
                     } else {
                         for (int k = j + 1; k < end; k++) {
-                            if (orgSudoku.getCell(k).getValue() != 0) {
+                            if (orgSudoku.getValue(k) != 0) {
                                 // cell already set
                                 continue;
                             }
@@ -772,21 +763,21 @@ public class BackdoorSearchDialog extends javax.swing.JDialog implements Runnabl
         sudoku.set(orgSudoku);
         if (cand1 == null) {
             // set the cells to the correct values
-            sudoku.setCell(index1, solvedSudoku.getCell(index1).getValue());
+            sudoku.setCell(index1, sudoku.getSolution(index1));
             if (index2 >= 0) {
-                sudoku.setCell(index2, solvedSudoku.getCell(index2).getValue());
+                sudoku.setCell(index2, sudoku.getValue(index2));
             }
             if (index3 >= 0) {
-                sudoku.setCell(index3, solvedSudoku.getCell(index3).getValue());
+                sudoku.setCell(index3, sudoku.getValue(index3));
             }
         } else {
             // remove the candidates
-            sudoku.setCandidate(cand1.index, SudokuCell.PLAY, cand1.value, false);
+            sudoku.setCandidate(cand1.getIndex(), cand1.getValue(), false);
             if (cand2 != null) {
-                sudoku.setCandidate(cand2.index, SudokuCell.PLAY, cand2.value, false);
+                sudoku.setCandidate(cand2.getIndex(), cand2.getValue(), false);
             }
             if (cand3 != null) {
-                sudoku.setCandidate(cand3.index, SudokuCell.PLAY, cand3.value, false);
+                sudoku.setCandidate(cand3.getIndex(), cand3.getValue(), false);
             }
         }
         // now try and solve
@@ -807,12 +798,12 @@ public class BackdoorSearchDialog extends javax.swing.JDialog implements Runnabl
                     cellString += ", " + SolutionStep.getCellPrint(index3, false);
                 }
             } else {
-                cellString = SolutionStep.getCellPrint(cand1.index, false) + "<>" + cand1.value;
+                cellString = SolutionStep.getCellPrint(cand1.getIndex(), false) + "<>" + cand1.getValue();
                 if (cand2 != null) {
-                    cellString += ", " + SolutionStep.getCellPrint(cand2.index, false) + "<>" + cand2.value;
+                    cellString += ", " + SolutionStep.getCellPrint(cand2.getIndex(), false) + "<>" + cand2.getValue();
                 }
                 if (cand3 != null) {
-                    cellString += ", " + SolutionStep.getCellPrint(cand2.index, false) + "<>" + cand3.value;
+                    cellString += ", " + SolutionStep.getCellPrint(cand2.getIndex(), false) + "<>" + cand3.getValue();
                 }
             }
             if (stepConfigs == null) {

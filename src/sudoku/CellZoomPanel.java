@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008/09/10  Bernhard Hobiger
+ * Copyright (C) 2008-11  Bernhard Hobiger
  *
  * This file is part of HoDoKu.
  *
@@ -58,7 +58,7 @@ import javax.swing.UIManager;
 
 /**
  *
- * @author Bernhard_2
+ * @author hobiwan
  */
 public class CellZoomPanel extends javax.swing.JPanel {
 
@@ -979,7 +979,7 @@ public class CellZoomPanel extends javax.swing.JPanel {
         }
     }
     
-    public void calculateLayout() {
+    public final void calculateLayout() {
         if (defaultButtonHeight == -1) {
             // not yet initialized!
             return;
@@ -1115,8 +1115,8 @@ public class CellZoomPanel extends javax.swing.JPanel {
             toggleCandidatesButtons[i].setBackground(normButtonBackground);
             toggleCandidatesButtons[i].setIcon(null);
         }
-        cellColorPanel.setBackground(Options.getInstance().defaultCellColor);
-        candidateColorPanel.setBackground(Options.getInstance().defaultCellColor);
+        cellColorPanel.setBackground(Options.getInstance().getDefaultCellColor());
+        candidateColorPanel.setBackground(Options.getInstance().getDefaultCellColor());
 
         // now set accordingly
         this.aktColor = aktColor;
@@ -1124,13 +1124,17 @@ public class CellZoomPanel extends javax.swing.JPanel {
             // no coloring -> buttons are available
             for (int i = 0; i < values.size(); i++) {
                 int cand = values.get(i) - 1;
-                setValueButtons[cand].setText(NUMBERS[cand]);
-                setValueButtons[cand].setEnabled(true);
+                if (cand >= 0 && cand <= 8) {
+                    setValueButtons[cand].setText(NUMBERS[cand]);
+                    setValueButtons[cand].setEnabled(true);
+                }
             }
             for (int i = 0; i < candidates.size(); i++) {
                 int cand = candidates.get(i) - 1;
-                toggleCandidatesButtons[cand].setText(NUMBERS[cand]);
-                toggleCandidatesButtons[cand].setEnabled(true);
+                if (cand >= 0 && cand <= 8) {
+                    toggleCandidatesButtons[cand].setText(NUMBERS[cand]);
+                    toggleCandidatesButtons[cand].setEnabled(true);
+                }
             }
             if (singleCell) {
                 toggleCandidatesLabel.setText(ResourceBundle.getBundle("intl/CellZoomPanel").getString("CellZoomPanel.toggleCandidatesLabel.text"));
@@ -1143,9 +1147,9 @@ public class CellZoomPanel extends javax.swing.JPanel {
         } else {
             // coloring
             if (colorCellOrCandidate) {
-                cellColorPanel.setBackground(Options.getInstance().coloringColors[aktColor]);
+                cellColorPanel.setBackground(Options.getInstance().getColoringColors()[aktColor]);
             } else {
-                candidateColorPanel.setBackground(Options.getInstance().coloringColors[aktColor]);
+                candidateColorPanel.setBackground(Options.getInstance().getColoringColors()[aktColor]);
             }
             if (coloredCells != null) {
                 // single cell is colored: set colors in buttons
@@ -1161,7 +1165,7 @@ public class CellZoomPanel extends javax.swing.JPanel {
                         int cand = candidates.get(i);
                         if (coloredCandidates.containsKey(index * 10 + cand)) {
                             int candIndex = coloredCandidates.get(index * 10 + cand);
-                            Color candColor = Options.getInstance().coloringColors[candIndex];
+                            Color candColor = Options.getInstance().getColoringColors()[candIndex];
                             toggleCandidatesButtons[cand - 1].setForeground(candColor);
                             toggleCandidatesButtons[cand - 1].setBackground(candColor);
                             //toggleCandidatesButtons[cand - 1].setText(NUMBERS[cand - 1]);
@@ -1182,9 +1186,9 @@ public class CellZoomPanel extends javax.swing.JPanel {
         if (size > 0) {
             Image img = new BufferedImage(size, size, BufferedImage.TYPE_INT_RGB);
             Graphics2D g = (Graphics2D) img.getGraphics();
-            Color color = Options.getInstance().defaultCellColor;
-            if (colorIndex < Options.getInstance().coloringColors.length) {
-                color = Options.getInstance().coloringColors[colorIndex];
+            Color color = Options.getInstance().getDefaultCellColor();
+            if (colorIndex < Options.getInstance().getColoringColors().length) {
+                color = Options.getInstance().getColoringColors()[colorIndex];
             }
             g.setColor(color);
             g.fillRect(0, 0, size, size);

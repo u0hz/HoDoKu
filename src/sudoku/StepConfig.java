@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008/09/10  Bernhard Hobiger
+ * Copyright (C) 2008-11  Bernhard Hobiger
  *
  * This file is part of HoDoKu.
  *
@@ -21,9 +21,9 @@ package sudoku;
 
 /**
  *
- * @author Bernhard Hobiger
+ * @author hobiwan
  */
-public class StepConfig implements Cloneable, Comparable<StepConfig> {
+public final class StepConfig implements Cloneable, Comparable<StepConfig> {
     private int index;                 // search order when solving
     private SolutionType type;         // which step
     private int level;                 // Index in Options.difficultyLevels
