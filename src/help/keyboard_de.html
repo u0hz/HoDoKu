@@ -1,0 +1,136 @@
+<!-- 
+    Document   : keyboard_default
+    Created on : 13.12.2008, 10:34:00
+    Author     : Admin
+-->
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<style type="text/css" media="all">
+<!--
+body {
+    font-family: Arial, sans-serif;
+    font-size: 12pt;
+    line-height: 25pt;
+}
+
+h1 {
+    font-size: 14pt;
+    font-weight: bold;
+    /*text-align: center;
+    margin: 0 auto; */
+}
+
+dt {
+    font-weight: bold;
+    margin: 5px;
+}
+
+dd {
+    margin: 5px;
+    margin-left: 40px;
+    margin-bottom: 10px;
+}
+-->
+</style>
+<html>
+  <head>
+    <title></title>
+    <meta http-equiv="Content-Type" content="text/html; charset=windows-1252">
+  </head>
+  <body>
+    <h1>Normale Benutzung</h1>
+    <dl>
+        <dt>Spielen mit der Maus</dt>
+        <dd>Um Werte/Kandidaten mit Hilfe der Maus zu setzen eine der Ziffern
+        in der Statusleiste anklicken (der Mauszeiger verändert seine Form entsprechend).
+        Klick auf den linken Mausknopf setzt einen Wert, Klick auf den rechten
+        löscht ihn wieder. Um Kandidaten zu setzen oder zu löschen, die [Strg]-Taste
+        während der Mausklicks gedrückt halten. Um zum Normalbetrieb zurückzukehren
+        "Aus" in der Statusleiste anklicken.</dd>
+        <dt>[links], [oben], [rechts], [unten]</dt>
+        <dd>Bewegt den Cursor (die gerade aktive Zelle).</dd>
+        <dt>[1] ... [9]</dt>
+        <dd>Setzt den Wert in der aktiven Zelle; in der Angabe gesetzte Zellen
+        (schwarze Ziffern) können nicht überschrieben werden.</dd>
+        <dt>[Strg][1] ... [Strg][9]</dt>
+        <dd>Schaltet den entsprechenden Kandidaten in der aktiven Zelle ein bzw. aus.</dd>
+        <dt>[Leerzeichen]</dt>
+        <dd>Wenn ein Filter gesetzt ist (siehe unten), wird der gefilterte
+        Kandidat ein-/ausgeschaltet.</dd>
+        <dt>[Entf], [Rückschritt]</dt>
+        <dd>Löscht den Wert in der aktiven Zelle (Angabe kann nicht gelöscht werden).</dd>
+    </dl>
+    <h1>Filter</h1>
+    <p>HoDoKu unterstützt zwei verschiedene Filter: Anzeige aller Zellen, in denen
+    eine bestimmte Ziffer erlaubt ist (Zellen sind grün), und Anzeige aller Zellen, 
+    in denen die Ziffer verboten ist (Zellen sind rot).</p>
+    <dl>
+        <dt>[F1] ... [F9]</dt>
+        <dd>Setzt bzw. löscht die gefilterte Ziffer.</dd>
+        <dt>[Strg][F1] ... [Strg][F9]</dt>
+        <dd>Setzt bzw. löscht die gefilterte Ziffer und wechselt dabei den
+        Filtermodus (erlaubt/verboten).</dd>
+        <dt>[&gt;]</dt>
+        <dd>Ist ein Filter aktiv, wird die nächste Ziffer gesetzt.</dd>
+        <dt>[&lt;]</dt>
+        <dd>Ist ein Filter aktiv, wird die vorhergehende Ziffer gesetzt.</dd>
+    </dl>
+    <h1>Coloring</h1>
+    <dl>
+        <dt>[a]/[A], [b]/[B], [c]/[C], [d]/[D], [e]/[E]</dt>
+        <dd>Setzt/löscht den Hintergrund der gerade aktiven Zelle.</dd>
+        <dt>[r]</dt>
+        <dd>Setzt den Hintergrund aller Zellen zurück.</dd>
+    </dl>
+    <h1>Sonstiges</h1>
+    <dl>
+        <dt>[Umschalt][Strg]</dt>
+        <dd>Zeige alle möglichen Kandidaten in der aktiven Zelle (nur wenn
+        "Optionen|Alle Kandidaten anzeigen" nicht gesetzt ist).</dd>
+        <dt>[Umschalt][Alt]</dt>
+        <dd>Zeige alle möglichen Kandidaten in allen Zellen (nur wenn
+        "Optionen|Alle Kandidaten anzeigen" nicht gesetzt ist).</dd>
+    </dl>
+    <h1>Menü und Dialoge</h1>
+    <dl>
+        <dt>[Strg][n]</dt>
+        <dd>Erzeuge ein neues zufälliges Sudoku.</dd>
+        <dt>[Strg][o]</dt>
+        <dd>Datei öffnen (Konfiguration oder Sudoku).</dd>
+        <dt>[Strg][s]</dt>
+        <dd>Datei speichern unter (Konfiguration oder Sudoku).</dd>
+        <dt>[Strg][p]</dt>
+        <dd>Sudoku drucken.</dd>
+        <dt>[Alt][x]</dt>
+        <dd>Programm beenden.</dd>
+        <dt>[Strg][z]</dt>
+        <dd>Rückgängig.</dd>
+        <dt>[Strg][y]</dt>
+        <dd>Wiederherstellen.</dd>
+        <dt>[Strg][c]</dt>
+        <dd>Kandidaten in die Zwischenablage kopieren.</dd>
+        <dt>[Strg][v]</dt>
+        <dd>Sudoku aus der Zwischenablage einfügen.</dd>
+        <dt>[Strg][Umschalt][e]</dt>
+        <dd>Einstellungen.</dd>
+        <dt>[Strg][Umschalt][1] ... [Strg][Umschalt][5]</dt>
+        <dd>Setze den Schwierigkeitsgrad für neu erzeugte Sudokus (1 ... Leicht bis
+        5 ... Extrem).</dd>
+        <dt>[Alt][F12]</dt>
+        <dd>Vagen Hinweis zeigen.</dd>
+        <dt>[Strg][F12]</dt>
+        <dd>Konkreten Hinweis zeigen.</dd>
+        <dt>[F12]</dt>
+        <dd>Nächsten Lösungsschritt zeigen.</dd>
+        <dt>[F11]</dt>
+        <dd>Alle Singles setzen.</dd>
+        <dt>[Strg][Umschalt][s]</dt>
+        <dd>Nur Sudoku anzeigen.</dd>
+        <dt>[Strg][Umschalt][z]</dt>
+        <dd>Übersicht über verwendete Lösungsschritte anzeigen.</dd>
+        <dt>[Strg][Umschalt][l]</dt>
+        <dd>Lösung(en) anzeigen.</dd>
+        <dt>[Strg][Umschalt][a]</dt>
+        <dd>Alle derzeit möglichen Lösungsschritte anzeigen.</dd>
+    </dl>
+  </body>
+</html>

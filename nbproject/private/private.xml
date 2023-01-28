@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project-private xmlns="http://www.netbeans.org/ns/project-private/1">
+    <data xmlns="http://www.netbeans.org/ns/profiler/1" version="0.9.1"/>
+    <editor-bookmarks xmlns="http://www.netbeans.org/ns/editor-bookmarks/1">
+        <file>
+            <url>src/sudoku/UniquenessSolver.java</url>
+            <line>288</line>
+            <line>325</line>
+            <line>545</line>
+        </file>
+        <file>
+            <url>src/sudoku/FishSolver.java</url>
+            <line>418</line>
+        </file>
+        <file>
+            <url>src/sudoku/ChainSolver.java</url>
+            <line>610</line>
+        </file>
+        <file>
+            <url>src/sudoku/SolutionStep.java</url>
+            <line>1322</line>
+            <line>1660</line>
+        </file>
+        <file>
+            <url>src/sudoku/SingleDigitPatternSolver.java</url>
+            <line>272</line>
+            <line>295</line>
+        </file>
+        <file>
+            <url>src/sudoku/MainFrame.java</url>
+            <line>1370</line>
+            <line>1543</line>
+        </file>
+        <file>
+            <url>src/sudoku/TablingSolver.java</url>
+            <line>398</line>
+            <line>1334</line>
+        </file>
+        <file>
+            <url>src/sudoku/SolutionPanel.java</url>
+            <line>396</line>
+            <line>420</line>
+        </file>
+        <file>
+            <url>src/sudoku/Options.java</url>
+            <line>421</line>
+        </file>
+    </editor-bookmarks>
+    <open-files xmlns="http://www.netbeans.org/ns/projectui-open-files/1">
+        <file>file:/D:/Projekte/Java/HoDoKu/src/sudoku/KeyboardLayoutFrame.java</file>
+    </open-files>
+</project-private>
