@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008/09  Bernhard Hobiger
+ * Copyright (C) 2008/09/10  Bernhard Hobiger
  *
  * This file is part of HoDoKu.
  *
@@ -40,6 +40,7 @@ public class SimpleSolver extends AbstractSolver {
     private int[] tmpCandArr = new int[16];
     
     private List<SolutionStep> steps;
+    private SolutionStep globalStep = new SolutionStep();
     
     /** Creates a new instance of SimpleSolver */
     public SimpleSolver(SudokuSolver solver) {
@@ -104,14 +105,14 @@ public class SimpleSolver extends AbstractSolver {
     public List<SolutionStep> findAllFullHouses(Sudoku sudoku) {
         Sudoku oldSudoku = getSudoku();
         setSudoku(sudoku);
-        List<SolutionStep> oldList = getSteps();
+        List<SolutionStep> oldList = steps;
         List<SolutionStep> newList = new ArrayList<SolutionStep>();
-        setSteps(newList);
+        steps = newList;
         findFullHouseInEntity(SudokuCell.BLOCK, Sudoku.BLOCKS);
         findFullHouseInEntity(SudokuCell.LINE, Sudoku.LINES);
         findFullHouseInEntity(SudokuCell.COL, Sudoku.COLS);
-        Collections.sort(getSteps());
-        setSteps(oldList);
+        Collections.sort(steps);
+        steps = oldList;
         if (oldSudoku != null) {
             setSudoku(oldSudoku);
         }
@@ -125,7 +126,7 @@ public class SimpleSolver extends AbstractSolver {
      * handelt es sich um ein "Full House".
      */
     private SolutionStep findFullHouse() {
-        getSteps().clear();
+        SudokuUtil.clearStepList(steps);
         SolutionStep step = findFullHouseInEntity(SudokuCell.BLOCK, Sudoku.BLOCKS);
         if (step != null) return step;
         step = findFullHouseInEntity(SudokuCell.LINE, Sudoku.LINES);
@@ -180,26 +181,26 @@ public class SimpleSolver extends AbstractSolver {
                 step.setEntityNumber(entityFound + 1);
                 step.addValue(value);
                 step.addIndex(indexFound);
-                getSteps().add(step);
+                steps.add(step);
             }
         }
-        if (getSteps().size() > 0) {
-            return getSteps().get(0);
+        if (steps.size() > 0) {
+            return steps.get(0);
         }
         return null;
     }
     
     public List<SolutionStep> findAllNakedXle(Sudoku sudoku) {
-        List<SolutionStep> oldList = getSteps();
+        List<SolutionStep> oldList = steps;
         List<SolutionStep> newList = new ArrayList<SolutionStep>();
         Sudoku oldSudoku = getSudoku();
         setSudoku(sudoku);
-        setSteps(newList);
+        steps = newList;
         for (int i = 1; i <= 4; i++) {
             findAllNakedXle(sudoku, i, false);
         }
-        Collections.sort(getSteps());
-        setSteps(oldList);
+        Collections.sort(steps);
+        steps = oldList;
         if (oldSudoku != null) {
             setSudoku(oldSudoku);
         }
@@ -209,11 +210,11 @@ public class SimpleSolver extends AbstractSolver {
     public List<SolutionStep> findAllNakedXle(Sudoku sudoku, int anz, boolean createNewList) {
         Sudoku oldSudoku = getSudoku();
         setSudoku(sudoku);
-        List<SolutionStep> oldList = getSteps();
-        List<SolutionStep> newList = getSteps();
+        List<SolutionStep> oldList = steps;
+        List<SolutionStep> newList = steps;
         if (createNewList) {
             newList = new ArrayList<SolutionStep>();
-            setSteps(newList);
+            steps = newList;
         }
         findNakedXleInEntity(SudokuCell.BLOCK, Sudoku.BLOCKS, anz);
         if (anz > 1) {
@@ -221,20 +222,20 @@ public class SimpleSolver extends AbstractSolver {
             findNakedXleInEntity(SudokuCell.COL, Sudoku.COLS, anz);
         }
         if (createNewList) {
-            setSteps(oldList);
+            steps = oldList;
             return newList;
         }
         if (oldSudoku != null) {
             setSudoku(oldSudoku);
         }
-        return getSteps();
+        return steps;
     }
     
     /**
      * Es wird nur auf die Anzahl der Kandidaten pro Zelle geschaut
      */
     private SolutionStep findNakedXle(int anz, boolean lockedOnly) {
-        getSteps().clear();
+        SudokuUtil.clearStepList(steps);
         SolutionStep step = findNakedXleInEntity(SudokuCell.BLOCK, Sudoku.BLOCKS, anz, lockedOnly);
         if (step != null) return step;
         step = findNakedXleInEntity(SudokuCell.LINE, Sudoku.LINES, anz, lockedOnly);
@@ -299,7 +300,7 @@ public class SimpleSolver extends AbstractSolver {
                         step.setEntityNumber(entity + 1);
                         step.addValue(tmpArrC[i][0]);
                         step.addIndex(tmpArrI[i][0]);
-                        getSteps().add(step);
+                        steps.add(step);
                     } else {
                         for (int j = i + 1; j < tmpArr1.length && found == false; j++) {
                             if (tmpArr1[j] > 0 && tmpArr1[j] <= anz) {
@@ -312,6 +313,7 @@ public class SimpleSolver extends AbstractSolver {
                                         // ok, es ist ein "Naked Pair" -> löschbare Kandidaten suchen
                                         // zuerst noch die Indexe ermitteln, dazu die Methode eq() zweckentfremden
                                         eq(2, tmpIndexArr, tmpArrI[i], tmpArrI[j], null, null);
+                                        // CAUTION: Returns a reference to globalStep!
                                         step = createHiddenXleSolutionStep(false, anz, type, entity, tmpIndexArr,
                                                 tmpCandArr[0], tmpCandArr[1], 0, 0, indices[entity]);
                                         if (checkLockedPairTriple(step, type, entity, tmpIndexArr, tmpCandArr[0], tmpCandArr[1], 0, true)) {
@@ -321,7 +323,7 @@ public class SimpleSolver extends AbstractSolver {
                                             continue;
                                         }
                                         if (step.getCandidatesToDelete().size() != 0) {
-                                            getSteps().add(step);
+                                            steps.add((SolutionStep)step.clone());
                                         } else {
                                             // weitersuchen
                                             step = null;
@@ -335,6 +337,7 @@ public class SimpleSolver extends AbstractSolver {
                                                 if (eq(3, false, tmpCandArr, tmpArrC[i], tmpArrC[j], tmpArrC[k], null)) {
                                                     // ok, es ist ein "Naked Triple" -> löschbare Kandidaten suchen
                                                     eq(3, tmpIndexArr, tmpArrI[i], tmpArrI[j], tmpArrI[k], null);
+                                                    // CAUTION: Returns a reference to globalStep!
                                                     step = createHiddenXleSolutionStep(false, anz, type, entity, tmpIndexArr,
                                                             tmpCandArr[0], tmpCandArr[1], tmpCandArr[2], 0, indices[entity]);
                                                     if (checkLockedPairTriple(step, type, entity, tmpIndexArr, tmpCandArr[0],
@@ -345,7 +348,7 @@ public class SimpleSolver extends AbstractSolver {
                                                         continue;
                                                     }
                                                     if (step.getCandidatesToDelete().size() != 0) {
-                                                        getSteps().add(step);
+                                                        steps.add((SolutionStep)step.clone());
                                                     } else {
                                                         // weitersuchen
                                                         step = null;
@@ -358,10 +361,11 @@ public class SimpleSolver extends AbstractSolver {
                                                         if (eq(4, false, tmpCandArr, tmpArrC[i], tmpArrC[j], tmpArrC[k], tmpArrC[l])) {
                                                             // ok, es ist ein "Naked Quadruple" -> löschbare Kandidaten suchen
                                                             eq(4, tmpIndexArr, tmpArrI[i], tmpArrI[j], tmpArrI[k], tmpArrI[l]);
+                                                            // CAUTION: Returns a reference to globalStep!
                                                             step = createHiddenXleSolutionStep(false, anz, type, entity, tmpIndexArr,
                                                                     tmpCandArr[0], tmpCandArr[1], tmpCandArr[2], tmpCandArr[3], indices[entity]);
                                                             if (step.getCandidatesToDelete().size() != 0) {
-                                                                getSteps().add(step);
+                                                                steps.add((SolutionStep)step.clone());
                                                             } else {
                                                                 // weitersuchen
                                                                 step = null;
@@ -379,23 +383,23 @@ public class SimpleSolver extends AbstractSolver {
                 }
             }
         }
-        if (getSteps().size() > 0) {
-            return getSteps().get(0);
+        if (steps.size() > 0) {
+            return steps.get(0);
         }
         return null;
     }
     
     public List<SolutionStep> findAllHiddenXle(Sudoku sudoku) {
-        List<SolutionStep> oldList = getSteps();
+        List<SolutionStep> oldList = steps;
         List<SolutionStep> newList = new ArrayList<SolutionStep>();
         Sudoku oldSudoku = getSudoku();
         setSudoku(sudoku);
-        setSteps(newList);
+        steps = newList;
         for (int i = 1; i <= 4; i++) {
             findAllHiddenXle(sudoku, i, false);
         }
-        Collections.sort(getSteps());
-        setSteps(oldList);
+        Collections.sort(steps);
+        steps = oldList;
         if (oldSudoku != null) {
             setSudoku(oldSudoku);
         }
@@ -405,23 +409,23 @@ public class SimpleSolver extends AbstractSolver {
     public List<SolutionStep> findAllHiddenXle(Sudoku sudoku, int anz, boolean createNewList) {
         Sudoku oldSudoku = getSudoku();
         setSudoku(sudoku);
-        List<SolutionStep> oldList = getSteps();
-        List<SolutionStep> newList = getSteps();
+        List<SolutionStep> oldList = steps;
+        List<SolutionStep> newList = steps;
         if (createNewList) {
             newList = new ArrayList<SolutionStep>();
-            setSteps(newList);
+            steps = newList;
         }
         findHiddenXleInEntity(SudokuCell.BLOCK, Sudoku.BLOCKS, anz);
         findHiddenXleInEntity(SudokuCell.LINE, Sudoku.LINES, anz);
         findHiddenXleInEntity(SudokuCell.COL, Sudoku.COLS, anz);
         if (createNewList) {
-            setSteps(oldList);
+            steps = oldList;
             return newList;
         }
         if (oldSudoku != null) {
             setSudoku(oldSudoku);
         }
-        return getSteps();
+        return steps;
     }
     
     /**
@@ -429,7 +433,7 @@ public class SimpleSolver extends AbstractSolver {
      * muss es ein "Hidden Single" oder ein "Naked Single" sein.
      */
     private SolutionStep findHiddenXle(int anz) {
-        getSteps().clear();
+        SudokuUtil.clearStepList(steps);
         SolutionStep step = findHiddenXleInEntity(SudokuCell.BLOCK, Sudoku.BLOCKS, anz);
         if (step != null) return step;
         step = findHiddenXleInEntity(SudokuCell.LINE, Sudoku.LINES, anz);
@@ -458,7 +462,7 @@ public class SimpleSolver extends AbstractSolver {
                         step.setEntityNumber(entity + 1);
                         step.addValue(i + 1);
                         step.addIndex(tmpArrI[i][0]);
-                        getSteps().add(step);
+                        steps.add(step);
                     } else {
                         for (int j = i + 1; j < tmpArr1.length && found == false; j++) {
                             if (tmpArr1[j] > 0 && tmpArr1[j] <= anz) {
@@ -469,12 +473,13 @@ public class SimpleSolver extends AbstractSolver {
                                     // muss noch löschbare Kandidaten geben
                                     if (eq(2, tmpIndexArr, tmpArrI[i], tmpArrI[j], null, null)) {
                                         // ok, es ist ein "Hidden Pair" -> löschbare Kandidaten suchen
+                                        // CAUTION: Returns a reference to globalStep!
                                         step = createHiddenXleSolutionStep(anz, type, entity, tmpIndexArr, i + 1, j + 1, 0, 0);
                                         if (checkLockedPairTriple(step, type, entity, tmpIndexArr, i + 1, j + 1, 0, true)) {
                                             step.setType(SolutionType.LOCKED_PAIR);
                                         }
                                         if (step.getCandidatesToDelete().size() != 0) {
-                                            getSteps().add(step);
+                                            steps.add((SolutionStep)step.clone());
                                         } else {
                                             // weitersuchen
                                             step = null;
@@ -487,12 +492,13 @@ public class SimpleSolver extends AbstractSolver {
                                                 // drei gleiche gefunden
                                                 if (eq(3, tmpIndexArr, tmpArrI[i], tmpArrI[j], tmpArrI[k], null)) {
                                                     // ok, es ist ein "Hidden Triple" -> löschbare Kandidaten suchen
+                                                    // CAUTION: Returns a reference to globalStep!
                                                     step = createHiddenXleSolutionStep(anz, type, entity, tmpIndexArr, i + 1, j + 1, k + 1, 0);
                                                     if (checkLockedPairTriple(step, type, entity, tmpIndexArr, i + 1, j + 1, k + 1, true)) {
                                                         step.setType(SolutionType.LOCKED_TRIPLE);
                                                     }
                                                     if (step.getCandidatesToDelete().size() != 0) {
-                                                        getSteps().add(step);
+                                                        steps.add((SolutionStep)step.clone());
                                                     } else {
                                                         // weitersuchen
                                                         step = null;
@@ -504,9 +510,10 @@ public class SimpleSolver extends AbstractSolver {
                                                         // ok, kann Hidden Quadruple sein
                                                         if (eq(4, tmpIndexArr, tmpArrI[i], tmpArrI[j], tmpArrI[k], tmpArrI[l])) {
                                                             // ok, es ist ein "Hidden Quadruple" -> löschbare Kandidaten suchen
+                                                            // CAUTION: Returns a reference to globalStep!
                                                             step = createHiddenXleSolutionStep(anz, type, entity, tmpIndexArr, i + 1, j + 1, k + 1, l + 1);
                                                             if (step.getCandidatesToDelete().size() != 0) {
-                                                                getSteps().add(step);
+                                                                steps.add((SolutionStep)step.clone());
                                                             } else {
                                                                 // weitersuchen
                                                                 step = null;
@@ -524,8 +531,8 @@ public class SimpleSolver extends AbstractSolver {
                 }
             }
         }
-        if (getSteps().size() > 0) {
-            return getSteps().get(0);
+        if (steps.size() > 0) {
+            return steps.get(0);
         }
         return null;
     }
@@ -576,7 +583,10 @@ public class SimpleSolver extends AbstractSolver {
             case 4: sType = hidden ? SolutionType.HIDDEN_QUADRUPLE : SolutionType.NAKED_QUADRUPLE; break;
             default: throw new RuntimeException("Invalid number: " + anz);
         }
-        SolutionStep step = new SolutionStep(sType);
+        globalStep.reset();
+        globalStep.setType(sType);
+//        SolutionStep step = new SolutionStep(sType);
+        SolutionStep step = globalStep;
         step.setEntity(type);
         step.setEntityNumber(entity + 1);
         step.addValue(n1);
@@ -783,14 +793,14 @@ public class SimpleSolver extends AbstractSolver {
     public List<SolutionStep> findAllLockedCandidates(Sudoku sudoku) {
         Sudoku oldSudoku = getSudoku();
         setSudoku(sudoku);
-        List<SolutionStep> oldList = getSteps();
+        List<SolutionStep> oldList = steps;
         List<SolutionStep> newList = new ArrayList<SolutionStep>();
-        setSteps(newList);
+        steps = newList;
         findLockedCandidatesInEntity(SudokuCell.BLOCK, Sudoku.BLOCKS);
         findLockedCandidatesInEntity(SudokuCell.LINE, Sudoku.LINES);
         findLockedCandidatesInEntity(SudokuCell.COL, Sudoku.COLS);
-        Collections.sort(getSteps());
-        setSteps(oldList);
+        Collections.sort(steps);
+        steps = oldList;
         if (oldSudoku != null) {
             setSudoku(oldSudoku);
         }
@@ -798,7 +808,7 @@ public class SimpleSolver extends AbstractSolver {
     }
     
     private SolutionStep findLockedCandidates() {
-        getSteps().clear();
+        SudokuUtil.clearStepList(steps);
         SolutionStep step = findLockedCandidatesInEntity(SudokuCell.BLOCK, Sudoku.BLOCKS);
         if (step != null) return step;
         step = findLockedCandidatesInEntity(SudokuCell.LINE, Sudoku.LINES);
@@ -814,7 +824,7 @@ public class SimpleSolver extends AbstractSolver {
      * in der anderen Einheit gelöscht werden.
      */
     private SolutionStep findLockedCandidatesInEntity(int type, int[][] indices) {
-        SolutionStep step = null;
+//        SolutionStep step = null;
         
         // Alle Einheiten durchgehen
         for (int entity = 0; entity < indices.length; entity++) {
@@ -824,28 +834,32 @@ public class SimpleSolver extends AbstractSolver {
             
             // Ergebnis prüfen
             SolutionType stepType = (type == SudokuCell.BLOCK) ? SolutionType.LOCKED_CANDIDATES_1 : SolutionType.LOCKED_CANDIDATES_2;
-            step = new SolutionStep(stepType); // noch nichts einschreiben, zuerst prüfen
+//            step = new SolutionStep(stepType); // noch nichts einschreiben, zuerst prüfen
+            globalStep.reset(); // noch nichts einschreiben, zuerst prüfen
+            globalStep.setType(stepType);
             for (int i = 0; i < tmpArr1.length; i++) {
                 if (tmpArr1[i] <= 3) {
-                    if (checkLockedPairTriple(step, type, entity, tmpArrI[i], i + 1, 0, 0, false) && step.getCandidatesToDelete().size() > 0) {
+                    if (checkLockedPairTriple(globalStep, type, entity, tmpArrI[i], i + 1, 0, 0, false) && globalStep.getCandidatesToDelete().size() > 0) {
                         // entity2 und entity2Number werden in checkLockedPairTriple() geschrieben
-                        step.setEntity(type);
-                        step.setEntityNumber(entity + 1);
-                        step.addValue(i + 1);
+                        globalStep.setEntity(type);
+                        globalStep.setEntityNumber(entity + 1);
+                        globalStep.addValue(i + 1);
                         for (int j = 0; j < tmpArrI[i].length; j++) {
                             if (tmpArrI[i][j] != -1) {
-                                step.addIndex(tmpArrI[i][j]);
+                                globalStep.addIndex(tmpArrI[i][j]);
                             }
                         }
-                        getSteps().add(step);
-                        step = new SolutionStep(stepType);
+                        steps.add((SolutionStep)globalStep.clone());
+//                        step = new SolutionStep(stepType);
+                        globalStep.reset();
+                        globalStep.setType(stepType);
                         //return step;
                     }
                 }
             }
         }
-        if (getSteps().size() > 0) {
-            return getSteps().get(0);
+        if (steps.size() > 0) {
+            return steps.get(0);
         }
         return null;
     }

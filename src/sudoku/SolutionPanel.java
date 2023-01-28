@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008/09  Bernhard Hobiger
+ * Copyright (C) 2008/09/10  Bernhard Hobiger
  *
  * This file is part of HoDoKu.
  *
@@ -463,6 +463,8 @@ private void solutionTabbedPaneStateChanged(javax.swing.event.ChangeEvent evt) {
             solver.doStep(sudoku, actSteps.get(i));
         }
         setActSelectedIndex(index);
+        mainFrame.getSudokuPanel().clearUndoRedo();
+        mainFrame.getSudokuPanel().clearColoring();
     }
     
     private void processDoubleClick(int index) {
@@ -660,6 +662,32 @@ private void solutionTabbedPaneStateChanged(javax.swing.event.ChangeEvent evt) {
 
     public List<List<SolutionStep>> getTabSteps() {
         return tabSteps;
+    }
+
+    /**
+     * Loads all relevant objects into <code>state</code>. If <code>copy</code> is true,
+     * all objects are copied.<br>
+     * Some objects have to be copied regardless of parameter <code>copy</code>.
+     * @param state
+     * @param copy
+     */
+    public void getState(GuiState state, boolean copy) {
+        if (copy) {
+            state.titels = (List<String>) ((ArrayList)titels).clone();
+            state.tabSteps = (List<List<SolutionStep>>) ((ArrayList)tabSteps).clone();
+        } else {
+            state.titels = titels;
+            state.tabSteps = tabSteps;
+        }
+    }
+
+    /**
+     * Loads back a saved state. Whether the objects had been copied
+     * before is irrelevant here.
+     * @param state
+     */
+    public void setState(GuiState state) {
+        initialize(state.titels, state.tabSteps);
     }
     
     class SolutionListRenderer extends JLabel implements ListCellRenderer {

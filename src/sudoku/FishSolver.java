@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008/09  Bernhard Hobiger
+ * Copyright (C) 2008/09/10  Bernhard Hobiger
  *
  * This file is part of HoDoKu.
  *
@@ -776,27 +776,36 @@ public class FishSolver extends AbstractSolver {
                         }
                     }
 
-                    // Kannibalismus (optimieren?)
-                    for (int j = 0; j < baseCandSet.size(); j++) {
-                        int aktCand = baseCandSet.get(j);
-                        int anz = 0;
-                        for (int k = 0; k < cInt.length; k++) {
-                            if (cInt[k].contains(aktCand)) {
-                                anz++;
-                            }
-                        }
-                        if (anz >= 2) {
+                    // cannibalism
+                    calculateCannibalisticSet();
+                    if (!cannibalisticSet.isEmpty()) {
+                        for (int j = 0; j < cannibalisticSet.size(); j++) {
                             // kann gelöscht werden
-                            addCandidateToDelete(aktCand, candidate);
-                            addCannibalistic(aktCand, candidate);
+                            addCandidateToDelete(cannibalisticSet.get(j), candidate);
+                            addCannibalistic(cannibalisticSet.get(j), candidate);
                         }
                     }
+//                    // Kannibalismus (optimieren?)
+//                    for (int j = 0; j < baseCandSet.size(); j++) {
+//                        int aktCand = baseCandSet.get(j);
+//                        int anz = 0;
+//                        for (int k = 0; k < cInt.length; k++) {
+//                            if (cInt[k].contains(aktCand)) {
+//                                anz++;
+//                            }
+//                        }
+//                        if (anz >= 2) {
+//                            // kann gelöscht werden
+//                            addCandidateToDelete(aktCand, candidate);
+//                            addCannibalistic(aktCand, candidate);
+//                        }
+//                    }
 
                     // Wenn es zu löschende Kandidaten gibt, wird der SolutionStep in steps aufgenommen
                     if (candidatesToDelete.size() > 0) {
                         initSolutionStep(globalStep, aktSize, candidate, baseCandSet,
                                 baseUnitsIncluded, coverUnitsIncluded, false, false, fins, endoFinSet,
-                                candidatesToDelete, cannibalistic);
+                                candidatesToDelete, cannibalistic, deleteCandSet, cannibalisticSet);
                         try {
                             addFishStep();
                             //steps.add((SolutionStep) globalStep.clone());
@@ -866,9 +875,12 @@ public class FishSolver extends AbstractSolver {
                     if (! kraken && candidatesToDelete.size() > 0) {
                         boolean isSashimi = checkSashimi(baseCandSet, baseUnitsIncluded, coverUnitsIncluded);
                         if (!sashimi || isSashimi) {
+                            // recalculate possible eliminations
+                            deleteCandSet.set(coverCandSet);
+                            deleteCandSet.andNot(baseCandSet);
                             initSolutionStep(globalStep, aktSize, candidate, baseCandSet,
                                     baseUnitsIncluded, coverUnitsIncluded, withFins, isSashimi, fins, endoFinSet,
-                                    candidatesToDelete, cannibalistic);
+                                    candidatesToDelete, cannibalistic, deleteCandSet, cannibalisticSet);
                             try {
                                 addFishStep();
                                 //steps.add((SolutionStep) globalStep.clone());
@@ -898,7 +910,7 @@ public class FishSolver extends AbstractSolver {
                                     boolean isSashimi = checkSashimi(baseCandSet, baseUnitsIncluded, coverUnitsIncluded);
                                     initSolutionStep(globalStep, aktSize, candidate, baseCandSet,
                                             baseUnitsIncluded, coverUnitsIncluded, withFins, isSashimi, fins, endoFinSet,
-                                            candidatesToDelete, cannibalistic);
+                                            candidatesToDelete, cannibalistic, SudokuSet.EMPTY_SET, SudokuSet.EMPTY_SET);
                                     globalStep.setSubType(globalStep.getType());
                                     globalStep.setType(SolutionType.KRAKEN_FISH_TYPE_1);
                                     globalStep.addCandidateToDelete(deleteCandSet.get(j), candidate);
@@ -940,7 +952,7 @@ public class FishSolver extends AbstractSolver {
                                         boolean isSashimi = checkSashimi(baseCandSet, baseUnitsIncluded, coverUnitsIncluded);
                                         initSolutionStep(globalStep, aktSize, candidate, baseCandSet,
                                                 baseUnitsIncluded, coverUnitsIncluded, withFins, isSashimi, fins, endoFinSet,
-                                                candidatesToDelete, cannibalistic);
+                                                candidatesToDelete, cannibalistic, SudokuSet.EMPTY_SET, SudokuSet.EMPTY_SET);
                                         globalStep.setSubType(globalStep.getType());
                                         globalStep.setType(SolutionType.KRAKEN_FISH_TYPE_2);
                                         globalStep.addCandidateToDelete(endIndex, endCandidate);
@@ -1029,7 +1041,7 @@ public class FishSolver extends AbstractSolver {
     
     /**
      * Siamese Fish are two fishes that have the same base sets and differ
-     * only on which candidates are fins; they provide different eliminations.
+     * only in which candidates are fins; they provide different eliminations.
      * only fishes of the same category are checked
      * 
      * To find them: Compare all pairs of fishes, if the base sets match create
@@ -1079,22 +1091,20 @@ public class FishSolver extends AbstractSolver {
                     continue;
                 }
                 // ok: siamese fish!
-                try {
-                    SolutionStep siamese = (SolutionStep) step1.clone();
-                    siamese.setIsSiamese(true);
-                    for (int k = 0; k < step2.getCoverEntities().size(); k++) {
-                        siamese.addCoverEntity(step2.getCoverEntities().get(k));
-                    }
-                    for (int k = 0; k < step2.getFins().size(); k++) {
-                        siamese.addFin(step2.getFins().get(k));
-                    }
-                    for (int k = 0; k < step2.getCandidatesToDelete().size(); k++) {
-                        siamese.addCandidateToDelete(step2.getCandidatesToDelete().get(k));
-                    }
-                    fishes.add(siamese);
-                } catch (CloneNotSupportedException ex) {
-                    Logger.getLogger(getClass().getName()).log(Level.SEVERE, "Error while cloning", ex);
+                SolutionStep siamese = (SolutionStep) step1.clone();
+                siamese.setIsSiamese(true);
+                for (int k = 0; k < step2.getCoverEntities().size(); k++) {
+                    siamese.addCoverEntity(step2.getCoverEntities().get(k));
                 }
+                for (int k = 0; k < step2.getFins().size(); k++) {
+                    siamese.addFin(step2.getFins().get(k));
+                }
+                for (int k = 0; k < step2.getCandidatesToDelete().size(); k++) {
+                    siamese.addCandidateToDelete(step2.getCandidatesToDelete().get(k));
+                }
+                siamese.getPotentialEliminations().or(step2.getPotentialEliminations());
+                siamese.getPotentialCannibalisticEliminations().or(step2.getPotentialCannibalisticEliminations());
+                fishes.add(siamese);
             }
         }
     }
@@ -1171,7 +1181,8 @@ public class FishSolver extends AbstractSolver {
 
     private void initSolutionStep(SolutionStep step, int aktSize, int candidate, SudokuSet baseCandSet,
             SudokuSet baseUnitsIncluded, SudokuSet coverUnitsIncluded, boolean withFins, boolean sashimi,
-            SudokuSet fins, SudokuSet endoFins, List<Candidate> candidatesToDelete, List<Candidate> cannibalistic) {
+            SudokuSet fins, SudokuSet endoFins, List<Candidate> candidatesToDelete, List<Candidate> cannibalistic,
+            SudokuSet deleteCandSet, SudokuSet cannibalisticSet) {
         step.reset();
         // Als erstes den Typ feststellen:
         //  BASIC: l/c oder c/l
@@ -1250,6 +1261,9 @@ public class FishSolver extends AbstractSolver {
         for (int i = 0; i < endoFins.size(); i++) {
             globalStep.addEndoFin(endoFins.get(i), candidate);
         }
+        // add potential (cannibalistic) eliminations
+        globalStep.getPotentialEliminations().set(deleteCandSet);
+        globalStep.getPotentialCannibalisticEliminations().set(cannibalisticSet);
     }
 
     private int getUnitMask(SudokuSet units, int[][] allUnits) {
@@ -1335,28 +1349,28 @@ public class FishSolver extends AbstractSolver {
         }
     }
 
-    /**
-     * Calculates n over k
-     * 
-     * @param n
-     * @param k
-     * @return
-     */
-    private int combinations(int n, int k) {
-        double fakN = 1;
-        for (int i = 2; i <= n; i++) {
-            fakN *= i;
-        }
-        double fakNMinusK = 1;
-        for (int i = 2; i <= n - k; i++) {
-            fakNMinusK *= i;
-        }
-        double fakK = 1;
-        for (int i = 2; i <= k; i++) {
-            fakK *= i;
-        }
-        return (int) (fakN / (fakNMinusK * fakK));
-    }
+//    /**
+//     * Calculates n over k
+//     *
+//     * @param n
+//     * @param k
+//     * @return
+//     */
+//    private int combinations(int n, int k) {
+//        double fakN = 1;
+//        for (int i = 2; i <= n; i++) {
+//            fakN *= i;
+//        }
+//        double fakNMinusK = 1;
+//        for (int i = 2; i <= n - k; i++) {
+//            fakNMinusK *= i;
+//        }
+//        double fakK = 1;
+//        for (int i = 2; i <= k; i++) {
+//            fakK *= i;
+//        }
+//        return (int) (fakN / (fakNMinusK * fakK));
+//    }
 
     /**
      * Does the actual calculations for {@link initForCandidat(int,int[][],int[][])}.

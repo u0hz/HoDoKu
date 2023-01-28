@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008/09  Bernhard Hobiger
+ * Copyright (C) 2008/09/10  Bernhard Hobiger
  *
  * This file is part of HoDoKu.
  *
@@ -374,11 +374,7 @@ public class SingleDigitPatternSolver extends AbstractSolver {
                                 globalStep.addFin(blockCands.get(k), cand);
                             }
                             globalStep.addCandidateToDelete(indexDel, cand);
-                            try {
-                                steps.add((SolutionStep) globalStep.clone());
-                            } catch (CloneNotSupportedException ex) {
-                                Logger.getLogger(getClass().getName()).log(Level.SEVERE, "Error while cloning", ex);
-                            }
+                            steps.add((SolutionStep) globalStep.clone());
                             // only one elimination per conjugate pair possible
                             break;
                         }
@@ -438,16 +434,12 @@ public class SingleDigitPatternSolver extends AbstractSolver {
                     continue;
                 }
                 // ok: dual!
-                try {
-                    SolutionStep dual = (SolutionStep) step1.clone();
-                    dual.setType(SolutionType.DUAL_EMPTY_RECTANGLE);
-                    dual.addIndex(step2.getIndices().get(0));
-                    dual.addIndex(step2.getIndices().get(1));
-                    dual.addCandidateToDelete(step2.getCandidatesToDelete().get(0));
-                    ers.add(dual);
-                } catch (CloneNotSupportedException ex) {
-                    Logger.getLogger(getClass().getName()).log(Level.SEVERE, "Error while cloning", ex);
-                }
+                SolutionStep dual = (SolutionStep) step1.clone();
+                dual.setType(SolutionType.DUAL_EMPTY_RECTANGLE);
+                dual.addIndex(step2.getIndices().get(0));
+                dual.addIndex(step2.getIndices().get(1));
+                dual.addCandidateToDelete(step2.getCandidatesToDelete().get(0));
+                ers.add(dual);
             }
         }
     }
@@ -730,18 +722,14 @@ public class SingleDigitPatternSolver extends AbstractSolver {
                         continue;
                     }
                     // ok: dual!
-                    try {
-                        SolutionStep dual = (SolutionStep) step1.clone();
-                        dual.setType(SolutionType.DUAL_TWO_STRING_KITE);
-                        dual.addIndex(step2.getIndices().get(0));
-                        dual.addIndex(step2.getIndices().get(1));
-                        dual.addIndex(step2.getIndices().get(2));
-                        dual.addIndex(step2.getIndices().get(3));
-                        dual.addCandidateToDelete(step2.getCandidatesToDelete().get(0));
-                        kites.add(dual);
-                    } catch (CloneNotSupportedException ex) {
-                        Logger.getLogger(getClass().getName()).log(Level.SEVERE, "Error while cloning", ex);
-                    }
+                    SolutionStep dual = (SolutionStep) step1.clone();
+                    dual.setType(SolutionType.DUAL_TWO_STRING_KITE);
+                    dual.addIndex(step2.getIndices().get(0));
+                    dual.addIndex(step2.getIndices().get(1));
+                    dual.addIndex(step2.getIndices().get(2));
+                    dual.addIndex(step2.getIndices().get(3));
+                    dual.addCandidateToDelete(step2.getCandidatesToDelete().get(0));
+                    kites.add(dual);
                 }
             }
         }

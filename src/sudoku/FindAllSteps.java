@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008/09  Bernhard Hobiger
+ * Copyright (C) 2008/09/10  Bernhard Hobiger
  *
  * This file is part of HoDoKu.
  *
@@ -126,7 +126,8 @@ public class FindAllSteps implements Runnable {
         int actStep = 0;
         //boolean[] tmpCands = new boolean[9];
         List<SolutionStep> steps1 = null;
-        while (! Thread.currentThread().isInterrupted()) {
+        //while (! Thread.currentThread().isInterrupted()) {
+        while (! Thread.interrupted()) {
             switch (actStep) {
                 case 0:
                     updateProgress(java.util.ResourceBundle.getBundle("intl/FindAllStepsProgressDialog").getString("FindAllStepsProgressDialog.simple_solutions"), actStep);
@@ -220,6 +221,7 @@ public class FindAllSteps implements Runnable {
                         steps.addAll(steps1);
                     }
                     if (isAllStepsEnabled(SolutionType.BUG_PLUS_1)) {
+                        uniquenessSolver.setSudoku(sudoku);
                         SolutionStep result = uniquenessSolver.getStep(SolutionType.BUG_PLUS_1);
                         if (result != null) {
                             steps.add(result);
@@ -296,6 +298,11 @@ public class FindAllSteps implements Runnable {
                         steps.addAll(steps1);
                     }
                     break;
+                case 27:
+                    updateProgress(java.util.ResourceBundle.getBundle("intl/FindAllStepsProgressDialog").getString("FindAllStepsProgressDialog.progress_Score"), actStep);
+                    // calculate progress measure
+                    SudokuSolver.getInstance().getProgressScore(sudoku, steps, dlg);
+                    break;
                 default:
                     if (testTypes == null) {
                         Thread.currentThread().interrupt();
@@ -307,6 +314,7 @@ public class FindAllSteps implements Runnable {
             }
             actStep++;
         }
+        // done!
         if (dlg != null) {
             EventQueue.invokeLater(new Runnable() {
                 @Override

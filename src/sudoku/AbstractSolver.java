@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008/09  Bernhard Hobiger
+ * Copyright (C) 2008/09/10  Bernhard Hobiger
  *
  * This file is part of HoDoKu.
  *
@@ -39,6 +39,7 @@
 
 package sudoku;
 
+import java.math.BigInteger;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.ListIterator;
@@ -151,6 +152,9 @@ public abstract class AbstractSolver {
     }
     
     public void initCandTemplates(boolean initLists) {
+        if (! Options.getInstance().checkTemplates) {
+            return;
+        }
         Sudoku s = getSudoku();
         SudokuSetBase[] allowedPositions = s.getAllowedPositions();
         SudokuSet[] positions = s.getPositions();
@@ -273,5 +277,46 @@ public abstract class AbstractSolver {
             return true;
         }
         return false;
+    }
+
+    /**
+     * Calculates n over k
+     *
+     * @param n
+     * @param k
+     * @return
+     */
+    public static int combinations(int n, int k) {
+        if (n <= 167) {
+            double fakN = 1;
+            for (int i = 2; i <= n; i++) {
+                fakN *= i;
+            }
+            double fakNMinusK = 1;
+            for (int i = 2; i <= n - k; i++) {
+                fakNMinusK *= i;
+            }
+            double fakK = 1;
+            for (int i = 2; i <= k; i++) {
+                fakK *= i;
+            }
+            return (int) (fakN / (fakNMinusK * fakK));
+        } else {
+            BigInteger fakN = BigInteger.ONE;
+            for (int i = 2; i <= n; i++) {
+                fakN = fakN.multiply(new BigInteger(i + ""));
+            }
+            BigInteger fakNMinusK = BigInteger.ONE;
+            for (int i = 2; i <= n - k; i++) {
+                fakNMinusK = fakNMinusK.multiply(new BigInteger(i + ""));
+            }
+            BigInteger fakK = BigInteger.ONE;
+            for (int i = 2; i <= k; i++) {
+                fakK = fakK.multiply(new BigInteger(i + ""));
+            }
+            fakNMinusK = fakNMinusK.multiply(fakK);
+            fakN = fakN.divide(fakNMinusK);
+            return fakN.intValue();
+        }
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008/09  Bernhard Hobiger
+ * Copyright (C) 2008/09/10  Bernhard Hobiger
  *
  * This file is part of HoDoKu.
  *
@@ -237,13 +237,13 @@ public class ChainSolver extends AbstractSolver {
         anzAufrufe = 0;
         deletesMap.clear();
         //checkLoopSetsIndex = 0;
-        boolean onlyOne = false; // zum testen: nur für einen Kandidaten in einer Zelle
+        boolean onlyOne = true; // zum testen: nur für einen Kandidaten in einer Zelle
         for (int i = 0; i < sudoku.getCells().length; i++) {
-            if (onlyOne && i != 15) {
+            if (onlyOne && i != 48) {
                 continue;
             }
             for (int j = 1; j <= 9; j++) {
-                if (onlyOne && j != 5) {
+                if (onlyOne && j != 8) {
                     continue;
                 }
                 int tmp = i * 10 + j;
@@ -508,11 +508,7 @@ public class ChainSolver extends AbstractSolver {
             newChain[i] = chain[i];
         }
         globalStep.addChain(0, chainIndex, newChain);
-        try {
-            steps.add((SolutionStep) globalStep.clone());
-        } catch (CloneNotSupportedException ex) {
-            Logger.getLogger(getClass().getName()).log(Level.SEVERE, "Error while cloning", ex);
-        }
+        steps.add((SolutionStep) globalStep.clone());
         // Neue Endzelle merken!
         endCells.add(endIndex);
     }
@@ -528,10 +524,11 @@ public class ChainSolver extends AbstractSolver {
         }
         //int endIndex = (lastLink / 10) % 100;
         int endIndex = Chain.getSCellIndex(lastLink);
-        if (endCells.contains(endIndex)) {
-            // die Chain hatten wir schon!
-            return;
-        }
+        // 20100216: Not allowed (shorter chain mightbe omitted)
+//        if (endCells.contains(endIndex)) {
+//            // die Chain hatten wir schon!
+//            return;
+//        }
         // wenn es die Chain schon gibt, nichts tun (da die chains bidirektional sind,
         // wird jede Chain zumindest 2 mal gefunden)
         // bad way of checking for duplicates: possibly shorter chains are not found!
@@ -573,11 +570,7 @@ public class ChainSolver extends AbstractSolver {
             newChain[i] = chain[i];
         }
         globalStep.addChain(0, chainIndex, newChain);
-        try {
-            steps.add((SolutionStep) globalStep.clone());
-        } catch (CloneNotSupportedException ex) {
-            Logger.getLogger(getClass().getName()).log(Level.SEVERE, "Error while cloning", ex);
-        }
+        steps.add((SolutionStep) globalStep.clone());
         // Neue Endzelle merken!
         endCells.add(endIndex);
     }
@@ -664,11 +657,7 @@ public class ChainSolver extends AbstractSolver {
             newChain[i] = chain[i];
         }
         globalStep.addChain(0, chainIndex, newChain);
-        try {
-            steps.add((SolutionStep) globalStep.clone());
-        } catch (CloneNotSupportedException ex) {
-            Logger.getLogger(getClass().getName()).log(Level.SEVERE, "Error while cloning", ex);
-        }
+        steps.add((SolutionStep) globalStep.clone());
     }
 
     /**
@@ -793,11 +782,7 @@ public class ChainSolver extends AbstractSolver {
                 newChain[i] = chain[i];
             }
             globalStep.addChain(0, chainIndex, newChain);
-            try {
-                steps.add((SolutionStep) globalStep.clone());
-            } catch (CloneNotSupportedException ex) {
-                Logger.getLogger(getClass().getName()).log(Level.SEVERE, "Error while cloning", ex);
-            }
+            steps.add((SolutionStep) globalStep.clone());
         }
     }
 
@@ -928,6 +913,10 @@ public class ChainSolver extends AbstractSolver {
         //sudoku.setSudoku(":0703:8:45.132..63.1657.4.2768493516.2415.37.1472356.73598612416.594.8..2.3614.554.27861.::817 829 917 929:");
         // BUG: No Remote Pair found (found but not displayed correctly - fixed
         sudoku.setSudoku(":0703:4:5.91673.8.63548.191..23956.952413..6316782495...9561328.53916..637824951.91675..3:432 462 298:498:");
+        // BUG: XY_CHAIN not sorted corectly
+        sudoku.setSudoku(":0702:1:8+67+3..+24+9+159+4+72+6+3+8+2+43+9+86+5+7148+51+2+3+967....+4781....+8.+9+4+2.+6+3.79.+15+2......394...2+3.+78+6::162 183 193::11");
+        // BUG: Shortes chain not found
+        sudoku.setSudoku(":0702:8:39674.15.827516..35143.9..74.16...7.27..94..596...7...7.296.5.16..2.17..189475236:838 845 846 347 249 857 858 265 865 867 468 868 869 889:876::9");
         ChainSolver cs = new ChainSolver(null);
         cs.setSudoku(sudoku);
         cs.steps = new ArrayList<SolutionStep>();
@@ -937,17 +926,18 @@ public class ChainSolver extends AbstractSolver {
         for (i = 0; i < 1; i++) {
             //cs.getXChains();
             //cs.getRemotePairs();
-            //cs.getXYChains();
-            sumSteps = cs.getAllChains(sudoku);
+            cs.getXYChains();
+            //sumSteps = cs.getAllChains(sudoku);
         //cs.getNiceLoops();
         }
         millis = System.currentTimeMillis() - millis;
         System.out.println("Time: " + (millis / i) + "ms");
         System.out.println("Anzahl Aufrufe: " + (cs.anzAufrufe / i) + ", RecDepth: " + (cs.maxRecDepth / i));
 
-        Collections.sort(cs.steps);
+        //Collections.sort(cs.steps);
         for (i = 0; i < cs.steps.size(); i++) {
             System.out.println(cs.steps.get(i).toString(2));
+            System.out.println(sudoku.getSudoku(ClipboardMode.LIBRARY, cs.steps.get(i)));
         }
         System.out.println("Gesamt: " + cs.steps.size() + " chains!");
         

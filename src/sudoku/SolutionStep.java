@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008/09  Bernhard Hobiger
+ * Copyright (C) 2008/09/10  Bernhard Hobiger
  *
  * This file is part of HoDoKu.
  *
@@ -18,14 +18,18 @@
  */
 package sudoku;
 
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
 import java.util.SortedMap;
 import java.util.SortedSet;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  *
@@ -40,6 +44,7 @@ public class SolutionStep implements Comparable<SolutionStep>, Cloneable {
         java.util.ResourceBundle.getBundle("intl/SolutionStep").getString("SolutionStep.cell")
     };
     private static final String[] entityShortNames = {"b", "r", "c", ""};
+    private static final DecimalFormat FISH_FORMAT = new DecimalFormat("#00");
     private SolutionType type;
     private SolutionType subType; // for kraken fish: holds the underlying fish type
     private int entity;
@@ -47,6 +52,9 @@ public class SolutionStep implements Comparable<SolutionStep>, Cloneable {
     private int entity2;        // für LOCKED_CANDIDATES_X
     private int entity2Number;  // für LOCKED_CANDIDATES_X
     private boolean isSiamese;  // für Siamese Fish
+    private int progressScoreSingles = -1; // number of singles that this step unlocks in the sudoku
+    private int progressScoreSinglesOnly = -1; // direct unlocked singles
+    private int progressScore = -1;  // the resulting score (only no single steps)
     private List<Integer> values = new ArrayList<Integer>();
     private List<Integer> indices = new ArrayList<Integer>();
     private List<Candidate> candidatesToDelete = new ArrayList<Candidate>();
@@ -59,6 +67,8 @@ public class SolutionStep implements Comparable<SolutionStep>, Cloneable {
     private List<AlsInSolutionStep> alses = new ArrayList<AlsInSolutionStep>();
     private SortedMap<Integer, Integer> colorCandidates = new TreeMap<Integer, Integer>(); // coloring moves
     private List<RestrictedCommon> restrictedCommons = new ArrayList<RestrictedCommon>(); // ALS Chains
+    private SudokuSet potentialCannibalisticEliminations = new SudokuSet(); // for fish only
+    private SudokuSet potentialEliminations = new SudokuSet(); // for fish only
 
     public SolutionStep() {
     }
@@ -69,27 +79,36 @@ public class SolutionStep implements Comparable<SolutionStep>, Cloneable {
     }
 
     @Override
-    public Object clone()
-            throws CloneNotSupportedException {
-        SolutionStep newStep = (SolutionStep) super.clone();
-        newStep.type = type;
-        newStep.entity = entity;
-        newStep.entityNumber = entityNumber;
-        newStep.entity2 = entity2;
-        newStep.entity2Number = entity2Number;
-        newStep.isSiamese = isSiamese;
-        newStep.values = (List<Integer>) ((ArrayList) values).clone();
-        newStep.indices = (List<Integer>) ((ArrayList) indices).clone();
-        newStep.candidatesToDelete = (List<Candidate>) ((ArrayList) candidatesToDelete).clone();
-        newStep.cannibalistic = (List<Candidate>) ((ArrayList) cannibalistic).clone();
-        newStep.fins = (List<Candidate>) ((ArrayList) fins).clone();
-        newStep.endoFins = (List<Candidate>) ((ArrayList) endoFins).clone();
-        newStep.baseEntities = (List<Entity>) ((ArrayList) baseEntities).clone();
-        newStep.coverEntities = (List<Entity>) ((ArrayList) coverEntities).clone();
-        newStep.chains = (List<Chain>) ((ArrayList) chains).clone();
-        newStep.alses = (List<AlsInSolutionStep>) ((ArrayList) alses).clone();
-        newStep.setColorCandidates((SortedMap<Integer, Integer>) ((TreeMap) getColorCandidates()).clone());
-        newStep.restrictedCommons = (List<RestrictedCommon>) ((ArrayList) restrictedCommons).clone();
+    public Object clone() {
+        SolutionStep newStep = null;
+        try {
+            newStep = (SolutionStep) super.clone();
+            newStep.type = type;
+            newStep.entity = entity;
+            newStep.entityNumber = entityNumber;
+            newStep.entity2 = entity2;
+            newStep.entity2Number = entity2Number;
+            newStep.isSiamese = isSiamese;
+            newStep.progressScoreSingles = progressScoreSingles;
+            newStep.progressScoreSinglesOnly = progressScoreSinglesOnly;
+            newStep.progressScore = progressScore;
+            newStep.values = (List<Integer>) ((ArrayList) values).clone();
+            newStep.indices = (List<Integer>) ((ArrayList) indices).clone();
+            newStep.candidatesToDelete = (List<Candidate>) ((ArrayList) candidatesToDelete).clone();
+            newStep.cannibalistic = (List<Candidate>) ((ArrayList) cannibalistic).clone();
+            newStep.fins = (List<Candidate>) ((ArrayList) fins).clone();
+            newStep.endoFins = (List<Candidate>) ((ArrayList) endoFins).clone();
+            newStep.baseEntities = (List<Entity>) ((ArrayList) baseEntities).clone();
+            newStep.coverEntities = (List<Entity>) ((ArrayList) coverEntities).clone();
+            newStep.chains = (List<Chain>) ((ArrayList) chains).clone();
+            newStep.alses = (List<AlsInSolutionStep>) ((ArrayList) alses).clone();
+            newStep.colorCandidates = (SortedMap<Integer, Integer>) ((TreeMap) getColorCandidates()).clone();
+            newStep.restrictedCommons = (List<RestrictedCommon>) ((ArrayList) restrictedCommons).clone();
+            newStep.potentialCannibalisticEliminations = (SudokuSet) potentialCannibalisticEliminations.clone();
+            newStep.potentialEliminations = (SudokuSet) potentialEliminations.clone();
+        } catch (CloneNotSupportedException ex) {
+            Logger.getLogger(getClass().getName()).log(Level.SEVERE, "Error while cloning", ex);
+        }
 
         return newStep;
     }
@@ -101,6 +120,9 @@ public class SolutionStep implements Comparable<SolutionStep>, Cloneable {
         entity2 = 0;
         entity2Number = 0;
         isSiamese = false;
+        progressScoreSingles = -1;
+        progressScoreSinglesOnly = -1;
+        progressScore = -1;
         values.clear();
         indices.clear();
         candidatesToDelete.clear();
@@ -111,8 +133,10 @@ public class SolutionStep implements Comparable<SolutionStep>, Cloneable {
         coverEntities.clear();
         chains.clear();
         alses.clear();
-        getColorCandidates().clear();
+        colorCandidates.clear();
         restrictedCommons.clear();
+        potentialCannibalisticEliminations.clear();
+        potentialEliminations.clear();
     }
 
     public StringBuffer getForcingChainString(Chain chain) {
@@ -313,6 +337,29 @@ public class SolutionStep implements Comparable<SolutionStep>, Cloneable {
         return tmp;
     }
 
+    /**
+     * indices and values hold candidates, that should be marked or set; the
+     * two lists are not necessarily of the same length. The method has to
+     * return all combinations of values and indices.
+     *
+     * @return A string containing all combinations of values and indices in
+     * library format
+     */
+    public String getValueIndexString() {
+        StringBuffer tmp = new StringBuffer();
+        for (int i = 0; i < values.size(); i++) {
+            int value = values.get(i);
+            for (int j = 0; j < indices.size(); j++) {
+                int index = indices.get(j);
+                tmp.append(value);
+                tmp.append(Integer.toString(Sudoku.getLine(index) + 1));
+                tmp.append(Integer.toString(Sudoku.getCol(index) + 1));
+                tmp.append(" ");
+            }
+        }
+        return tmp.toString().trim();
+    }
+
     public String getSingleCandidateString() {
         return getStepName() + ": " + getCompactCellPrint(indices) + "=" + values.get(0);
     }
@@ -324,9 +371,10 @@ public class SolutionStep implements Comparable<SolutionStep>, Cloneable {
     public String getCandidateString(boolean library) {
         return getCandidateString(library, false);
     }
-    
+
     public String getCandidateString(boolean library, boolean statistics) {
         Collections.sort(candidatesToDelete);
+        eliminateDoubleCandidatesToDelete();
         StringBuffer candBuff = new StringBuffer();
         int lastCand = -1;
         StringBuffer delPos = new StringBuffer();
@@ -365,6 +413,17 @@ public class SolutionStep implements Comparable<SolutionStep>, Cloneable {
         }
     }
 
+    private void eliminateDoubleCandidatesToDelete() {
+        Set<Candidate> candSet = new TreeSet<Candidate>();
+        for (int i = 0; i < candidatesToDelete.size(); i++) {
+            candSet.add(candidatesToDelete.get(i));
+        }
+        candidatesToDelete.clear();
+        for (Candidate cand : candSet) {
+            candidatesToDelete.add(cand);
+        }
+    }
+
     public static String getCellPrint(int index) {
         return getCellPrint(index, true);
     }
@@ -383,6 +442,15 @@ public class SolutionStep implements Comparable<SolutionStep>, Cloneable {
         tmpSet.add(index2);
         if (index3 != -1) {
             tmpSet.add(index3);
+        }
+        String result = getCompactCellPrint(tmpSet);
+        return result;
+    }
+
+    public static String getCompactCellPrint(SudokuSet set) {
+        TreeSet<Integer> tmpSet = new TreeSet<Integer>();
+        for (int i = 0; i < set.size(); i++) {
+            tmpSet.add(set.get(i));
         }
         String result = getCompactCellPrint(tmpSet);
         return result;
@@ -528,7 +596,7 @@ public class SolutionStep implements Comparable<SolutionStep>, Cloneable {
         }
         return 0;
     }
-    
+
     public SolutionType getType() {
         return type;
     }
@@ -740,7 +808,11 @@ public class SolutionStep implements Comparable<SolutionStep>, Cloneable {
                 }
                 break;
             case SIMPLE_COLORS:
+            case SIMPLE_COLORS_TRAP:
+            case SIMPLE_COLORS_WRAP:
             case MULTI_COLORS:
+            case MULTI_COLORS_1:
+            case MULTI_COLORS_2:
                 str = getStepName();
                 if (art >= 1) {
                     str += ": " + values.get(0);
@@ -768,10 +840,16 @@ public class SolutionStep implements Comparable<SolutionStep>, Cloneable {
                 if (art >= 1) {
                     if (type == SolutionType.REMOTE_PAIR) {
                         str += ": " + values.get(0) + "/" + values.get(1);
-                    //} else if (type == SolutionType.X_CHAIN || type == SolutionType.XY_CHAIN) {
-                    } else if (type == SolutionType.X_CHAIN) {
-                        str += ": " + values.get(0);
+                    } else {
+                        str += ": " + getCandidatesToDeleteDigits();
                     }
+//                    if (type == SolutionType.REMOTE_PAIR) {
+//                        str += ": " + values.get(0) + "/" + values.get(1);
+//                    } else if (type == SolutionType.X_CHAIN || type == SolutionType.XY_CHAIN) {
+//                    //} else if (type == SolutionType.X_CHAIN) {
+//                        //str += ": " + values.get(0);
+//                        str += ": " + candidatesToDelete.get(0).value;
+//                    }
                 }
                 if (art >= 2) {
                     StringBuffer tmpChain = getChainString(getChains().get(0));
@@ -791,7 +869,7 @@ public class SolutionStep implements Comparable<SolutionStep>, Cloneable {
                         end++;
                         tmpChain.insert(0, ch.getCandidate(end) + "= ");
                         tmpChain.append(" =" + ch.getCandidate(start));
-                    //System.out.println(Chain.toString(ch.chain[start]) + "/" + Chain.toString(ch.chain[ch.end]));
+                        //System.out.println(Chain.toString(ch.chain[start]) + "/" + Chain.toString(ch.chain[ch.end]));
                     }
                     if (type == SolutionType.AIC || type == SolutionType.GROUPED_AIC || type == SolutionType.XY_CHAIN) {
                         Chain ch = getChains().get(0);
@@ -927,13 +1005,28 @@ public class SolutionStep implements Comparable<SolutionStep>, Cloneable {
                     tmp.append(" ");
                     getEntities(tmp, coverEntities, true, true);
                     //tmp.append(" Positionen: ");
-                    if (fins.size() > 0) {
-                        tmp.append(" ");
-                        getFins(tmp, false, true);
+                    int displayMode = Options.getInstance().fishDisplayMode;
+                    if (type.isKrakenFish()) {
+                        // no statistics
+                        displayMode = 0;
                     }
-                    if (endoFins.size() > 0) {
-                        tmp.append(" ");
-                        getFins(tmp, true, true);
+                    switch (displayMode) {
+                        case 0:
+                            if (fins.size() > 0) {
+                                tmp.append(" ");
+                                getFins(tmp, false, true);
+                            }
+                            if (endoFins.size() > 0) {
+                                tmp.append(" ");
+                                getFins(tmp, true, true);
+                            }
+                            break;
+                        case 1:
+                            getFishStatistics(tmp, false);
+                            break;
+                        case 2:
+                            getFishStatistics(tmp, true);
+                            break;
                     }
                     if (!type.isKrakenFish()) {
                         getCandidatesToDelete(tmp);
@@ -1131,6 +1224,64 @@ public class SolutionStep implements Comparable<SolutionStep>, Cloneable {
                 throw new RuntimeException(java.util.ResourceBundle.getBundle("intl/SolutionStep").getString("SolutionStep.invalid_type") + " (" + type + ")!");
         }
         return str;
+    }
+
+    /**
+     * Gets information about vertices, fins, eliminations...
+     * @param tmp
+     * @param cells
+     */
+    private void getFishStatistics(StringBuffer tmp, boolean cells) {
+        tmp.append(" ");
+        SudokuSet set = new SudokuSet();
+        // Vertices: all indices minus potential cannibalistic eliminations
+        for (int i = 0; i < indices.size(); i++) {
+            set.add(indices.get(i));
+        }
+        set.andNot(potentialCannibalisticEliminations);
+        appendFishData(tmp, set, "V", cells);
+        // exo fins
+        set.clear();
+        for (int i = 0; i < fins.size(); i++) {
+            set.add(fins.get(i).index);
+        }
+        for (int i = 0; i < endoFins.size(); i++) {
+            set.remove(endoFins.get(i).index);
+        }
+        appendFishData(tmp, set, "XF", cells);
+        // endo fins
+        set.clear();
+        for (int i = 0; i < endoFins.size(); i++) {
+            set.add(endoFins.get(i).index);
+        }
+        appendFishData(tmp, set, "NF", cells);
+        // eventual eliminations
+        set.clear();
+        for (int i = 0; i < candidatesToDelete.size(); i++) {
+            set.add(candidatesToDelete.get(i).index);
+        }
+        appendFishData(tmp, set, "EE", cells);
+        // cannibalistic eventual eliminations
+        set.clear();
+        for (int i = 0; i < cannibalistic.size(); i++) {
+            set.add(cannibalistic.get(i).index);
+        }
+        appendFishData(tmp, set, "CE", cells);
+        // potential eliminations
+        set.set(potentialEliminations);
+        set.or(potentialCannibalisticEliminations);
+        appendFishData(tmp, set, "PE", cells);
+    }
+
+    private void appendFishData(StringBuffer tmp, SudokuSet set, String prefix, boolean cells) {
+        tmp.append(prefix);
+        tmp.append("(");
+        if (cells) {
+            tmp.append(getCompactCellPrint(set));
+        } else {
+            tmp.append(FISH_FORMAT.format(set.size()));
+        }
+        tmp.append(") ");
     }
 
     private void getColorCellPrint(StringBuffer tmp) {
@@ -1354,6 +1505,20 @@ public class SolutionStep implements Comparable<SolutionStep>, Cloneable {
         }
     }
 
+    /**
+     * Similar to {@link #getCandidatesToDeleteDigits(java.lang.StringBuffer) },
+     * but inserts slashes between the digits
+     */
+    private String getCandidatesToDeleteDigits() {
+        StringBuffer tmp = new StringBuffer();
+        getCandidatesToDeleteDigits(tmp);
+        int compactLength = tmp.length();
+        for (int i = 0; i < compactLength - 1; i++) {
+            tmp.insert(i * 2 + 1, "/");
+        }
+        return tmp.toString();
+    }
+
     private void getCandidatesToDelete(StringBuffer tmp) {
         tmp.append(" => ");
         ArrayList<Candidate> tmpList = (ArrayList<Candidate>) ((ArrayList<Candidate>) candidatesToDelete).clone();
@@ -1500,12 +1665,9 @@ public class SolutionStep implements Comparable<SolutionStep>, Cloneable {
             }
 
             // einmal hin...
-            for (i = akt.start      , j= 
-                 start   
-                    ;
-                
-            
-             j <= end  ; i++, j++) {
+            for (i = akt.start, j =
+                            start;
+                    j <= end; i++, j++) {
                 if (akt.chain[i] != chain[j]) {
                     break;
                 }
@@ -1514,14 +1676,11 @@ public class SolutionStep implements Comparable<SolutionStep>, Cloneable {
                 return true;
             }
             // und einmal her...
-            for (i = akt.start      , j= 
-                 end ; 
-                    
-                
-            
-             j >= start  ; i++, j--) {
+            for (i = akt.start, j =
+                            end;
+                    j >= start; i++, j--) {
                 // die Zellen und Kandidaten müssen gleich sein
-                if (! Chain.equalsIndexCandidate(akt.chain[i], chain[j])) {
+                if (!Chain.equalsIndexCandidate(akt.chain[i], chain[j])) {
                     break;
                 }
                 // um strong oder weak kümmere ich mich einmal nicht...
@@ -1725,7 +1884,7 @@ public class SolutionStep implements Comparable<SolutionStep>, Cloneable {
     public int compareChainLengths(SolutionStep o) {
         return getChainLength() - o.getChainLength();
     }
-    
+
     /**
      * Sortierreihenfolge:
      *
@@ -1792,10 +1951,10 @@ public class SolutionStep implements Comparable<SolutionStep>, Cloneable {
             }
             return 0;
         }
-        
+
         // kraken fish: sort for (fish type, chain length)
         if (type.isKrakenFish() && o.getType().isKrakenFish()) {
-        //if (type == SolutionType.KRAKEN_FISH && o.getType() == SolutionType.KRAKEN_FISH) {
+            //if (type == SolutionType.KRAKEN_FISH && o.getType() == SolutionType.KRAKEN_FISH) {
             int ret = subType.compare(o.getSubType());
             if (ret != 0) {
                 return ret;
@@ -1804,6 +1963,12 @@ public class SolutionStep implements Comparable<SolutionStep>, Cloneable {
         }
 
         // GENERAL STEPS
+        // Neu: Chains - nach Länge der Chains (gesamt)
+        int chainDiff = compareChainLengths(o);
+        if (chainDiff != 0) {
+            return chainDiff;
+        }
+
         // jetzt nach betroffenen Kandidaten
         // wenn alle betroffenen Kandidaten gleich sind, sind die Steps gleich, sonst
         // zählt die Summe
@@ -1811,12 +1976,6 @@ public class SolutionStep implements Comparable<SolutionStep>, Cloneable {
             sum1 = getSumme(values);
             sum2 = getSumme(o.values);
             return sum1 == sum2 ? 1 : sum1 - sum2;
-        }
-
-        // Neu: Chains - nach Länge der Chains (gesamt)
-        int chainDiff  = compareChainLengths(o);
-        if (chainDiff != 0) {
-            return chainDiff;
         }
 
         // Neuer Versuch: Nach Kandidaten, Fins und Typ
@@ -2007,5 +2166,75 @@ public class SolutionStep implements Comparable<SolutionStep>, Cloneable {
 
     public void setRestrictedCommons(List<RestrictedCommon> restrictedCommons) {
         this.restrictedCommons = restrictedCommons;
+    }
+
+    /**
+     * @return the progressScoreSingles
+     */
+    public int getProgressScoreSingles() {
+        return progressScoreSingles;
+    }
+
+    /**
+     * @param progressScoreSingles the progressScoreSingles to set
+     */
+    public void setProgressScoreSingles(int progressScoreSingles) {
+        this.progressScoreSingles = progressScoreSingles;
+    }
+
+    /**
+     * @return the progressScoreSingles
+     */
+    public int getProgressScoreSinglesOnly() {
+        return progressScoreSinglesOnly;
+    }
+
+    /**
+     * @param progressScoreSingles the progressScoreSingles to set
+     */
+    public void setProgressScoreSinglesOnly(int progressScoreSinglesOnly) {
+        this.progressScoreSinglesOnly = progressScoreSinglesOnly;
+    }
+
+    /**
+     * @return the progressScore
+     */
+    public int getProgressScore() {
+        return progressScore;
+    }
+
+    /**
+     * @param progressScore the progressScore to set
+     */
+    public void setProgressScore(int progressScore) {
+        this.progressScore = progressScore;
+    }
+
+    /**
+     * @return the potentialCannibalisticEliminations
+     */
+    public SudokuSet getPotentialCannibalisticEliminations() {
+        return potentialCannibalisticEliminations;
+    }
+
+    /**
+     * @param potentialCannibalisticEliminations the potentialCannibalisticEliminations to set
+     */
+    public void setPotentialCannibalisticEliminations(SudokuSet potentialCannibalisticEliminations) {
+        this.potentialCannibalisticEliminations = potentialCannibalisticEliminations;
+    }
+
+    /**
+     * @return the potentialEliminations
+     */
+    public SudokuSet getPotentialEliminations() {
+        return potentialEliminations;
+    }
+
+    /**
+     * @param potentialEliminations the potentialEliminations to set
+     */
+    public void setPotentialEliminations(SudokuSet potentialEliminations) {
+        this.potentialEliminations = potentialEliminations;
     }
 }

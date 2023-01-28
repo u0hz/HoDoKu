@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008/09  Bernhard Hobiger
+ * Copyright (C) 2008/09/10  Bernhard Hobiger
  *
  * This file is part of HoDoKu.
  *
@@ -34,21 +34,26 @@ public class CheckNode extends DefaultMutableTreeNode {
     private StepConfig step;
     private boolean allSteps;
     private SolutionCategory category;
+    private boolean heuristics;
+    private boolean training;
 
     public CheckNode() {
         this(null);
     }
 
     public CheckNode(Object userObject) {
-        this(userObject, true, NONE, null, false, null);
+        this(userObject, true, NONE, null, false, false, false, null);
     }
 
     public CheckNode(Object userObject, boolean allowsChildren, int selectionState,
-            StepConfig step, boolean allSteps, SolutionCategory category) {
+            StepConfig step, boolean allSteps, boolean heuristics,
+            boolean training, SolutionCategory category) {
         super(userObject, allowsChildren);
         this.selectionState = selectionState;
         this.step = step;
         this.allSteps = allSteps;
+        this.heuristics = heuristics;
+        this.training = training;
         this.category = category;
     }
 
@@ -90,6 +95,10 @@ public class CheckNode extends DefaultMutableTreeNode {
         if (node.step != null) {
             if (allSteps) {
                 node.step.setAllStepsEnabled(node.selectionState == FULL);
+            } else if (heuristics) {
+                node.step.setEnabledProgress(node.selectionState == FULL);
+            } else if (training) {
+                node.step.setEnabledTraining(node.selectionState == FULL);
             } else {
                 node.step.setEnabled(node.selectionState == FULL);
             }

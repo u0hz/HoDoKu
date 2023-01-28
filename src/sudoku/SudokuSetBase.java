@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008/09  Bernhard Hobiger
+ * Copyright (C) 2008/09/10  Bernhard Hobiger
  *
  * This file is part of HoDoKu.
  *
@@ -19,6 +19,7 @@
 
 package sudoku;
 
+import java.io.Serializable;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -26,7 +27,8 @@ import java.util.logging.Logger;
  *
  * @author Bernhard Hobiger
  */
-public class SudokuSetBase implements Cloneable {
+public class SudokuSetBase implements Cloneable, Serializable {
+    private static final long serialVersionUID = 1L;
 
     public static final SudokuSet EMPTY_SET = new SudokuSet();
     public static final long[] MASKS = {

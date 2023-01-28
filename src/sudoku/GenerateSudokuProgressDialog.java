@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008/09  Bernhard Hobiger
+ * Copyright (C) 2008/09/10  Bernhard Hobiger
  *
  * This file is part of HoDoKu.
  *
@@ -22,6 +22,7 @@ package sudoku;
 import java.awt.EventQueue;
 import java.awt.event.ActionEvent;
 import java.awt.event.KeyEvent;
+import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.AbstractAction;
@@ -38,9 +39,11 @@ public class GenerateSudokuProgressDialog extends javax.swing.JDialog implements
     private int anz;
     private Thread thread;
     private DifficultyLevel level;
+    private GameMode mode;
     
     /** Creates new form GenerateSudokuProgressDialog */
-    public GenerateSudokuProgressDialog(java.awt.Frame parent, boolean modal, DifficultyLevel level) {
+    public GenerateSudokuProgressDialog(java.awt.Frame parent, boolean modal, DifficultyLevel level,
+            GameMode mode) {
         super(parent, modal);
         initComponents();
         getRootPane().setDefaultButton(cancelButton);
@@ -55,6 +58,7 @@ public class GenerateSudokuProgressDialog extends javax.swing.JDialog implements
         getRootPane().getActionMap().put("ESCAPE", escapeAction);
         
         this.level = level;
+        this.mode = mode;
         thread = new Thread(this);
         thread.start();
     }
@@ -68,6 +72,7 @@ public class GenerateSudokuProgressDialog extends javax.swing.JDialog implements
     private void initComponents() {
 
         progressLabel = new javax.swing.JLabel();
+        jPanel1 = new javax.swing.JPanel();
         cancelButton = new javax.swing.JButton();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
@@ -92,29 +97,27 @@ public class GenerateSudokuProgressDialog extends javax.swing.JDialog implements
                 cancelButtonActionPerformed(evt);
             }
         });
+        jPanel1.add(cancelButton);
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
+                .addContainerGap()
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addGroup(layout.createSequentialGroup()
-                        .addContainerGap()
-                        .addComponent(progressLabel, javax.swing.GroupLayout.DEFAULT_SIZE, 196, Short.MAX_VALUE))
-                    .addGroup(layout.createSequentialGroup()
-                        .addGap(66, 66, 66)
-                        .addComponent(cancelButton)))
+                    .addComponent(jPanel1, javax.swing.GroupLayout.DEFAULT_SIZE, 196, Short.MAX_VALUE)
+                    .addComponent(progressLabel, javax.swing.GroupLayout.DEFAULT_SIZE, 196, Short.MAX_VALUE))
                 .addContainerGap())
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
-                .addContainerGap(21, Short.MAX_VALUE)
+            .addGroup(layout.createSequentialGroup()
+                .addGap(18, 18, 18)
                 .addComponent(progressLabel)
-                .addGap(19, 19, 19)
-                .addComponent(cancelButton)
-                .addContainerGap())
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
 
         pack();
@@ -143,7 +146,18 @@ public class GenerateSudokuProgressDialog extends javax.swing.JDialog implements
             sudoku = creator.generateSudoku(level, true);
             Sudoku solvedSudoku = sudoku.clone();
             boolean ok = solver.solve(level, solvedSudoku, true, null);
-            if (ok && solvedSudoku.getLevel().getOrdinal() == level.getOrdinal()) {
+            boolean containsTrainingStep = true;
+            if (mode != GameMode.PLAYING) {
+                containsTrainingStep = false;
+                List<SolutionStep> steps = solver.getSteps();
+                for (SolutionStep step : steps) {
+                    if (step.getType().getStepConfig().isEnabledTraining()) {
+                        containsTrainingStep = true;
+                        break;
+                    }
+                }
+            }
+            if (ok && containsTrainingStep && solvedSudoku.getLevel().getOrdinal() == level.getOrdinal()) {
                 sudoku.setLevel(solvedSudoku.getLevel());
                 sudoku.setScore(solvedSudoku.getScore());
                 break;
@@ -178,7 +192,9 @@ public class GenerateSudokuProgressDialog extends javax.swing.JDialog implements
         java.awt.EventQueue.invokeLater(new Runnable() {
             @Override
             public void run() {
-                new GenerateSudokuProgressDialog(new javax.swing.JFrame(), true, Options.getInstance().getDifficultyLevels()[DifficultyType.EASY.ordinal()]).setVisible(true);
+                new GenerateSudokuProgressDialog(new javax.swing.JFrame(), true, 
+                        Options.getInstance().getDifficultyLevels()[DifficultyType.EASY.ordinal()],
+                        GameMode.PLAYING).setVisible(true);
             }
         });
     }
@@ -193,6 +209,7 @@ public class GenerateSudokuProgressDialog extends javax.swing.JDialog implements
     
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton cancelButton;
+    private javax.swing.JPanel jPanel1;
     private javax.swing.JLabel progressLabel;
     // End of variables declaration//GEN-END:variables
     

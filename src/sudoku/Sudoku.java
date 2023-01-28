@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008/09  Bernhard Hobiger
+ * Copyright (C) 2008/09/10  Bernhard Hobiger
  *
  * This file is part of HoDoKu.
  *
@@ -19,6 +19,7 @@
 
 package sudoku;
 
+import java.io.ObjectInputStream;
 import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.SortedSet;
@@ -156,6 +157,7 @@ public class Sudoku implements Cloneable {
             for (int i = 0; i < positions.length; i++) {
                 newSudoku.positions[i] = positions[i].clone();
             }
+            synchronizeSets();
         } catch (CloneNotSupportedException ex) {
             Logger.getLogger(getClass().getName()).log(Level.SEVERE, "Error while cloning", ex);
         }
@@ -175,6 +177,7 @@ public class Sudoku implements Cloneable {
         for (int i = 0; i < positions.length; i++) {
             positions[i].set(src.positions[i]);
         }
+        synchronizeSets();
     }
 
     /**
@@ -183,6 +186,31 @@ public class Sudoku implements Cloneable {
     public void resetSudoku() {
         if (initialState != null) {
             setSudoku(initialState, false);
+        }
+    }
+
+    /**
+     * Sometimes the sets allowedPositions, possiblePositions and positions get
+     * out of synch with the data in cells[]. This method resynchs them.
+     */
+    public void synchronizeSets() {
+        for (int i = 0; i < allowedPositions.length; i++) {
+            allowedPositions[i].clear();
+            possiblePositions[i].setAll();
+            positions[i].clear();
+        }
+        for (int i = 0; i < cells.length; i++) {
+            int value = cells[i].getValue();
+            if (value != 0) {
+                positions[value].add(i);
+                possiblePositions[value].andNot(buddies[i]);
+            } else {
+                for (int j = 1; j <= 9; j++) {
+                    if (cells[i].isCandidateValid(SudokuCell.PLAY, j)) {
+                        allowedPositions[j].add(i);
+                    }
+                }
+            }
         }
     }
 
@@ -286,7 +314,7 @@ public class Sudoku implements Cloneable {
 //            while ((index = init.indexOf(":", index + 1)) >= 0) {
 //                anzDoppelpunkt++;
 //            }
-            if (anzDoppelpunkt == 6) {
+            if (anzDoppelpunkt == 6 || anzDoppelpunkt == 7) {
                 libraryFormat = true;
                 String[] libLines = init.split(":");
                 lines[0] = libLines[3];
@@ -488,6 +516,7 @@ public class Sudoku implements Cloneable {
                     if (libraryFormat) {
                         given = !solvedButNotGivens[sRow * 9 + sCol];
                     }
+                    //System.out.println("sRow="+sRow+", sCol="+sCol+", digit="+Character.digit(ch,10)+", given="+given);
                     setCell(sRow, sCol, Character.digit(ch, 10), given);
                 }
                 sIndex++;
@@ -626,14 +655,26 @@ public class Sudoku implements Cloneable {
             if (step == null) {
                 out.append(":0000:x:");
             } else {
-                out.append(":" + step.getType().getLibraryType() + ":");
+                String type = step.getType().getLibraryType();
+                if (step.getType().isFish() && step.isIsSiamese()) {
+                    type += "1";
+                }
+                out.append(":" + type + ":");
 //                for (int i = 0; i < step.getValues().size(); i++) {
 //                    out.append(step.getValues().get(i));
 //                }
-                // dont append values, append the candidates, that can be deleted
+                // append the candidates, that can be deleted
                 SortedSet<Integer> candToDeleteSet = new TreeSet<Integer>();
-                for (Candidate cand : step.getCandidatesToDelete()) {
-                    candToDeleteSet.add(cand.value);
+                if (step.getType().useCandToDelInLibraryFormat()) {
+                    for (Candidate cand : step.getCandidatesToDelete()) {
+                        candToDeleteSet.add(cand.value);
+                    }
+                }
+                // if nothing can be deleted, append the cells, that can be set
+                if (candToDeleteSet.isEmpty()) {
+                    for (int i = 0; i < step.getValues().size(); i++) {
+                        candToDeleteSet.add(step.getValues().get(i));
+                    }
                 }
                 for (int cand : candToDeleteSet) {
                     out.append(cand);
@@ -658,7 +699,7 @@ public class Sudoku implements Cloneable {
         if (mode == ClipboardMode.PM_GRID || mode == ClipboardMode.PM_GRID_WITH_STEP) {
             // new: create one StringBuffer per cell with all candidates/values; add
             // special characters for step if necessary; if a '*' is added to a cell, 
-            // insert a blank in all other cells of tha col that don't have a '*';
+            // insert a blank in all other cells of that col that don't have a '*';
             // calculate fieldLength an write it
             StringBuffer[] cellBuffers = new StringBuffer[cells.length];
             for (int i = 0; i < cells.length; i++) {
@@ -666,7 +707,12 @@ public class Sudoku implements Cloneable {
                 if (cells[i].getValue() != 0) {
                     cellBuffers[i].append(String.valueOf(cells[i].getValue()));
                 } else {
-                    cellBuffers[i].append(String.valueOf(cells[i].getCandidateString(SudokuCell.PLAY)));
+                    //cellBuffers[i].append(String.valueOf(cells[i].getCandidateString(SudokuCell.PLAY)));
+                    String candString = cells[i].getCandidateString(SudokuCell.PLAY);
+                    if (candString.isEmpty()) {
+                        candString = dot;
+                    }
+                    cellBuffers[i].append(candString);
                 }
             }
 
@@ -802,20 +848,27 @@ public class Sudoku implements Cloneable {
             if (step == null) {
                 out.append("::");
             } else {
-                out.append(":" + step.getCandidateString(true) + ":");
-                //if (SudokuSolver.getInstance().getCategory(step.getType()).isFish()) {
-                if (SolutionType.isFish(step.getType())) {
-                    step.getEntities(out, step.getBaseEntities(), true);
-                    out.append(" ");
-                    step.getEntities(out, step.getCoverEntities(), true);
-                    if (step.getFins().size() > 0) {
-                        out.append(" ");
-                        step.getFins(out, false, true);
-                    }
-                    if (step.getEndoFins().size() > 0) {
-                        out.append(" ");
-                        step.getFins(out, true, true);
-                    }
+                String candString = step.getCandidateString(true);
+                out.append(":" + candString + ":");
+//                if (SolutionType.isFish(step.getType())) {
+//                    step.getEntities(out, step.getBaseEntities(), true);
+//                    out.append(" ");
+//                    step.getEntities(out, step.getCoverEntities(), true);
+//                    if (step.getFins().size() > 0) {
+//                        out.append(" ");
+//                        step.getFins(out, false, true);
+//                    }
+//                    if (step.getEndoFins().size() > 0) {
+//                        out.append(" ");
+//                        step.getFins(out, true, true);
+//                    }
+//                }
+                if (candString.isEmpty()) {
+                    out.append(step.getValueIndexString());
+                }
+                out.append(":");
+                if (step.getType().isSimpleChainOrLoop()) {
+                    out.append((step.getChainLength() - 1));
                 }
             }
         }
@@ -1279,10 +1332,37 @@ public class Sudoku implements Cloneable {
     
     private static void initTemplates() {
         // alle 46656 möglichen Templates anlegen
-        //Sudoku sudoku = new Sudoku(false);
-        Sudoku sudoku = new Sudoku();
-        SudokuSetBase set = new SudokuSetBase();
-        initTemplatesRecursive(sudoku, 0, 0, 1, set);
+        try {
+            //System.out.println("Start Templates lesen...");
+            long ticks = System.currentTimeMillis();
+            ObjectInputStream in = new ObjectInputStream(Sudoku.class.getResourceAsStream("/templates.dat"));
+            templates = (SudokuSetBase[])in.readObject();
+            in.close();
+            ticks = System.currentTimeMillis() - ticks;
+            //System.out.println("Templates lesen: " + ticks + "ms");
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+//        //Sudoku sudoku = new Sudoku(false);
+//        Sudoku sudoku = new Sudoku();
+//        SudokuSetBase set = new SudokuSetBase();
+//        initTemplatesRecursive(sudoku, 0, 0, 1, set);
+//        try {
+////            PrintWriter out = new PrintWriter(new FileWriter("templates.txt"));
+////            for (int i = 0; i < templates.length; i++) {
+////                if ((i % 2) == 0) {
+////                    out.print("        new SudokuSetBase(" + templates[i].mask1 + "L, " + templates[i].mask2 + "L),");
+////                } else {
+////                    out.println(" new SudokuSetBase(" + templates[i].mask1 + "L, " + templates[i].mask2 + "L),");
+////                }
+////            }
+////            out.close();
+//            ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream("templates.dat"));
+//            out.writeObject(templates);
+//            out.close();
+//        } catch (Exception ex) {
+//            ex.printStackTrace();
+//        }
 
         // jetzt noch die Templates für die Häuser
         for (int i = 0; i < LINES.length; i++) {
@@ -1481,5 +1561,12 @@ public class Sudoku implements Cloneable {
             }
         }
         return anz;
+    }
+
+    public void printAllowedPositions(String txt) {
+        System.out.println(txt + ":");
+        for (int i = 1; i < allowedPositions.length; i++) {
+            System.out.println("   allowedPositions[" + i + "]: " + allowedPositions[i]);
+        }
     }
 }

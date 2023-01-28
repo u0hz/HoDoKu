@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008/09  Bernhard Hobiger
+ * Copyright (C) 2008/09/10  Bernhard Hobiger
  *
  * This file is part of HoDoKu.
  *
@@ -326,11 +326,7 @@ public class MiscellaneousSolver extends AbstractSolver {
                             globalStep.addAls(intersectionActSet, intersectionActCandSet);
                             globalStep.addAls(blockActSet, blockActCandSet);
                             globalStep.addAls(nonBlockActSet, nonBlockActCandSet);
-                            try {
-                                steps.add((SolutionStep)globalStep.clone());
-                            } catch (CloneNotSupportedException ex) {
-                                Logger.getLogger(getClass().getName()).log(Level.SEVERE, "Error while cloning", ex);
-                            }
+                            steps.add((SolutionStep)globalStep.clone());
                         }
                     }
                 }

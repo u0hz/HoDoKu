@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008/09  Bernhard Hobiger
+ * Copyright (C) 2008/09/10  Bernhard Hobiger
  *
  * This file is part of HoDoKu.
  *
@@ -65,6 +65,7 @@ public class FindAllStepsProgressDialog extends javax.swing.JDialog {
         steps = new ArrayList<SolutionStep>();
         FindAllSteps findAllSteps = new FindAllSteps(steps, sudoku, this);
         thread = new Thread(findAllSteps);
+        thread.setPriority(Thread.MAX_PRIORITY);
         thread.start();
     }
     

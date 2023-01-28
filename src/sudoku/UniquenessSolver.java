@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008/09  Bernhard Hobiger
+ * Copyright (C) 2008/09/10  Bernhard Hobiger
  *
  * This file is part of HoDoKu.
  *
@@ -21,6 +21,7 @@ package sudoku;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -118,6 +119,7 @@ public class UniquenessSolver extends AbstractSolver {
      */
     private SolutionStep getUniqueness(SolutionType type) {
         steps = getAllUniquenessInternal(new ArrayList<SolutionStep>());
+        Collections.sort(steps);
         for (int i = 0; i < steps.size(); i++) {
             if (steps.get(i).getType() == type) {
                 return steps.get(i);
@@ -131,6 +133,7 @@ public class UniquenessSolver extends AbstractSolver {
      */
     private SolutionStep getAvoidableRectangle(SolutionType type) {
         steps = getAllAvoidableRectangles(new ArrayList<SolutionStep>());
+        //steps = getAllUniquenessInternal(new ArrayList<SolutionStep>());
         for (int i = 0; i < steps.size(); i++) {
             if (steps.get(i).getType() == type) {
                 return steps.get(i);
@@ -226,11 +229,7 @@ public class UniquenessSolver extends AbstractSolver {
                             globalStep.addCandidateToDelete(index3, candArr[j]);
                         }
                     }
-                    try {
-                        return (SolutionStep) globalStep.clone();
-                    } catch (CloneNotSupportedException ex) {
-                        Logger.getLogger(getClass().getName()).log(Level.SEVERE, "Error while cloning", ex);
-                    }
+                    return (SolutionStep) globalStep.clone();
                 }
             }
         }
@@ -350,11 +349,7 @@ public class UniquenessSolver extends AbstractSolver {
             initStep(SolutionType.UNIQUENESS_1);
             globalStep.addCandidateToDelete(additionalCandidates.get(0), cand1);
             globalStep.addCandidateToDelete(additionalCandidates.get(0), cand2);
-            try {
-                steps.add((SolutionStep) globalStep.clone());
-            } catch (CloneNotSupportedException ex) {
-                Logger.getLogger(getClass().getName()).log(Level.SEVERE, "Error while cloning", ex);
-            }
+            steps.add((SolutionStep) globalStep.clone());
         }
 
         // Uniqueness Test 2/5/5A: eine oder zwei Zellen haben 2 Kandidaten, die anderen Zellen 
@@ -398,11 +393,7 @@ public class UniquenessSolver extends AbstractSolver {
                     }
                 }
                 if (globalStep.getCandidatesToDelete().size() > 0) {
-                    try {
-                        steps.add((SolutionStep) globalStep.clone());
-                    } catch (CloneNotSupportedException ex) {
-                        Logger.getLogger(getClass().getName()).log(Level.SEVERE, "Error while cloning", ex);
-                    }
+                    steps.add((SolutionStep) globalStep.clone());
                 }
             }
         }
@@ -462,11 +453,7 @@ public class UniquenessSolver extends AbstractSolver {
                     int candToDelete = noCand1 ? cand2 : cand1;
                     globalStep.addCandidateToDelete(additionalCandidates.get(0), candToDelete);
                     globalStep.addCandidateToDelete(additionalCandidates.get(1), candToDelete);
-                    try {
-                        steps.add((SolutionStep) globalStep.clone());
-                    } catch (CloneNotSupportedException ex) {
-                        Logger.getLogger(getClass().getName()).log(Level.SEVERE, "Error while cloning", ex);
-                    }
+                    steps.add((SolutionStep) globalStep.clone());
                 }
             }
         }
@@ -503,11 +490,7 @@ public class UniquenessSolver extends AbstractSolver {
                     int candToDelete = noCand1 ? cand1 : cand2;
                     globalStep.addCandidateToDelete(additionalCandidates.get(0), candToDelete);
                     globalStep.addCandidateToDelete(additionalCandidates.get(1), candToDelete);
-                    try {
-                        steps.add((SolutionStep) globalStep.clone());
-                    } catch (CloneNotSupportedException ex) {
-                        Logger.getLogger(getClass().getName()).log(Level.SEVERE, "Error while cloning", ex);
-                    }
+                    steps.add((SolutionStep) globalStep.clone());
                 }
             }
         }
@@ -553,11 +536,7 @@ public class UniquenessSolver extends AbstractSolver {
             } else {
                 globalStep.addCandidateToDelete(index21, cand2);
             }
-            try {
-                steps.add((SolutionStep) globalStep.clone());
-            } catch (CloneNotSupportedException ex) {
-                Logger.getLogger(getClass().getName()).log(Level.SEVERE, "Error while cloning", ex);
-            }
+            steps.add((SolutionStep) globalStep.clone());
         } else {
             // the additional candidate in index21 and index22 has to be the same
             short[] cands = cell21.getAllCandidates(candType);
@@ -583,11 +562,7 @@ public class UniquenessSolver extends AbstractSolver {
                 globalStep.addEndoFin(index21, additionalCand);
                 globalStep.addEndoFin(index22, additionalCand);
             }
-            try {
-                steps.add((SolutionStep) globalStep.clone());
-            } catch (CloneNotSupportedException ex) {
-                Logger.getLogger(getClass().getName()).log(Level.SEVERE, "Error while cloning", ex);
-            }
+            steps.add((SolutionStep) globalStep.clone());
         }
     }
 
@@ -648,11 +623,7 @@ public class UniquenessSolver extends AbstractSolver {
 
         initStep(SolutionType.HIDDEN_RECTANGLE);
         globalStep.addCandidateToDelete(delIndex, cand2);
-        try {
-            steps.add((SolutionStep) globalStep.clone());
-        } catch (CloneNotSupportedException ex) {
-            Logger.getLogger(getClass().getName()).log(Level.SEVERE, "Error while cloning", ex);
-        }
+        steps.add((SolutionStep) globalStep.clone());
     }
 
     private void checkUniqueness3(int type, int[] unit, SudokuSet u3Cands) {
@@ -736,11 +707,7 @@ public class UniquenessSolver extends AbstractSolver {
                         }
                     }
                     if (globalStep.getCandidatesToDelete().size() > 0) {
-                        try {
-                            steps.add((SolutionStep) globalStep.clone());
-                        } catch (CloneNotSupportedException ex) {
-                            Logger.getLogger(getClass().getName()).log(Level.SEVERE, "Error while cloning", ex);
-                        }
+                        steps.add((SolutionStep) globalStep.clone());
                     }
                 }
             }

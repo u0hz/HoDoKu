@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008/09  Bernhard Hobiger
+ * Copyright (C) 2008/09/10  Bernhard Hobiger
  *
  * This file is part of HoDoKu.
  *
@@ -55,9 +55,13 @@ public class ColoringSolver extends AbstractSolver {
         SolutionStep result = null;
         switch (type) {
             case SIMPLE_COLORS:
+            case SIMPLE_COLORS_TRAP:
+            case SIMPLE_COLORS_WRAP:
                 result = findSimpleColorStep();
                 break;
             case MULTI_COLORS:
+            case MULTI_COLORS_1:
+            case MULTI_COLORS_2:
                 result = findMultiColorStep();
                 break;
         }
@@ -69,7 +73,11 @@ public class ColoringSolver extends AbstractSolver {
         boolean handled = true;
         switch (step.getType()) {
             case SIMPLE_COLORS:
+            case SIMPLE_COLORS_TRAP:
+            case SIMPLE_COLORS_WRAP:
             case MULTI_COLORS:
+            case MULTI_COLORS_1:
+            case MULTI_COLORS_2:
                 for (Candidate cand : step.getCandidatesToDelete()) {
                     sudoku.delCandidate(cand.getIndex(), candType, cand.getValue());
                 }
@@ -151,15 +159,11 @@ public class ColoringSolver extends AbstractSolver {
             globalStep.reset();
             checkCandidateToDelete(onSet, offSet, cand);
             if (globalStep.getCandidatesToDelete().size() != 0) {
-                globalStep.setType(SolutionType.SIMPLE_COLORS);
+                globalStep.setType(SolutionType.SIMPLE_COLORS_TRAP);
                 globalStep.addValue(cand);
                 globalStep.addColorCandidates(onSet, 0);
                 globalStep.addColorCandidates(offSet, 1);
-                try {
-                    steps.add((SolutionStep) globalStep.clone());
-                } catch (CloneNotSupportedException ex) {
-                    Logger.getLogger(getClass().getName()).log(Level.SEVERE, "Error while cloning", ex);
-                }
+                steps.add((SolutionStep) globalStep.clone());
             }
 
             // second: color wrap - if two cells with the same color can see each other,
@@ -177,17 +181,13 @@ public class ColoringSolver extends AbstractSolver {
                 }
             }
             if (globalStep.getCandidatesToDelete().size() != 0) {
-                globalStep.setType(SolutionType.SIMPLE_COLORS);
+                globalStep.setType(SolutionType.SIMPLE_COLORS_WRAP);
                 globalStep.addValue(cand);
                 globalStep.addColorCandidates(onSet, 0);
                 globalStep.addColorCandidates(offSet, 1);
                 //System.out.println("onSet: " + onSet);
                 //System.out.println("offSet: " + offSet);
-                try {
-                    steps.add((SolutionStep) globalStep.clone());
-                } catch (CloneNotSupportedException ex) {
-                    Logger.getLogger(getClass().getName()).log(Level.SEVERE, "Error while cloning", ex);
-                }
+                steps.add((SolutionStep) globalStep.clone());
             }
         }
     }
@@ -284,17 +284,13 @@ public class ColoringSolver extends AbstractSolver {
                     }
                 }
                 if (globalStep.getCandidatesToDelete().size() != 0) {
-                    globalStep.setType(SolutionType.MULTI_COLORS);
+                    globalStep.setType(SolutionType.MULTI_COLORS_2);
                     globalStep.addValue(cand);
                     globalStep.addColorCandidates(onSet1, 0);
                     globalStep.addColorCandidates(offSet1, 1);
                     globalStep.addColorCandidates(onSet2, 2);
                     globalStep.addColorCandidates(offSet2, 3);
-                    try {
-                        steps.add((SolutionStep) globalStep.clone());
-                    } catch (CloneNotSupportedException ex) {
-                        Logger.getLogger(getClass().getName()).log(Level.SEVERE, "Error while cloning", ex);
-                    }
+                    steps.add((SolutionStep) globalStep.clone());
                 }
                 
                 // now check, if a two cells of different color pairs can see each other. If so,
@@ -313,17 +309,13 @@ public class ColoringSolver extends AbstractSolver {
                     checkCandidateToDelete(onSet1, onSet2, cand);
                 }
                 if (globalStep.getCandidatesToDelete().size() != 0) {
-                    globalStep.setType(SolutionType.MULTI_COLORS);
+                    globalStep.setType(SolutionType.MULTI_COLORS_1);
                     globalStep.addValue(cand);
                     globalStep.addColorCandidates(onSet1, 0);
                     globalStep.addColorCandidates(offSet1, 1);
                     globalStep.addColorCandidates(onSet2, 2);
                     globalStep.addColorCandidates(offSet2, 3);
-                    try {
-                        steps.add((SolutionStep) globalStep.clone());
-                    } catch (CloneNotSupportedException ex) {
-                        Logger.getLogger(getClass().getName()).log(Level.SEVERE, "Error while cloning", ex);
-                    }
+                    steps.add((SolutionStep) globalStep.clone());
                 }
             }
         }
@@ -334,7 +326,7 @@ public class ColoringSolver extends AbstractSolver {
      * in set can be eliminated.
      * @param set Set to be checked
      * @param s21 First color of other color pair
-     * @param s22 Second color of ather color pair
+     * @param s22 Second color of other color pair
      * @return
      */
     private boolean checkMultiColor1(SudokuSet set, SudokuSet s21, SudokuSet s22) {

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008/09  Bernhard Hobiger
+ * Copyright (C) 2008/09/10  Bernhard Hobiger
  *
  * This file is part of HoDoKu.
  *
@@ -168,6 +168,7 @@ public class ConfigGeneralPanel extends javax.swing.JPanel {
         lookAndFeelLabel = new javax.swing.JLabel();
         localComboBox = new javax.swing.JComboBox();
         lookAndFeelComboBox = new javax.swing.JComboBox();
+        shiftKeyCheckBox = new javax.swing.JCheckBox();
 
         java.util.ResourceBundle bundle = java.util.ResourceBundle.getBundle("intl/ConfigGeneralPanel"); // NOI18N
         jPanel1.setBorder(javax.swing.BorderFactory.createTitledBorder(bundle.getString("ConfigGeneralPanel.jPanel1.border.title"))); // NOI18N
@@ -612,6 +613,9 @@ public class ConfigGeneralPanel extends javax.swing.JPanel {
         lookAndFeelLabel.setLabelFor(lookAndFeelComboBox);
         lookAndFeelLabel.setText(bundle.getString("ConfigGeneralPanel.lookAndFeelLabel.text")); // NOI18N
 
+        shiftKeyCheckBox.setMnemonic(java.util.ResourceBundle.getBundle("intl/ConfigGeneralPanel").getString("ConfigGeneralPanel.shiftKeyCheckBox.mnemonic").charAt(0));
+        shiftKeyCheckBox.setText(bundle.getString("ConfigGeneralPanel.shiftKeyCheckBox.text")); // NOI18N
+
         javax.swing.GroupLayout jPanel4Layout = new javax.swing.GroupLayout(jPanel4);
         jPanel4.setLayout(jPanel4Layout);
         jPanel4Layout.setHorizontalGroup(
@@ -619,12 +623,15 @@ public class ConfigGeneralPanel extends javax.swing.JPanel {
             .addGroup(jPanel4Layout.createSequentialGroup()
                 .addContainerGap()
                 .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(localLabel)
-                    .addComponent(lookAndFeelLabel))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(localComboBox, 0, 120, Short.MAX_VALUE)
-                    .addComponent(lookAndFeelComboBox, 0, 120, Short.MAX_VALUE))
+                    .addComponent(shiftKeyCheckBox)
+                    .addGroup(jPanel4Layout.createSequentialGroup()
+                        .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(localLabel)
+                            .addComponent(lookAndFeelLabel))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(localComboBox, 0, 120, Short.MAX_VALUE)
+                            .addComponent(lookAndFeelComboBox, 0, 120, Short.MAX_VALUE))))
                 .addContainerGap())
         );
         jPanel4Layout.setVerticalGroup(
@@ -637,7 +644,9 @@ public class ConfigGeneralPanel extends javax.swing.JPanel {
                 .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(lookAndFeelLabel)
                     .addComponent(lookAndFeelComboBox, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addContainerGap(43, Short.MAX_VALUE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addComponent(shiftKeyCheckBox)
+                .addContainerGap(13, Short.MAX_VALUE))
         );
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(this);
@@ -669,7 +678,7 @@ public class ConfigGeneralPanel extends javax.swing.JPanel {
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
                     .addComponent(jPanel2, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addComponent(jPanel4, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 77, Short.MAX_VALUE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 17, Short.MAX_VALUE)
                 .addComponent(resetButton)
                 .addContainerGap())
         );
@@ -786,6 +795,8 @@ public class ConfigGeneralPanel extends javax.swing.JPanel {
             }
         }
         Options.getInstance().laf = laf;
+
+        Options.getInstance().useShiftForRegionSelect = shiftKeyCheckBox.isSelected();
     }
     
     private void initAll(boolean setDefault) {
@@ -808,6 +819,7 @@ public class ConfigGeneralPanel extends javax.swing.JPanel {
             
             language = Options.DEFAULT_LANGUAGE;
             laf = Options.DEFAULT_LAF;
+            shiftKeyCheckBox.setSelected(Options.USE_SHIFT_FOR_REGION_SELECT);
         } else {
             levels = Options.getInstance().copyDifficultyLevels(Options.getInstance().difficultyLevels);
             
@@ -827,6 +839,7 @@ public class ConfigGeneralPanel extends javax.swing.JPanel {
             
             language = Options.getInstance().language;
             laf = Options.getInstance().laf;
+            shiftKeyCheckBox.setSelected(Options.getInstance().useShiftForRegionSelect);
         }
         
         initButtons();
@@ -1015,6 +1028,7 @@ public class ConfigGeneralPanel extends javax.swing.JPanel {
     private javax.swing.JLabel printSmallLabel;
     private javax.swing.JButton resetButton;
     private javax.swing.JCheckBox saveWindowLayoutCheckBox;
+    private javax.swing.JCheckBox shiftKeyCheckBox;
     private javax.swing.JCheckBox showCandidatesCheckBox;
     private javax.swing.JCheckBox showDeviationsCheckBox;
     private javax.swing.JCheckBox showWrongValuesCheckBox;

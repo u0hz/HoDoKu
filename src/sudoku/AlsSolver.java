@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008/09  Bernhard Hobiger
+ * Copyright (C) 2008/09/10  Bernhard Hobiger
  *
  * This file is part of HoDoKu.
  *
@@ -244,11 +244,7 @@ public class AlsSolver extends AbstractSolver {
                 if (rc.cand2 != 0) {
                     addRestrictedCommonToStep(als1, als2, rc.cand2, false);
                 }
-                try {
-                    steps.add((SolutionStep) globalStep.clone());
-                } catch (CloneNotSupportedException ex) {
-                    Logger.getLogger(getClass().getName()).log(Level.SEVERE, "Error while cloning", ex);
-                }
+                steps.add((SolutionStep) globalStep.clone());
                 globalStep.reset();
             }
         }
@@ -345,11 +341,7 @@ public class AlsSolver extends AbstractSolver {
                     if (rc2.cand2 != 0) {
                         addRestrictedCommonToStep(b, c, rc2.cand2, false);
                     }
-                    try {
-                        steps.add((SolutionStep) globalStep.clone());
-                    } catch (CloneNotSupportedException ex) {
-                        Logger.getLogger(getClass().getName()).log(Level.SEVERE, "Error while cloning", ex);
-                    }
+                    steps.add((SolutionStep) globalStep.clone());
                     globalStep.reset();
                 }
             }
@@ -514,18 +506,14 @@ public class AlsSolver extends AbstractSolver {
                         }
                     }
                     if (writeIt) {
-                        try {
-                            if (replaceIndex != -1) {
-                                steps.remove(replaceIndex);
-                                steps.add(replaceIndex, (SolutionStep) globalStep.clone());
-                            } else {
-                                steps.add((SolutionStep) globalStep.clone());
-                                if (elim != null) {
-                                    deletesMap.put(elim, steps.size() - 1);
-                                }
+                        if (replaceIndex != -1) {
+                            steps.remove(replaceIndex);
+                            steps.add(replaceIndex, (SolutionStep) globalStep.clone());
+                        } else {
+                            steps.add((SolutionStep) globalStep.clone());
+                            if (elim != null) {
+                                deletesMap.put(elim, steps.size() - 1);
                             }
-                        } catch (CloneNotSupportedException ex) {
-                            Logger.getLogger(getClass().getName()).log(Level.SEVERE, "Error while cloning", ex);
                         }
                     }
                     globalStep.reset();
@@ -707,18 +695,14 @@ public class AlsSolver extends AbstractSolver {
                             }
                         }
                         if (writeIt) {
-                            try {
-                                if (replaceIndex != -1) {
-                                    steps.remove(replaceIndex);
-                                    steps.add(replaceIndex, (SolutionStep)globalStep.clone());
-                                } else {
-                                    steps.add((SolutionStep) globalStep.clone());
-                                    if (elim != null) {
-                                        deletesMap.put(elim, steps.size() - 1);
-                                    }
+                            if (replaceIndex != -1) {
+                                steps.remove(replaceIndex);
+                                steps.add(replaceIndex, (SolutionStep) globalStep.clone());
+                            } else {
+                                steps.add((SolutionStep) globalStep.clone());
+                                if (elim != null) {
+                                    deletesMap.put(elim, steps.size() - 1);
                                 }
-                            } catch (CloneNotSupportedException ex) {
-                                Logger.getLogger(getClass().getName()).log(Level.SEVERE, "Error while cloning", ex);
                             }
                         }
                         globalStep.reset();

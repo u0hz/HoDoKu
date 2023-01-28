@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008/09  Bernhard Hobiger
+ * Copyright (C) 2008/09/10  Bernhard Hobiger
  *
  * This file is part of HoDoKu.
  *
@@ -41,6 +41,8 @@ public class ConfigDialog extends javax.swing.JDialog {
     private ConfigStepPanel myConfigStepPanel;
     private ConfigColorPanel myConfigColorPanel;
     private ConfigFindAllStepsPanel myConfigFindAllStepsPanel;
+    private ConfigProgressPanel myConfigProgressPanel;
+    private ConfigTrainigPanel myConfigTrainingPanel;
 
     /** Creates new form ConfigDialog */
     public ConfigDialog(java.awt.Frame parent, boolean modal, int tabIndex) {
@@ -74,6 +76,12 @@ public class ConfigDialog extends javax.swing.JDialog {
         myConfigFindAllStepsPanel = new ConfigFindAllStepsPanel();
         findAllStepsPanel.add(myConfigFindAllStepsPanel, BorderLayout.CENTER);
         
+        myConfigProgressPanel = new ConfigProgressPanel();
+        heuristicsPanel.add(myConfigProgressPanel, BorderLayout.CENTER);
+
+        myConfigTrainingPanel = new ConfigTrainigPanel();
+        trainingPanel.add(myConfigTrainingPanel, BorderLayout.CENTER);
+        
         if (tabIndex != -1) {
             tabbedPane.setSelectedIndex(tabIndex);
         }
@@ -91,7 +99,9 @@ public class ConfigDialog extends javax.swing.JDialog {
         generalPanel = new javax.swing.JPanel();
         solverPanel = new javax.swing.JPanel();
         findAllStepsPanel = new javax.swing.JPanel();
+        heuristicsPanel = new javax.swing.JPanel();
         stepConfigPanel = new javax.swing.JPanel();
+        trainingPanel = new javax.swing.JPanel();
         colorPanel = new javax.swing.JPanel();
         okButton = new javax.swing.JButton();
         cancelButton = new javax.swing.JButton();
@@ -114,8 +124,14 @@ public class ConfigDialog extends javax.swing.JDialog {
         findAllStepsPanel.setLayout(new java.awt.BorderLayout());
         tabbedPane.addTab(bundle.getString("ConfigDialog.findAllStepsPanel.TabConstraints.tabTitle"), findAllStepsPanel); // NOI18N
 
+        heuristicsPanel.setLayout(new java.awt.BorderLayout());
+        tabbedPane.addTab(bundle.getString("ConfigDialog.heuristicsPanel.TabConstraints.tabTitle"), heuristicsPanel); // NOI18N
+
         stepConfigPanel.setLayout(new java.awt.BorderLayout());
         tabbedPane.addTab(bundle.getString("ConfigDialog.stepConfigPanel.TabConstraints.tabTitle"), stepConfigPanel); // NOI18N
+
+        trainingPanel.setLayout(new java.awt.BorderLayout());
+        tabbedPane.addTab(bundle.getString("ConfigDialog.trainingPanel.TabConstraints.tabTitle"), trainingPanel); // NOI18N
 
         colorPanel.setLayout(new java.awt.BorderLayout());
         tabbedPane.addTab(bundle.getString("ConfigDialog.colorPanel.TabConstraints.tabTitle"), colorPanel); // NOI18N
@@ -174,6 +190,8 @@ public class ConfigDialog extends javax.swing.JDialog {
         myConfigStepPanel.okPressed();
         myConfigColorPanel.okPressed();
         myConfigFindAllStepsPanel.okPressed();
+        myConfigProgressPanel.okPressed();
+        myConfigTrainingPanel.okPressed();
         try {
             Options.getInstance().writeOptions();
         } catch (FileNotFoundException ex) {
@@ -228,10 +246,12 @@ public class ConfigDialog extends javax.swing.JDialog {
     private javax.swing.JPanel colorPanel;
     private javax.swing.JPanel findAllStepsPanel;
     private javax.swing.JPanel generalPanel;
+    private javax.swing.JPanel heuristicsPanel;
     private javax.swing.JButton okButton;
     private javax.swing.JPanel solverPanel;
     private javax.swing.JPanel stepConfigPanel;
     private javax.swing.JTabbedPane tabbedPane;
+    private javax.swing.JPanel trainingPanel;
     // End of variables declaration//GEN-END:variables
     
 }

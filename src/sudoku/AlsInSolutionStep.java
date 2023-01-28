@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008/09  Bernhard Hobiger
+ * Copyright (C) 2008/09/10  Bernhard Hobiger
  *
  * This file is part of HoDoKu.
  *
@@ -50,7 +50,7 @@ public class AlsInSolutionStep implements Cloneable {
         newAls.candidates = (List<Integer>) ((ArrayList<Integer>) candidates).clone();
         return newAls;
     }
-    
+
     public List<Integer> getIndices() {
         return indices;
     }

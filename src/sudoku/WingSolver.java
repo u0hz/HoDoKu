@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008/09  Bernhard Hobiger
+ * Copyright (C) 2008/09/10  Bernhard Hobiger
  *
  * This file is part of HoDoKu.
  *
@@ -21,8 +21,6 @@ package sudoku;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 /**
  *
@@ -158,6 +156,7 @@ public class WingSolver extends AbstractSolver {
                 checkPincer1(i, Sudoku.BLOCKS[Sudoku.getBlock(i)]);
                 if (! xyz) {
                     checkPincer1(i, Sudoku.COLS[Sudoku.getCol(i)]);
+                    checkPincer1(i, Sudoku.LINES[Sudoku.getLine(i)]);
                 }
             }
         }
@@ -279,11 +278,7 @@ public class WingSolver extends AbstractSolver {
                     }
                 }
                 if (globalStep.getCandidatesToDelete().size() > 0) {
-                    try {
-                        steps.add((SolutionStep)globalStep.clone());
-                    } catch (CloneNotSupportedException ex) {
-                        Logger.getLogger(getClass().getName()).log(Level.SEVERE, "Error while cloning", ex);
-                    }
+                    steps.add((SolutionStep)globalStep.clone());
                 }
             }
         }
@@ -362,11 +357,7 @@ public class WingSolver extends AbstractSolver {
                         }
                     }
                     if (! stepAlreadyFound) {
-                        try {
-                            steps.add((SolutionStep)globalStep.clone());
-                        } catch (CloneNotSupportedException ex) {
-                            Logger.getLogger(getClass().getName()).log(Level.SEVERE, "Error while cloning", ex);
-                        }
+                        steps.add((SolutionStep)globalStep.clone());
                     }
                 }
             }

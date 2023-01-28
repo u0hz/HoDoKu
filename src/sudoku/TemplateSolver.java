@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008/09  Bernhard Hobiger
+ * Copyright (C) 2008/09/10  Bernhard Hobiger
  *
  * This file is part of HoDoKu.
  *
@@ -134,11 +134,7 @@ public class TemplateSolver extends AbstractSolver {
                 for (int j = 0; j < setSet.size(); j++) {
                     globalStep.addIndex(setSet.get(j));
                 }
-                try {
-                    steps.add((SolutionStep)globalStep.clone());
-                } catch (CloneNotSupportedException ex) {
-                    Logger.getLogger(getClass().getName()).log(Level.SEVERE, "Error while cloning", ex);
-                }
+                steps.add((SolutionStep)globalStep.clone());
             }
         }
     }
@@ -165,11 +161,7 @@ public class TemplateSolver extends AbstractSolver {
                 for (int j = 0; j < setSet.size(); j++) {
                     globalStep.addCandidateToDelete(setSet.get(j), i);
                 }
-                try {
-                    steps.add((SolutionStep)globalStep.clone());
-                } catch (CloneNotSupportedException ex) {
-                    Logger.getLogger(getClass().getName()).log(Level.SEVERE, "Error while cloning", ex);
-                }
+                steps.add((SolutionStep)globalStep.clone());
             }
         }
     }

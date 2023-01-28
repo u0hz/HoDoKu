@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008/09  Bernhard Hobiger
+ * Copyright (C) 2008/09/10  Bernhard Hobiger
  *
  * This file is part of HoDoKu.
  *
@@ -158,8 +158,8 @@ implements ListDragAndDropChange {
                     .addComponent(scoreLabel))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(scoreTextField, javax.swing.GroupLayout.DEFAULT_SIZE, 220, Short.MAX_VALUE)
-                    .addComponent(levelComboBox, 0, 220, Short.MAX_VALUE))
+                    .addComponent(scoreTextField, javax.swing.GroupLayout.DEFAULT_SIZE, 224, Short.MAX_VALUE)
+                    .addComponent(levelComboBox, 0, 224, Short.MAX_VALUE))
                 .addContainerGap())
         );
         jPanel3Layout.setVerticalGroup(
@@ -222,7 +222,7 @@ implements ListDragAndDropChange {
             jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel1Layout.createSequentialGroup()
                 .addComponent(jPanel3, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 298, Short.MAX_VALUE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 301, Short.MAX_VALUE)
                 .addComponent(upButton)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
@@ -246,7 +246,7 @@ implements ListDragAndDropChange {
 
         jPanel4.add(stepScrollPane, java.awt.BorderLayout.CENTER);
 
-        listButton.setIcon(new javax.swing.ImageIcon(getClass().getResource("/img/listview16.png"))); // NOI18N
+        listButton.setIcon(new javax.swing.ImageIcon(getClass().getResource("/img/listview16b.png"))); // NOI18N
         listButton.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 listButtonActionPerformed(evt);
@@ -254,7 +254,7 @@ implements ListDragAndDropChange {
         });
         jToolBar1.add(listButton);
 
-        treeButton.setIcon(new javax.swing.ImageIcon(getClass().getResource("/img/treeview16.png"))); // NOI18N
+        treeButton.setIcon(new javax.swing.ImageIcon(getClass().getResource("/img/treeview16b.png"))); // NOI18N
         treeButton.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 treeButtonActionPerformed(evt);
@@ -270,7 +270,7 @@ implements ListDragAndDropChange {
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
                 .addContainerGap()
-                .addComponent(jPanel4, javax.swing.GroupLayout.DEFAULT_SIZE, 357, Short.MAX_VALUE)
+                .addComponent(jPanel4, javax.swing.GroupLayout.DEFAULT_SIZE, 276, Short.MAX_VALUE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
         );
@@ -488,12 +488,12 @@ implements ListDragAndDropChange {
                 // neue Kategorie
                 act = new CheckNode(steps[i].getCategoryName(), true,
                         steps[i].isEnabled() ? CheckNode.FULL : CheckNode.NONE,
-                        null, false, steps[i].getCategory());
+                        null, false, false, false, steps[i].getCategory());
                 root.add(act);
             }
             act.add(new CheckNode(steps[i].getType().getStepName(), false,
                     steps[i].isEnabled() ? CheckNode.FULL : CheckNode.NONE,
-                    steps[i], false, null));
+                    steps[i], false, false, false, null));
             if (act.getSelectionState() == CheckNode.FULL && ! steps[i].isEnabled()) {
                 act.setSelectionState(CheckNode.HALF);
             }

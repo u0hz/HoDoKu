@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008/09  Bernhard Hobiger
+ * Copyright (C) 2008/09/10  Bernhard Hobiger
  *
  * This file is part of HoDoKu.
  *
@@ -289,11 +289,13 @@ public class Main {
                 //handler.setLevel(Level.ALL);
                 //handler.setLevel(Level.CONFIG);
                 handler.setLevel(Level.SEVERE);
+                //handler.setLevel(Level.FINER);
             }
         }
         //Logger.getLogger(Sudoku.class.getName()).setLevel(Level.FINER);
         //Logger.getLogger(FishSolver.class.getName()).setLevel(Level.FINER);
         //Logger.getLogger(TablingSolver.class.getName()).setLevel(Level.FINER);
+        //Logger.getLogger(SudokuSolver.class.getName()).setLevel(Level.FINER);
 
         Logger.getLogger(Main.class.getName()).log(Level.CONFIG, "java.io.tmpdir=" + System.getProperty("java.io.tmpdir"));
         Logger.getLogger(Main.class.getName()).log(Level.CONFIG, "user.dir=" + System.getProperty("user.dir"));
@@ -353,15 +355,24 @@ public class Main {
 
         // to detect whether launch4j is used, a constant command line parameter
         // "/launch4j" is used for the exe version; detect it
+        // "/gui" is used to start the GUI with a hcfg or hsol file
         boolean launch4jUsed = false;
+        boolean launchGui = false;
+        String launchFile = null;
         for (int i = 0; i < args.length; i++) {
             if (args[i].equals("/launch4j")) {
                 launch4jUsed = true;
             }
+            if (args[i].equalsIgnoreCase("/gui")) {
+                launchGui = true;
+            }
+            if (args[i].toLowerCase().endsWith("hsol") || args[i].toLowerCase().endsWith("hcfg")) {
+                launchFile = args[i];
+            }
         }
         // handle command line arguments
         SudokuConsoleFrame consoleFrame = null;
-        if (launch4jUsed && args.length > 1 || ! launch4jUsed && args.length > 0) {
+        if (! launchGui && (launch4jUsed && args.length > 1 || ! launch4jUsed && args.length > 0)) {
 //            for (int i = 0; i < args.length; i++) {
 //                System.out.println("args[" + i + "]: <" + args[i] + ">");
 //            }
@@ -459,6 +470,7 @@ public class Main {
                 if (arg.equals("/bs") || arg.equals("/vg") || arg.equals("/sc") ||
                         arg.equals("/so") || arg.equals("/c") || arg.equals("/o") ||
                         arg.equals("/bsaf") || arg.equals("/bts") || arg.equals("/bt") ||
+                        arg.equals("/test") || arg.equals("/testf") || arg.equals("/vf") ||
                         (arg.equals("/s") && (i + 1 < options.size()) && options.get(i + 1).trim().charAt(0) != '/')) {
                     // args with parameters (only one parameter per arg permitted)
                     if (i + 1 >= options.size() || options.get(i + 1).trim().charAt(0) == '/') {
@@ -506,6 +518,16 @@ public class Main {
             if (helpArg != null) {
                 printHelpScreen();
                 printIgnoredOptions(helpArg, argMap);
+                return;
+            }
+            if (argMap.containsKey("/testf")) {
+                RegressionTester tester = new RegressionTester();
+                tester.runTest(argMap.get("/testf"), true);
+                return;
+            }
+            if (argMap.containsKey("/test")) {
+                RegressionTester tester = new RegressionTester();
+                tester.runTest(argMap.get("/test"));
                 return;
             }
             if (argMap.containsKey("/lt")) {
@@ -573,6 +595,17 @@ public class Main {
             if (argMap.containsKey("/vst")) {
                 printStatistics = true;
                 argMap.remove("/vst");
+            }
+            if (argMap.containsKey("/vf")) {
+                String arg = argMap.get("/vf");
+                int fishFormat = 0;
+                try {
+                    fishFormat = Integer.parseInt(arg);
+                } catch (NumberFormatException ex) {
+                    System.out.println("Invalid argument for /vf ('" + arg + "'): '0' used instead!");
+                }
+                Options.getInstance().fishDisplayMode = fishFormat;
+                argMap.remove("/vf");
             }
             ClipboardMode clipboardMode = null;
             Set<SolutionType> outTypes = null;
@@ -691,11 +724,12 @@ public class Main {
         }
 
         // ok - no console operation, start GUI
+        final String lf = launchFile;
         java.awt.EventQueue.invokeLater(new Runnable() {
 
             @Override
             public void run() {
-                new MainFrame().setVisible(true);
+                new MainFrame(lf).setVisible(true);
             }
         });
     }
@@ -825,6 +859,7 @@ public class Main {
                         "  /vs: print solution in output file (only valid with /bs)\r\n" +
                         "  /vp: print complete solution for each puzzle (only valid with /bs)\r\n" +
                         "  /vst: print statistics (only valid with /bs)\r\n" +
+                        "  /vf <0|1|2>: set fish output format (default, numbers, cells)\r\n" +
                         "  /vg [l|c|s:]<step>[,<step>...]: print pm before every <step> in the solution\r\n" +
                         "      (only valid with /bs and /vp)\r\n" +
                         "      l: print library format\r\n" +
@@ -833,6 +868,8 @@ public class Main {
                         "  /o <file>: write output to <file>; if <file> is \"stdout\", all output is\r\n" + 
                         "      written to the console\r\n" +
                         "  /stdin: read options from stdin\r\n" +
+                        "  /test <file>: run regression tester against test cases in <file>\r\n" +
+                        "  /testf <file>: same as /test, but long running tests are ommitted\r\n" +
                         "\r\n" +
                         "Puzzle: If a puzzle is given it is solved as if it was read from a file with\r\n" +
                         "      /bs; if a PM is given it must be delimited by \" or '");

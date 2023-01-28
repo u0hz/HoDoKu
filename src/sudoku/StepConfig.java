@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008/09  Bernhard Hobiger
+ * Copyright (C) 2008/09/10  Bernhard Hobiger
  *
  * This file is part of HoDoKu.
  *
@@ -24,21 +24,25 @@ package sudoku;
  * @author Bernhard Hobiger
  */
 public class StepConfig implements Cloneable, Comparable<StepConfig> {
-    private int index;
-    private SolutionType type;
-    private int level;     // Index in Options.difficultyLevels
-    private SolutionCategory category;
-    private int baseScore;
-    private int adminScore;
-    private boolean enabled;
-    private boolean allStepsEnabled;
+    private int index;                 // search order when solving
+    private SolutionType type;         // which step
+    private int level;                 // Index in Options.difficultyLevels
+    private SolutionCategory category; // which category (used for configuration)
+    private int baseScore;             // score for every instance of step in solution
+    private int adminScore;            // currently not used
+    private boolean enabled;           // used in solution?
+    private boolean allStepsEnabled;   // searched for when all steps are found?
+    private int indexProgress;         // search order when rating the efficiency of steps
+    private boolean enabledProgress; // enabled when rating the efficiency of steps
+    private boolean enabledTraining;   // enabled for traing/practising mode
     
     /** Creates a new instance of StepConfig */
     public StepConfig() {
     }
     
     public StepConfig(int index, SolutionType type, int level, SolutionCategory category,
-            int baseScore, int adminScore, boolean enabled, boolean allStepsEnabled) {
+            int baseScore, int adminScore, boolean enabled, boolean allStepsEnabled,
+            int indexProgress, boolean enabledProgress, boolean enabledTraining) {
         setIndex(index);
         setType(type);
         setLevel(level);
@@ -47,6 +51,9 @@ public class StepConfig implements Cloneable, Comparable<StepConfig> {
         setAdminScore(adminScore);
         setEnabled(enabled);
         setAllStepsEnabled(allStepsEnabled);
+        setIndexProgress(indexProgress);
+        setEnabledProgress(enabledProgress);
+        setEnabledTraining(enabledTraining);
     }
 
     @Override
@@ -134,5 +141,35 @@ public class StepConfig implements Cloneable, Comparable<StepConfig> {
 
     public void setAllStepsEnabled(boolean allStepsEnabled) {
         this.allStepsEnabled = allStepsEnabled;
+    }
+
+    public int getIndexProgress() {
+        return indexProgress;
+    }
+
+    public void setIndexProgress(int indexProgress) {
+        this.indexProgress = indexProgress;
+    }
+
+    public boolean isEnabledProgress() {
+        return enabledProgress;
+    }
+
+    public void setEnabledProgress(boolean enabledProgress) {
+        this.enabledProgress = enabledProgress;
+    }
+
+    /**
+     * @return the enabledTraining
+     */
+    public boolean isEnabledTraining() {
+        return enabledTraining;
+    }
+
+    /**
+     * @param enabledTraining the enabledTraining to set
+     */
+    public void setEnabledTraining(boolean enabledTraining) {
+        this.enabledTraining = enabledTraining;
     }
 }

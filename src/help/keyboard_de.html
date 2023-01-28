@@ -39,17 +39,35 @@ dd {
   <body>
     <h1>Normale Benutzung</h1>
     <dl>
-        <dt>Spielen mit der Maus</dt>
-        <dd>Um Werte/Kandidaten mit Hilfe der Maus zu setzen eine der Ziffern
-        in der Statusleiste anklicken (der Mauszeiger verändert seine Form entsprechend).
-        Klick auf den linken Mausknopf setzt einen Wert, Klick auf den rechten
-        löscht ihn wieder. Um Kandidaten zu setzen oder zu löschen, die [Strg]-Taste
-        während der Mausklicks gedrückt halten. Um zum Normalbetrieb zurückzukehren
-        "Aus" in der Statusleiste anklicken.</dd>
+        <dt>Spielen mit der Maus (normales Spiel)</dt>
+        <dd>Klick auf eine Zelle wählt diese Zelle aus. Mit [Strg] oder [Umschalt]
+        können mehrere Zellen markiert werden. Werte/Kandidaten setzen:
+        <ul>
+            <li>Doppelklick auf einen Kandidaten setzt ihn in der Zelle</li>
+            <li>Gibt es in einer Zelle nur noch einen Kandidaten, wird er mit
+            Doppelklick auf die Zelle gesetzt</li>
+            <li>Sind Filter eingeschaltet, setzt Doppelklick auf eine Zelle den
+            gefilterten Kandidaten in der Zelle, wenn er ein Hidden Single ist</li>
+            <li>[Strg] Doppelklick auf einen Kandidaten schaltet ihn ein oder aus</li>
+        </ul>
+        </dd>
+        <dt>Spielen mit der Maus (Färbemodus)</dt>
+        <dd>Klick auf eine Farbe in der Statuszeile oder in der Ansicht "Aktive Zelle"
+        schaltet den Färbemodus ein. Klick auf eine Zelle/einen Kandidaten schaltet die
+        Farbe ein bzw. aus. Mit [Umschalt] kann eine andere Farbe gewählt werden. Klick auf
+        die Hintergrundfarbe in der Palette (oder Drücken von [Esc]) schaltet den Färbemodus
+        wieder aus. Klick auf die Farbe mit dem "R" schaltet den Färbemodus aus und
+        löscht alle Farben.
+        </dd>
         <dt>[links], [oben], [rechts], [unten]</dt>
         <dd>Bewegt den Cursor (die gerade aktive Zelle).</dd>
+        <dt>[Umschalt][links], [Umschalt][oben], [Umschalt][rechts], [Umschalt][unten]</dt>
+        <dd>Erweitert den Bereich der markierten Zellen.</dd>
         <dt>[Strg][links], [Strg][oben], [Strg][rechts], [Strg][unten]</dt>
         <dd>Bewegt den Cursor zur nächsten ungelösten Zelle.</dd>
+        <dt>[Umschalt][Strg][links], [Umschalt][Strg][oben], [Umschalt][Strg][rechts], [Umschalt][Strg][unten]</dt>
+        <dd>Sind Filter eingeschaltet, springt der Cursor zur nächsten ungelösten Zelle,
+        die den Filterkandidaten enthält</dd>
         <dt>[Pos1]</dt>
         <dd>Setzt den Cursor ganz nach links.</dd>
         <dt>[Ende]</dt>
@@ -105,9 +123,9 @@ dd {
         <dt>[Strg][n]</dt>
         <dd>Erzeuge ein neues zufälliges Sudoku.</dd>
         <dt>[Strg][o]</dt>
-        <dd>Datei öffnen (Konfiguration oder Sudoku).</dd>
+        <dd>Sudoku laden.</dd>
         <dt>[Strg][s]</dt>
-        <dd>Datei speichern unter (Konfiguration oder Sudoku).</dd>
+        <dd>Sudoku speichern.</dd>
         <dt>[Strg][p]</dt>
         <dd>Sudoku drucken.</dd>
         <dt>[Alt][x]</dt>

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008/09  Bernhard Hobiger
+ * Copyright (C) 2008/09/10  Bernhard Hobiger
  *
  * This file is part of HoDoKu.
  *
@@ -33,6 +33,11 @@ public class ConfigStepPanel extends javax.swing.JPanel {
         "20", "21", "22", "23", "24", "25", "26", "27", "28", "29",
         "30", "31", "32", "33", "34", "35", "36", "37", "38", "39"
     };
+    private static String[] fishDisplayTypes = {
+        java.util.ResourceBundle.getBundle("intl/ConfigStepPanel").getString("ConfigStepPanel.fishDisplayTypeLabel.text1"),
+        java.util.ResourceBundle.getBundle("intl/ConfigStepPanel").getString("ConfigStepPanel.fishDisplayTypeLabel.text2"),
+        java.util.ResourceBundle.getBundle("intl/ConfigStepPanel").getString("ConfigStepPanel.fishDisplayTypeLabel.text3")
+    };
     
     /** Creates new form ConfigStepPanel */
     public ConfigStepPanel() {
@@ -57,6 +62,11 @@ public class ConfigStepPanel extends javax.swing.JPanel {
         krakenFishMaxSizeComboBox.removeAllItems();
         for (int i = 0; i < fishSizes.length; i++) {
             krakenFishMaxSizeComboBox.addItem(fishSizes[i]);
+        }
+
+        fishDisplayTypeComboBox.removeAllItems();
+        for (int i = 0; i < fishDisplayTypes.length; i++) {
+            fishDisplayTypeComboBox.addItem(fishDisplayTypes[i]);
         }
 
         for (int i = 0; i < chainSizes.length; i++) {
@@ -101,10 +111,12 @@ public class ConfigStepPanel extends javax.swing.JPanel {
         fishPanel = new javax.swing.JPanel();
         maxFinsLabel = new javax.swing.JLabel();
         maxEndoFinsLabel = new javax.swing.JLabel();
+        fishDisplayTypeLabel = new javax.swing.JLabel();
         maxFinsComboBox = new javax.swing.JComboBox();
         maxEndoFinsComboBox = new javax.swing.JComboBox();
         checkTemplatesCheckBox = new javax.swing.JCheckBox();
         onlyOneFishCheckBox = new javax.swing.JCheckBox();
+        fishDisplayTypeComboBox = new javax.swing.JComboBox();
         jPanel3 = new javax.swing.JPanel();
         restrictChainSizeLabel = new javax.swing.JLabel();
         restrictChainSizeComboBox = new javax.swing.JComboBox();
@@ -159,8 +171,8 @@ public class ConfigStepPanel extends javax.swing.JPanel {
                             .addComponent(lookAheadLabel))
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addGroup(tablingPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(lookAheadTextField, javax.swing.GroupLayout.DEFAULT_SIZE, 154, Short.MAX_VALUE)
-                            .addComponent(maxTableEntryLengthTextField, javax.swing.GroupLayout.DEFAULT_SIZE, 154, Short.MAX_VALUE)))
+                            .addComponent(lookAheadTextField, javax.swing.GroupLayout.DEFAULT_SIZE, 158, Short.MAX_VALUE)
+                            .addComponent(maxTableEntryLengthTextField, javax.swing.GroupLayout.DEFAULT_SIZE, 158, Short.MAX_VALUE)))
                     .addGroup(tablingPanelLayout.createSequentialGroup()
                         .addGap(10, 10, 10)
                         .addComponent(onlyOneChainCheckBox))
@@ -206,7 +218,7 @@ public class ConfigStepPanel extends javax.swing.JPanel {
                     .addComponent(erWithTwoCandidatesCheckBox)
                     .addComponent(useZeroInsteadOfDotCheckBox)
                     .addComponent(allowDualsAndSiameseCheckBox))
-                .addContainerGap(53, Short.MAX_VALUE))
+                .addContainerGap(57, Short.MAX_VALUE))
         );
         miscellaneousPanelLayout.setVerticalGroup(
             miscellaneousPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -236,7 +248,7 @@ public class ConfigStepPanel extends javax.swing.JPanel {
                 .addGroup(alsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addComponent(allowAlsOverlapCheckBox)
                     .addComponent(onlyOneAlsStepCheckBox))
-                .addContainerGap(59, Short.MAX_VALUE))
+                .addContainerGap(63, Short.MAX_VALUE))
         );
         alsPanelLayout.setVerticalGroup(
             alsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -281,6 +293,10 @@ public class ConfigStepPanel extends javax.swing.JPanel {
         maxEndoFinsLabel.setDisplayedMnemonic(java.util.ResourceBundle.getBundle("intl/ConfigStepPanel").getString("ConfigStepPanel.maxEndoFinsLabel.mnemonic").charAt(0));
         maxEndoFinsLabel.setText(bundle.getString("ConfigStepPanel.maxEndoFinsLabel.text")); // NOI18N
 
+        fishDisplayTypeLabel.setDisplayedMnemonic(java.util.ResourceBundle.getBundle("intl/ConfigStepPanel").getString("ConfigStepPanel.fishDisplayTypeLabel.mnemonic").charAt(0));
+        fishDisplayTypeLabel.setLabelFor(fishDisplayTypeComboBox);
+        fishDisplayTypeLabel.setText(bundle.getString("ConfigStepPanel.fishDisplayTypeLabel.text")); // NOI18N
+
         checkTemplatesCheckBox.setMnemonic(java.util.ResourceBundle.getBundle("intl/ConfigStepPanel").getString("ConfigStepPanel.checkTemplatesCheckBox.mnemonic").charAt(0));
         checkTemplatesCheckBox.setText(bundle.getString("ConfigStepPanel.checkTemplatesCheckBox.text")); // NOI18N
         checkTemplatesCheckBox.setBorder(javax.swing.BorderFactory.createEmptyBorder(0, 0, 0, 0));
@@ -289,29 +305,39 @@ public class ConfigStepPanel extends javax.swing.JPanel {
         onlyOneFishCheckBox.setMnemonic(java.util.ResourceBundle.getBundle("intl/ConfigStepPanel").getString("ConfigStepPanel.onlyOneFishCheckBox.mnemonic").charAt(0));
         onlyOneFishCheckBox.setText(bundle.getString("ConfigStepPanel.onlyOneFishCheckBox.text")); // NOI18N
 
+        fishDisplayTypeComboBox.setModel(new javax.swing.DefaultComboBoxModel(new String[] { "Item 1", "Item 2", "Item 3", "Item 4" }));
+
         javax.swing.GroupLayout fishPanelLayout = new javax.swing.GroupLayout(fishPanel);
         fishPanel.setLayout(fishPanelLayout);
         fishPanelLayout.setHorizontalGroup(
             fishPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(fishPanelLayout.createSequentialGroup()
                 .addGroup(fishPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, fishPanelLayout.createSequentialGroup()
-                        .addGap(10, 10, 10)
+                    .addGroup(fishPanelLayout.createSequentialGroup()
                         .addGroup(fishPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(maxEndoFinsLabel, javax.swing.GroupLayout.DEFAULT_SIZE, 125, Short.MAX_VALUE)
                             .addGroup(fishPanelLayout.createSequentialGroup()
-                                .addComponent(maxFinsLabel, javax.swing.GroupLayout.DEFAULT_SIZE, 98, Short.MAX_VALUE)
-                                .addGap(27, 27, 27)))
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                                .addGap(10, 10, 10)
+                                .addGroup(fishPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                    .addComponent(maxEndoFinsLabel, javax.swing.GroupLayout.DEFAULT_SIZE, 125, Short.MAX_VALUE)
+                                    .addGroup(fishPanelLayout.createSequentialGroup()
+                                        .addComponent(maxFinsLabel, javax.swing.GroupLayout.DEFAULT_SIZE, 98, Short.MAX_VALUE)
+                                        .addGap(27, 27, 27)))
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED))
+                            .addGroup(fishPanelLayout.createSequentialGroup()
+                                .addContainerGap()
+                                .addComponent(fishDisplayTypeLabel)
+                                .addGap(72, 72, 72)))
                         .addGroup(fishPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addComponent(maxFinsComboBox, 0, 59, Short.MAX_VALUE)
-                            .addComponent(maxEndoFinsComboBox, 0, 59, Short.MAX_VALUE)))
-                    .addGroup(fishPanelLayout.createSequentialGroup()
-                        .addGap(10, 10, 10)
-                        .addComponent(checkTemplatesCheckBox))
+                            .addComponent(maxEndoFinsComboBox, 0, 59, Short.MAX_VALUE)
+                            .addComponent(fishDisplayTypeComboBox, 0, 59, Short.MAX_VALUE)))
                     .addGroup(fishPanelLayout.createSequentialGroup()
                         .addContainerGap()
-                        .addComponent(onlyOneFishCheckBox)))
+                        .addGroup(fishPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addGroup(fishPanelLayout.createSequentialGroup()
+                                .addGap(4, 4, 4)
+                                .addComponent(checkTemplatesCheckBox))
+                            .addComponent(onlyOneFishCheckBox))))
                 .addContainerGap())
         );
         fishPanelLayout.setVerticalGroup(
@@ -324,10 +350,15 @@ public class ConfigStepPanel extends javax.swing.JPanel {
                 .addGroup(fishPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(maxEndoFinsLabel)
                     .addComponent(maxEndoFinsComboBox, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addGroup(fishPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(fishDisplayTypeLabel)
+                    .addComponent(fishDisplayTypeComboBox, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addGap(14, 14, 14)
                 .addComponent(checkTemplatesCheckBox)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(onlyOneFishCheckBox))
+                .addComponent(onlyOneFishCheckBox)
+                .addContainerGap())
         );
 
         jPanel3.setBorder(javax.swing.BorderFactory.createTitledBorder(bundle.getString("ConfigStepPanel.jPanel3.border.title"))); // NOI18N
@@ -444,20 +475,20 @@ public class ConfigStepPanel extends javax.swing.JPanel {
             .addGroup(jPanel1Layout.createSequentialGroup()
                 .addContainerGap()
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(fishPanel, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addComponent(krakenFishPanel, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(jPanel3, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(fishPanel, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                    .addComponent(jPanel3, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                 .addContainerGap())
         );
         jPanel1Layout.setVerticalGroup(
             jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel1Layout.createSequentialGroup()
                 .addComponent(fishPanel, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGap(1, 1, 1)
                 .addComponent(krakenFishPanel, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jPanel3, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(57, Short.MAX_VALUE))
+                .addContainerGap(34, Short.MAX_VALUE))
         );
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(this);
@@ -486,6 +517,7 @@ public class ConfigStepPanel extends javax.swing.JPanel {
         Options.getInstance().maxEndoFins = Integer.parseInt((String)maxEndoFinsComboBox.getSelectedItem());
         Options.getInstance().checkTemplates = checkTemplatesCheckBox.isSelected();
         Options.getInstance().onlyOneFishPerStep = onlyOneFishCheckBox.isSelected();
+        Options.getInstance().fishDisplayMode = fishDisplayTypeComboBox.getSelectedIndex();
         
         Options.getInstance().restrictChainLength = Integer.parseInt((String)restrictChainSizeComboBox.getSelectedItem());
         //Options.getInstance().restrictNiceLoopLength = Integer.parseInt((String)restrictNiceLoopSizeComboBox.getSelectedItem());
@@ -516,6 +548,7 @@ public class ConfigStepPanel extends javax.swing.JPanel {
             maxEndoFinsComboBox.setSelectedIndex(Options.MAX_ENDO_FINS);
             checkTemplatesCheckBox.setSelected(Options.CHECK_TEMPLATES);
             onlyOneFishCheckBox.setSelected(Options.ONLY_ONE_FISH_PER_STEP);
+            fishDisplayTypeComboBox.setSelectedIndex(Options.FISH_DISPLAY_MODE);
             
             restrictChainSizeComboBox.setSelectedIndex(Options.RESTRICT_CHAIN_LENGTH);
             //restrictNiceLoopSizeComboBox.setSelectedIndex(Options.RESTRICT_NICE_LOOP_LENGTH);
@@ -543,6 +576,7 @@ public class ConfigStepPanel extends javax.swing.JPanel {
             maxEndoFinsComboBox.setSelectedIndex(Options.getInstance().maxEndoFins);
             checkTemplatesCheckBox.setSelected(Options.getInstance().checkTemplates);
             onlyOneFishCheckBox.setSelected(Options.getInstance().onlyOneFishPerStep);
+            fishDisplayTypeComboBox.setSelectedIndex(Options.getInstance().fishDisplayMode);
             
             restrictChainSizeComboBox.setSelectedIndex(Options.getInstance().restrictChainLength);
             //restrictNiceLoopSizeComboBox.setSelectedIndex(Options.getInstance().restrictNiceLoopLength);
@@ -575,6 +609,8 @@ public class ConfigStepPanel extends javax.swing.JPanel {
     private javax.swing.JPanel alsPanel;
     private javax.swing.JCheckBox checkTemplatesCheckBox;
     private javax.swing.JCheckBox erWithTwoCandidatesCheckBox;
+    private javax.swing.JComboBox fishDisplayTypeComboBox;
+    private javax.swing.JLabel fishDisplayTypeLabel;
     private javax.swing.JPanel fishPanel;
     private javax.swing.JPanel jPanel1;
     private javax.swing.JPanel jPanel2;

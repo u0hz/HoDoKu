@@ -30,7 +30,46 @@ ok Konfigurationsdialoge überarbeiten (Farben für Coloring?)
 ok Hilfe Menü mit About (License)
 ok Englische version
 ok EXE-stub (Launch4j)
- - User Manual
- - Regression tests + Library überarbeiten
+ok - User Manual
+ok - Regression tests + Library überarbeiten
 
- - Doubly linked ALS-xz http://www.sudoku.com/boards/viewtopic.php?t=3979&postdays=0&postorder=asc&start=0
+ok - Doubly linked ALS-xz http://www.sudoku.com/boards/viewtopic.php?t=3979&postdays=0&postorder=asc&start=0
+
+20100117:
+
+   - hodoku.hcfg aus Startverzeichnis laden, wenn es existiert.
+   - Pattern-Generator: Zellen angeben, die Givens enthalten sollen
+   - Hintergrund-Bild erlauben
+ok - ShortCut der zur nächsten erlaubten Zelle springt, wenn Filter gesetzt sind
+ok - Einzelne Kandidaten färben
+ok - Optionen Speichern beim Beenden des Dialogs
+   - Add tooltip texts
+ok - Learning Mode: Play, Learn, Practise
+     Technik(en) aussuchen, Puzzle wird bei "Learn" bis zur Technik gelöst, bei "Practise" wird nur ein
+     entsprechendes Puzzle erzeugt
+   - generate game in idle time
+ok - Maussteuerung:
+       Double click on a single should set the cell (HS only when filters are applied)
+       Double click on a candidate should set the cell to that value
+       Ctrl-Click on a candidate location should toggle that candidate
+       Double click on a NS should change filter to that digit (?)
+       Right click gibt Kontextmenü mit bester Option zuerst
+       Coloring Zellen: Farbe wählen, Klick/Shift Klick toggelt
+       Coloring Kandidaten: Wie oben
+ok - Savepoints setzen
+   - Automatisches Entfernen von Kandidaten abwählbar machen
+ok - History of generated puzzles
+   - Automatic error report when invalid candidate eliminations are done by the program
+   - DUAL Skyscrapers
+   - URs with missing candidates
+ok - Backdoor searcher (configurable)
+ok - Add "advancing rating" to steps (configurable)
+ok - Allow different sorting options in "show all steps"
+   - Add Grouped W-Wing
+
+ok - BUG: CNL that force candidates
+ok - BUG: Importing invalid puzzles doesnt reset views
+ok - BUG: Copying invalid grids to the clipboard is broken
+ok - BUG: Shortest XY-Chain not found
+ok - BUG: Ist "Alle Kandidaten anzeigen" nicht gesetzt, funktioniert der Grünfilter nicht
+ok - BUG: Shortcuts for difficulty levels dont work correctly

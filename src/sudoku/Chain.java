@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008/09  Bernhard Hobiger
+ * Copyright (C) 2008/09/10  Bernhard Hobiger
  *
  * This file is part of HoDoKu.
  *
@@ -113,7 +113,7 @@ public class Chain implements Cloneable {
         end = 0;
         length = -1;
     }
-    
+
     public void resetLength() {
         length = -1;
     }

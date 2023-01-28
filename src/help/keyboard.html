@@ -39,14 +39,32 @@ dd {
   <body>
     <h1>Normal Operation</h1>
     <dl>
-        <dt>Using the mouse</dt>
-        <dd>To set values/candidates in cells using the mouse, click a number
-        in the status bar (mouse cursor changes appropriately). Left mouse button
-        sets a value, right mose button deletes it. To set/delete candidates press
-        and hold [ctrl] while pressing the mouse buttons. Click "Off" in the status bar
-        to return to normal operation.</dd>
+        <dt>Using the mouse (normal operation)</dt>
+        <dd>Clicking a cell selects that cell. Pressing [ctrl] or [shift] while clicking
+        selects a region of cells. Setting cells/candidates:
+        <ul>
+            <li>Double clicking a candidate sets it in the cell</li>
+            <li>If a cell has only one candidate left, double clicking the cell
+            sets that candidate in the cell</li>
+            <li>If filters are applied double clicking a filtered cell sets the
+            filtered candidate in the cell if it is a Hidden Single</li>
+            <li>Double clicking a candidate while pressing [ctrl] toggles the candidate</li>
+        </ul>
+        </dd>
+        <dt>Using the mouse (coloring mode)</dt>
+        <dd>Clicking a color in the status bar or the Active Cell view activates
+        coloring mode. Clicking a cell/candidate toggles the selected color for
+        that cell/candidate. Pressing [shift] while clicking uses another color.
+        Clicking the background color or pressing [esc] ends coloring mode. Clicking
+        the panel with the "R" ends coloring mode and deletes all colors.
+        </dd>
         <dt>[left], [up], [right], [down]</dt>
         <dd>Moves the cursor (the highlighted cell).</dd>
+        <dt>[shift][left], [shift][up], [shift][right], [shift][down]</dt>
+        <dd>Expands the range of selected cells.</dd>
+        <dt>[shift][ctrl][left], [shift][ctrl][up], [shift][ctrl][right], [shift][ctrl][down]</dt>
+        <dd>If filters are applied the cursor is moved to the next unsolved cell,
+        that contains the filtered candidate.</dd>
         <dt>[ctrl][left], [ctrl][up], [ctrl][right], [ctrl][down]</dt>
         <dd>Moves the cursor to the next unsolved cell.</dd>
         <dt>[home]</dt>
@@ -102,9 +120,9 @@ dd {
         <dt>[ctrl][n]</dt>
         <dd>Create new random sudoku.</dd>
         <dt>[ctrl][o]</dt>
-        <dd>Open file (configuration or sudoku).</dd>
+        <dd>Open puzzle file.</dd>
         <dt>[ctrl][s]</dt>
-        <dd>Save file as (configuration or sudoku).</dd>
+        <dd>Save sudoku.</dd>
         <dt>[ctrl][p]</dt>
         <dd>Print sudoku.</dd>
         <dt>[alt][x]</dt>

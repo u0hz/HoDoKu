@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008/09  Bernhard Hobiger
+ * Copyright (C) 2008/09/10  Bernhard Hobiger
  *
  * This file is part of HoDoKu.
  *
@@ -111,7 +111,7 @@ public class SolverProgressDialog extends javax.swing.JDialog
 
     @Override
     public void run() {
-        solved = solver.solve(Options.getInstance().getDifficultyLevels()[DifficultyType.EXTREME.ordinal()], 
+        solved = solver.solve(Options.getInstance().getDifficultyLevels()[DifficultyType.EXTREME.ordinal()],
                 null, false, this);
 
         EventQueue.invokeLater(new Runnable() {
@@ -120,6 +120,12 @@ public class SolverProgressDialog extends javax.swing.JDialog
                 setVisible(false);
             }
         });
+    }
+    
+    public void initializeProgressState(final int unsolvedCandidates) {
+        int dummy = candsProgressBar.getMaximum() - unsolvedCandidates;
+        candsProgressBar.setMinimum(dummy);
+        candsProgressBar.setValue(dummy);
     }
     
     public void setProgressState(final int unsolvedCells, final int unsolvedCandidates) {

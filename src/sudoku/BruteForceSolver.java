@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008/09  Bernhard Hobiger
+ * Copyright (C) 2008/09/10  Bernhard Hobiger
  *
  * This file is part of HoDoKu.
  *
@@ -61,12 +61,18 @@ public class BruteForceSolver extends AbstractSolver {
     
     /**
      * Das Sudoku wird mit Dancing-Links gelöst. Anschließend wird aus den nicht gesetzten Zellen
-     * die mittlere ausgesucht und gesetzt.
+     * die mittlere ausgesucht und gesetzt.<br>
+     * If the sudoku is invalid, no result is returned.
      */
     private SolutionStep getBruteForce() {
         Sudoku solvedSudoku = sudoku.clone();
-        creator.validSolution(solvedSudoku);
+        boolean valid = creator.validSolution(solvedSudoku);
+        if (! valid) {
+            // can happen, when invalid puzzles are pasted
+            return null;
+        }
         solvedSudoku = creator.getSolvedSudoku();
+
         
         // alle Positionen ermitteln, die im ungelösten Sudoku noch nicht gesetzt sind
         SudokuSet unsolved = new SudokuSet();

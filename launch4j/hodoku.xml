@@ -1,8 +1,8 @@
 <launch4jConfig>
   <dontWrapJar>false</dontWrapJar>
   <headerType>gui</headerType>
-  <jar>D:\Projekte\Java\HoDoKu\dist\HoDoKu.jar</jar>
-  <outfile>D:\Projekte\Java\HoDoKu\launch4j\hodoku.exe</outfile>
+  <jar>D:\Sudoku\Alles rund um HoDoKu\HoDoKu\dist\HoDoKu.jar</jar>
+  <outfile>D:\Sudoku\Alles rund um HoDoKu\HoDoKu\launch4j\hodoku.exe</outfile>
   <errTitle></errTitle>
   <cmdLine>/launch4j</cmdLine>
   <chdir></chdir>
@@ -12,7 +12,7 @@
   <customProcName>true</customProcName>
   <stayAlive>false</stayAlive>
   <manifest></manifest>
-  <icon>D:\Projekte\Java\HoDoKu\src\img\hodoku01.ico</icon>
+  <icon>D:\Sudoku\Alles rund um HoDoKu\HoDoKu\src\img\hodoku02.ico</icon>
   <jre>
     <path></path>
     <minVersion>1.6.0</minVersion>

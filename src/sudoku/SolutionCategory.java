@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008/09  Bernhard Hobiger
+ * Copyright (C) 2008/09/10  Bernhard Hobiger
  *
  * This file is part of HoDoKu.
  *
@@ -32,7 +32,7 @@ public enum SolutionCategory {
     FRANKEN_FISH("Franken Fish"),
     FINNED_FRANKEN_FISH("Finned Franken Fish"),
     MUTANT_FISH("Mutant Fish"),
-    FINNED_MUTANT_FISH("Finned mutant Fish"),
+    FINNED_MUTANT_FISH("Finned Mutant Fish"),
     SINGLE_DIGIT_PATTERNS("Single Digit Patterns"),
     COLORING("Coloring"),
     UNIQUENESS("Uniqueness"),

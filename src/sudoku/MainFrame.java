@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008/09  Bernhard Hobiger
+ * Copyright (C) 2008/09/10  Bernhard Hobiger
  *
  * This file is part of HoDoKu.
  *
@@ -19,11 +19,9 @@
 package sudoku;
 
 import java.awt.Color;
-import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.FontMetrics;
 import java.awt.Image;
-import java.awt.Point;
 import java.awt.Toolkit;
 import java.awt.datatransfer.Clipboard;
 import java.awt.datatransfer.DataFlavor;
@@ -43,8 +41,11 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.net.URL;
 import java.text.MessageFormat;
+import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
+import java.util.ResourceBundle;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -53,7 +54,6 @@ import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
-import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JRadioButtonMenuItem;
@@ -70,22 +70,19 @@ import javax.swing.filechooser.FileFilter;
  * @author  Bernhard Hobiger
  */
 public class MainFrame extends javax.swing.JFrame implements FlavorListener {
-
-    public static final String VERSION = "HoDoKu - v1.2.4";
+    public static final String VERSION = "HoDoKu - v2.0";
+    public static final String BUILD = "Build 26";
     private SudokuPanel sudokuPanel;
     private DifficultyLevel level = Options.getInstance().getDifficultyLevels()[DifficultyType.EASY.ordinal()];
-    private Cursor[] numberCursors = new Cursor[10];
-    private JLabel[] statusLabels = new JLabel[10];
-    //private JLabel[] statusCandidateLabels = new JLabel[3];
     private JToggleButton[] toggleButtons = new JToggleButton[9];
     private JRadioButtonMenuItem[] levelMenuItems = new JRadioButtonMenuItem[5];
-    private Color statusLabelAktColor = Color.WHITE;
-    private Color statusLabelNormColor = Color.BLACK;
+    private JRadioButtonMenuItem[] modeMenuItems;
     private boolean oldShowDeviations = true;
     private SplitPanel splitPanel = new SplitPanel();
     private SummaryPanel summaryPanel = new SummaryPanel(this);
     private SolutionPanel solutionPanel = new SolutionPanel(this);
     private AllStepsPanel allStepsPanel = new AllStepsPanel(this, null);
+    private CellZoomPanel cellZoomPanel = new CellZoomPanel(this);
     private JTabbedPane tabPane = new JTabbedPane();    // Ausdruck
     private PageFormat pageFormat = null;
     private PrinterJob job = null;
@@ -94,8 +91,11 @@ public class MainFrame extends javax.swing.JFrame implements FlavorListener {
     private double bildSize = 400;
     private int bildAuflösung = 96;
     private int bildEinheit = 2;    // File/IO
-    private MyFileFilter[] fileFilters = new MyFileFilter[]{
-        new MyFileFilter(0), new MyFileFilter(1)
+    private MyFileFilter[] puzzleFileFilters = new MyFileFilter[]{
+        new MyFileFilter(1)
+    };
+    private MyFileFilter[] configFileFilters = new MyFileFilter[]{
+        new MyFileFilter(0)
     };
     private MyCaretListener caretListener = new MyCaretListener();
     private boolean outerSplitPaneInitialized = false; // used to adjust divider bar at startup!
@@ -105,9 +105,17 @@ public class MainFrame extends javax.swing.JFrame implements FlavorListener {
     private String configFileExt = java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.config_file_ext");
     private String solutionFileExt = java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.solution_file_ext");
     private MessageFormat formatter = new MessageFormat("");
+    private List<GuiState> savePoints = new ArrayList<GuiState>(); // container for savepoints
+    private GameMode mode = GameMode.PLAYING;
 
     /** Creates new form MainFrame */
-    public MainFrame() {
+    public MainFrame(String launchFile) {
+        // if a configuration file is given at the command line, load it before anything
+        // else is done (helps restoring the screen layout)
+        if (launchFile != null && launchFile.endsWith("." + configFileExt)) {
+            Options.readOptions(launchFile);
+        }
+
         initComponents();
         setTitle(VERSION);
         outerSplitPane.getActionMap().getParent().remove("startResize");
@@ -127,10 +135,10 @@ public class MainFrame extends javax.swing.JFrame implements FlavorListener {
         }
         statusLinePanel.setBackground(lafMenuBackColor);
         statusLabelLevel.setForeground(lafMenuColor);
-        statusLabelAktColor = lafMenuInactiveColor;
-        statusLabelNormColor = lafMenuColor;
         summaryPanel.setTitleLabelColors(lafMenuColor, lafMenuBackColor);
         solutionPanel.setTitleLabelColors(lafMenuColor, lafMenuBackColor);
+        cellZoomPanel.setTitleLabelColors(lafMenuColor, lafMenuBackColor);
+        statusLabelModus.setText(ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.playingMenuItem.text"));
 
 //        UIDefaults def = UIManager.getDefaults();
 //        Enumeration defEnum = def.keys();
@@ -150,13 +158,17 @@ public class MainFrame extends javax.swing.JFrame implements FlavorListener {
         adjustPasteMenuItem();
 
         sudokuPanel = new SudokuPanel(this);
+        sudokuPanel.setCellZoomPanel(cellZoomPanel);
+        cellZoomPanel.setSudokuPanel(sudokuPanel);
         outerSplitPane.setLeftComponent(splitPanel);
         splitPanel.setSplitPane(sudokuPanel, null);
 
         tabPane.addTab(java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.summary"), summaryPanel);
         tabPane.addTab(java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.solution_path"), solutionPanel);
         tabPane.addTab(java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.all_steps"), allStepsPanel);
+        tabPane.addTab(java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.cell_zoom"), cellZoomPanel);
         tabPane.addMouseListener(new java.awt.event.MouseAdapter() {
+
             @Override
             public void mouseClicked(java.awt.event.MouseEvent evt) {
                 tabPaneMouseClicked(evt);
@@ -222,6 +234,14 @@ public class MainFrame extends javax.swing.JFrame implements FlavorListener {
             }
         }
         mnemonics = null;
+
+        // mode menu items
+        modeMenuItems = new JRadioButtonMenuItem[] {
+            playingMenuItem,
+            learningMenuItem,
+            practisingMenuItem
+        };
+
         // in Windows miWidth = 35, miHeight = 14; size = 60/20
         if (miWidth > 35) {
             Dimension newLevelSize = new Dimension(60 + (miWidth - 35) + 8, 20 + (miHeight - 14) + 3);
@@ -229,29 +249,16 @@ public class MainFrame extends javax.swing.JFrame implements FlavorListener {
             levelComboBox.setMinimumSize(newLevelSize);
             levelComboBox.setPreferredSize(newLevelSize);
             levelComboBox.setSize(newLevelSize);
-        //System.out.println("Size changed to: " + newLevelSize);
-        //jToolBar1.doLayout();
-        //repaint();
+            System.out.println("Size changed to: " + newLevelSize);
+            //jToolBar1.doLayout();
+            //repaint();
         }
 
         // Menüzustand prüfen, übernimmt Werte von SudokuPanel; muss am Anfang stehen,
         // weil die Werte später in der Methode verwendet werden
         check();
 
-        // Die Panels für die Zahlen in ein Array stecken, ist später einfacher
-        statusLabels[0] = statusLabelAus;
-        statusLabels[1] = statusLabel1;
-        statusLabels[2] = statusLabel2;
-        statusLabels[3] = statusLabel3;
-        statusLabels[4] = statusLabel4;
-        statusLabels[5] = statusLabel5;
-        statusLabels[6] = statusLabel6;
-        statusLabels[7] = statusLabel7;
-        statusLabels[8] = statusLabel8;
-        statusLabels[9] = statusLabel9;
-        setStatusLabel(0);
-
-        // gleiches für ToggleButtons
+        // Die ToggleButtons in ein Array stecken, ist später einfacher
         toggleButtons[0] = f1ToggleButton;
         toggleButtons[1] = f2ToggleButton;
         toggleButtons[2] = f3ToggleButton;
@@ -263,11 +270,13 @@ public class MainFrame extends javax.swing.JFrame implements FlavorListener {
         toggleButtons[8] = f9ToggleButton;
         setToggleButton(null);
 
-        // Maus-Icons mit Zahlen erzeugen
-        createNumberCursors();
-
         // Caret-Listener for display of Forcing Chains
         hinweisTextArea.addCaretListener(caretListener);
+
+        // if a puzzle file is given at the command line, load it
+        if (launchFile != null && launchFile.endsWith("." + solutionFileExt)) {
+            loadFromFile(launchFile);
+        }
 
         fixFocus();
     }
@@ -282,19 +291,23 @@ public class MainFrame extends javax.swing.JFrame implements FlavorListener {
 
         levelButtonGroup = new javax.swing.ButtonGroup();
         viewButtonGroup = new javax.swing.ButtonGroup();
+        colorButtonGroup = new javax.swing.ButtonGroup();
+        modeButtonGroup = new javax.swing.ButtonGroup();
         statusLinePanel = new javax.swing.JPanel();
-        statusLabel1 = new javax.swing.JLabel();
-        statusLabel2 = new javax.swing.JLabel();
-        statusLabel3 = new javax.swing.JLabel();
-        statusLabel4 = new javax.swing.JLabel();
-        statusLabel5 = new javax.swing.JLabel();
-        statusLabel6 = new javax.swing.JLabel();
-        statusLabel7 = new javax.swing.JLabel();
-        statusLabel8 = new javax.swing.JLabel();
-        statusLabel9 = new javax.swing.JLabel();
-        statusLabelAus = new javax.swing.JLabel();
+        statusPanelColorResult = new javax.swing.JPanel();
+        jPanel1 = new javax.swing.JPanel();
+        statusPanelColor1 = new StatusColorPanel(0);
+        statusPanelColor2 = new StatusColorPanel(2);
+        statusPanelColor3 = new StatusColorPanel(4);
+        statusPanelColor4 = new StatusColorPanel(6);
+        statusPanelColor5 = new StatusColorPanel(8);
+        statusPanelColorClear = new StatusColorPanel(-1);
+        statusPanelColorReset = new StatusColorPanel(-2);
+        statusLabelCellCandidate = new javax.swing.JLabel();
         jSeparator1 = new javax.swing.JSeparator();
         statusLabelLevel = new javax.swing.JLabel();
+        jSeparator8 = new javax.swing.JSeparator();
+        statusLabelModus = new javax.swing.JLabel();
         jToolBar1 = new javax.swing.JToolBar();
         undoToolButton = new javax.swing.JButton();
         redoToolButton = new javax.swing.JButton();
@@ -326,8 +339,10 @@ public class MainFrame extends javax.swing.JFrame implements FlavorListener {
         dateiMenu = new javax.swing.JMenu();
         neuMenuItem = new javax.swing.JMenuItem();
         jSeparator14 = new javax.swing.JSeparator();
-        loadMenuItem = new javax.swing.JMenuItem();
-        saveAsMenuItem = new javax.swing.JMenuItem();
+        loadPuzzleMenuItem = new javax.swing.JMenuItem();
+        savePuzzleAsMenuItem = new javax.swing.JMenuItem();
+        loadConfigMenuItem = new javax.swing.JMenuItem();
+        saveConfigAsMenuItem = new javax.swing.JMenuItem();
         jSeparator4 = new javax.swing.JSeparator();
         seiteEinrichtenMenuItem = new javax.swing.JMenuItem();
         druckenMenuItem = new javax.swing.JMenuItem();
@@ -353,11 +368,18 @@ public class MainFrame extends javax.swing.JFrame implements FlavorListener {
         resetSpielMenuItem = new javax.swing.JMenuItem();
         jSeparator2 = new javax.swing.JSeparator();
         configMenuItem = new javax.swing.JMenuItem();
+        modeMenu = new javax.swing.JMenu();
+        playingMenuItem = new javax.swing.JRadioButtonMenuItem();
+        learningMenuItem = new javax.swing.JRadioButtonMenuItem();
+        practisingMenuItem = new javax.swing.JRadioButtonMenuItem();
         optionenMenu = new javax.swing.JMenu();
         showCandidatesMenuItem = new javax.swing.JCheckBoxMenuItem();
         showWrongValuesMenuItem = new javax.swing.JCheckBoxMenuItem();
         showDeviationsMenuItem = new javax.swing.JCheckBoxMenuItem();
         jSeparator10 = new javax.swing.JSeparator();
+        colorCellsMenuItem = new javax.swing.JRadioButtonMenuItem();
+        colorCandidatesMenuItem = new javax.swing.JRadioButtonMenuItem();
+        jSeparator19 = new javax.swing.JSeparator();
         levelMenu = new javax.swing.JMenu();
         levelLeichtMenuItem = new javax.swing.JRadioButtonMenuItem();
         levelMittelMenuItem = new javax.swing.JRadioButtonMenuItem();
@@ -368,6 +390,11 @@ public class MainFrame extends javax.swing.JFrame implements FlavorListener {
         vageHintMenuItem = new javax.swing.JMenuItem();
         mediumHintMenuItem = new javax.swing.JMenuItem();
         lösungsSchrittMenuItem = new javax.swing.JMenuItem();
+        jSeparator21 = new javax.swing.JSeparator();
+        backdoorSearchMenuItem = new javax.swing.JMenuItem();
+        historyMenuItem = new javax.swing.JMenuItem();
+        createSavePointMenuItem = new javax.swing.JMenuItem();
+        restoreSavePointMenuItem = new javax.swing.JMenuItem();
         jSeparator5 = new javax.swing.JSeparator();
         alleHiddenSinglesSetzenMenuItem = new javax.swing.JMenuItem();
         ansichtMenu = new javax.swing.JMenu();
@@ -376,11 +403,16 @@ public class MainFrame extends javax.swing.JFrame implements FlavorListener {
         summaryMenuItem = new javax.swing.JRadioButtonMenuItem();
         solutionMenuItem = new javax.swing.JRadioButtonMenuItem();
         allStepsMenuItem = new javax.swing.JRadioButtonMenuItem();
+        cellZoomMenuItem = new javax.swing.JRadioButtonMenuItem();
         jSeparator7 = new javax.swing.JSeparator();
         resetViewMenuItem = new javax.swing.JMenuItem();
         helpMenu = new javax.swing.JMenu();
         keyMenuItem = new javax.swing.JMenuItem();
         jSeparator6 = new javax.swing.JSeparator();
+        userManualMenuItem = new javax.swing.JMenuItem();
+        solvingGuideMenuItem = new javax.swing.JMenuItem();
+        projectHomePageMenuItem = new javax.swing.JMenuItem();
+        jSeparator20 = new javax.swing.JSeparator();
         aboutMenuItem = new javax.swing.JMenuItem();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
@@ -399,106 +431,185 @@ public class MainFrame extends javax.swing.JFrame implements FlavorListener {
         statusLinePanel.setBackground(new java.awt.Color(0, 153, 255));
         statusLinePanel.setLayout(new java.awt.FlowLayout(java.awt.FlowLayout.LEFT));
 
-        statusLabel1.setFont(new java.awt.Font("Tahoma", 1, 14));
-        statusLabel1.setText(bundle.getString("MainFrame.statusLabel1.text")); // NOI18N
-        statusLabel1.addMouseListener(new java.awt.event.MouseAdapter() {
-            public void mouseClicked(java.awt.event.MouseEvent evt) {
-                statusLabel1MouseClicked(evt);
-            }
-        });
-        statusLinePanel.add(statusLabel1);
+        javax.swing.GroupLayout statusPanelColorResultLayout = new javax.swing.GroupLayout(statusPanelColorResult);
+        statusPanelColorResult.setLayout(statusPanelColorResultLayout);
+        statusPanelColorResultLayout.setHorizontalGroup(
+            statusPanelColorResultLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGap(0, 30, Short.MAX_VALUE)
+        );
+        statusPanelColorResultLayout.setVerticalGroup(
+            statusPanelColorResultLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGap(0, 15, Short.MAX_VALUE)
+        );
 
-        statusLabel2.setFont(new java.awt.Font("Tahoma", 1, 14));
-        statusLabel2.setText(bundle.getString("MainFrame.statusLabel2.text")); // NOI18N
-        statusLabel2.addMouseListener(new java.awt.event.MouseAdapter() {
-            public void mouseClicked(java.awt.event.MouseEvent evt) {
-                statusLabel2MouseClicked(evt);
-            }
-        });
-        statusLinePanel.add(statusLabel2);
+        statusLinePanel.add(statusPanelColorResult);
 
-        statusLabel3.setFont(new java.awt.Font("Tahoma", 1, 14));
-        statusLabel3.setText(bundle.getString("MainFrame.statusLabel3.text")); // NOI18N
-        statusLabel3.addMouseListener(new java.awt.event.MouseAdapter() {
-            public void mouseClicked(java.awt.event.MouseEvent evt) {
-                statusLabel3MouseClicked(evt);
-            }
-        });
-        statusLinePanel.add(statusLabel3);
+        jPanel1.setOpaque(false);
+        jPanel1.setLayout(new java.awt.FlowLayout(java.awt.FlowLayout.CENTER, 1, 0));
 
-        statusLabel4.setFont(new java.awt.Font("Tahoma", 1, 14));
-        statusLabel4.setText(bundle.getString("MainFrame.statusLabel4.text")); // NOI18N
-        statusLabel4.addMouseListener(new java.awt.event.MouseAdapter() {
+        statusPanelColor1.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent evt) {
-                statusLabel4MouseClicked(evt);
+                statusPanelColor1MouseClicked(evt);
             }
         });
-        statusLinePanel.add(statusLabel4);
 
-        statusLabel5.setFont(new java.awt.Font("Tahoma", 1, 14));
-        statusLabel5.setText(bundle.getString("MainFrame.statusLabel5.text")); // NOI18N
-        statusLabel5.addMouseListener(new java.awt.event.MouseAdapter() {
+        javax.swing.GroupLayout statusPanelColor1Layout = new javax.swing.GroupLayout(statusPanelColor1);
+        statusPanelColor1.setLayout(statusPanelColor1Layout);
+        statusPanelColor1Layout.setHorizontalGroup(
+            statusPanelColor1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGap(0, 15, Short.MAX_VALUE)
+        );
+        statusPanelColor1Layout.setVerticalGroup(
+            statusPanelColor1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGap(0, 15, Short.MAX_VALUE)
+        );
+
+        jPanel1.add(statusPanelColor1);
+
+        statusPanelColor2.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent evt) {
-                statusLabel5MouseClicked(evt);
+                statusPanelColor2MouseClicked(evt);
             }
         });
-        statusLinePanel.add(statusLabel5);
 
-        statusLabel6.setFont(new java.awt.Font("Tahoma", 1, 14));
-        statusLabel6.setText(bundle.getString("MainFrame.statusLabel6.text")); // NOI18N
-        statusLabel6.addMouseListener(new java.awt.event.MouseAdapter() {
+        javax.swing.GroupLayout statusPanelColor2Layout = new javax.swing.GroupLayout(statusPanelColor2);
+        statusPanelColor2.setLayout(statusPanelColor2Layout);
+        statusPanelColor2Layout.setHorizontalGroup(
+            statusPanelColor2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGap(0, 15, Short.MAX_VALUE)
+        );
+        statusPanelColor2Layout.setVerticalGroup(
+            statusPanelColor2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGap(0, 15, Short.MAX_VALUE)
+        );
+
+        jPanel1.add(statusPanelColor2);
+
+        statusPanelColor3.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent evt) {
-                statusLabel6MouseClicked(evt);
+                statusPanelColor3MouseClicked(evt);
             }
         });
-        statusLinePanel.add(statusLabel6);
 
-        statusLabel7.setFont(new java.awt.Font("Tahoma", 1, 14));
-        statusLabel7.setText(bundle.getString("MainFrame.statusLabel7.text")); // NOI18N
-        statusLabel7.addMouseListener(new java.awt.event.MouseAdapter() {
+        javax.swing.GroupLayout statusPanelColor3Layout = new javax.swing.GroupLayout(statusPanelColor3);
+        statusPanelColor3.setLayout(statusPanelColor3Layout);
+        statusPanelColor3Layout.setHorizontalGroup(
+            statusPanelColor3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGap(0, 15, Short.MAX_VALUE)
+        );
+        statusPanelColor3Layout.setVerticalGroup(
+            statusPanelColor3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGap(0, 15, Short.MAX_VALUE)
+        );
+
+        jPanel1.add(statusPanelColor3);
+
+        statusPanelColor4.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent evt) {
-                statusLabel7MouseClicked(evt);
+                statusPanelColor4MouseClicked(evt);
             }
         });
-        statusLinePanel.add(statusLabel7);
 
-        statusLabel8.setFont(new java.awt.Font("Tahoma", 1, 14));
-        statusLabel8.setText(bundle.getString("MainFrame.statusLabel8.text")); // NOI18N
-        statusLabel8.addMouseListener(new java.awt.event.MouseAdapter() {
-            public void mousePressed(java.awt.event.MouseEvent evt) {
-                statusLabel8MousePressed(evt);
-            }
-        });
-        statusLinePanel.add(statusLabel8);
+        javax.swing.GroupLayout statusPanelColor4Layout = new javax.swing.GroupLayout(statusPanelColor4);
+        statusPanelColor4.setLayout(statusPanelColor4Layout);
+        statusPanelColor4Layout.setHorizontalGroup(
+            statusPanelColor4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGap(0, 15, Short.MAX_VALUE)
+        );
+        statusPanelColor4Layout.setVerticalGroup(
+            statusPanelColor4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGap(0, 15, Short.MAX_VALUE)
+        );
 
-        statusLabel9.setFont(new java.awt.Font("Tahoma", 1, 14));
-        statusLabel9.setText(bundle.getString("MainFrame.statusLabel9.text")); // NOI18N
-        statusLabel9.addMouseListener(new java.awt.event.MouseAdapter() {
+        jPanel1.add(statusPanelColor4);
+
+        statusPanelColor5.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent evt) {
-                statusLabel9MouseClicked(evt);
+                statusPanelColor5MouseClicked(evt);
             }
         });
-        statusLinePanel.add(statusLabel9);
 
-        statusLabelAus.setFont(new java.awt.Font("Tahoma", 1, 14));
-        statusLabelAus.setText(bundle.getString("MainFrame.statusLabelAus.text")); // NOI18N
-        statusLabelAus.addMouseListener(new java.awt.event.MouseAdapter() {
+        javax.swing.GroupLayout statusPanelColor5Layout = new javax.swing.GroupLayout(statusPanelColor5);
+        statusPanelColor5.setLayout(statusPanelColor5Layout);
+        statusPanelColor5Layout.setHorizontalGroup(
+            statusPanelColor5Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGap(0, 15, Short.MAX_VALUE)
+        );
+        statusPanelColor5Layout.setVerticalGroup(
+            statusPanelColor5Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGap(0, 15, Short.MAX_VALUE)
+        );
+
+        jPanel1.add(statusPanelColor5);
+
+        statusPanelColorClear.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent evt) {
-                statusLabelAusMouseClicked(evt);
+                statusPanelColorClearMouseClicked(evt);
             }
         });
-        statusLinePanel.add(statusLabelAus);
+
+        javax.swing.GroupLayout statusPanelColorClearLayout = new javax.swing.GroupLayout(statusPanelColorClear);
+        statusPanelColorClear.setLayout(statusPanelColorClearLayout);
+        statusPanelColorClearLayout.setHorizontalGroup(
+            statusPanelColorClearLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGap(0, 15, Short.MAX_VALUE)
+        );
+        statusPanelColorClearLayout.setVerticalGroup(
+            statusPanelColorClearLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGap(0, 15, Short.MAX_VALUE)
+        );
+
+        jPanel1.add(statusPanelColorClear);
+
+        statusPanelColorReset.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                statusPanelColorResetMouseClicked(evt);
+            }
+        });
+
+        javax.swing.GroupLayout statusPanelColorResetLayout = new javax.swing.GroupLayout(statusPanelColorReset);
+        statusPanelColorReset.setLayout(statusPanelColorResetLayout);
+        statusPanelColorResetLayout.setHorizontalGroup(
+            statusPanelColorResetLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGap(0, 15, Short.MAX_VALUE)
+        );
+        statusPanelColorResetLayout.setVerticalGroup(
+            statusPanelColorResetLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGap(0, 15, Short.MAX_VALUE)
+        );
+
+        jPanel1.add(statusPanelColorReset);
+
+        statusLinePanel.add(jPanel1);
+
+        statusLabelCellCandidate.setFont(new java.awt.Font("Tahoma", 0, 12));
+        statusLabelCellCandidate.setText(bundle.getString("MainFrame.statusLabelCellCandidate.text.cell")); // NOI18N
+        statusLabelCellCandidate.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                statusLabelCellCandidateMouseClicked(evt);
+            }
+        });
+        statusLinePanel.add(statusLabelCellCandidate);
 
         jSeparator1.setOrientation(javax.swing.SwingConstants.VERTICAL);
         jSeparator1.setPreferredSize(new java.awt.Dimension(2, 17));
         statusLinePanel.add(jSeparator1);
 
-        statusLabelLevel.setFont(new java.awt.Font("Tahoma", 1, 14));
+        statusLabelLevel.setFont(new java.awt.Font("Tahoma", 0, 12));
+        statusLabelLevel.setText(bundle.getString("MainFrame.statusLabelLevel.text")); // NOI18N
         statusLinePanel.add(statusLabelLevel);
+
+        jSeparator8.setOrientation(javax.swing.SwingConstants.VERTICAL);
+        jSeparator8.setPreferredSize(new java.awt.Dimension(2, 17));
+        statusLinePanel.add(jSeparator8);
+
+        statusLabelModus.setFont(new java.awt.Font("Tahoma", 0, 12));
+        statusLabelModus.setText(bundle.getString("MainFrame.statusLabelModus.textPlay")); // NOI18N
+        statusLinePanel.add(statusLabelModus);
 
         getContentPane().add(statusLinePanel, java.awt.BorderLayout.SOUTH);
 
-        undoToolButton.setIcon(new javax.swing.ImageIcon(getClass().getResource("/img/NavBack.png"))); // NOI18N
+        undoToolButton.setIcon(new javax.swing.ImageIcon(getClass().getResource("/img/undo.png"))); // NOI18N
         undoToolButton.setEnabled(false);
         undoToolButton.setRequestFocusEnabled(false);
         undoToolButton.addActionListener(new java.awt.event.ActionListener() {
@@ -508,7 +619,7 @@ public class MainFrame extends javax.swing.JFrame implements FlavorListener {
         });
         jToolBar1.add(undoToolButton);
 
-        redoToolButton.setIcon(new javax.swing.ImageIcon(getClass().getResource("/img/NavForward.png"))); // NOI18N
+        redoToolButton.setIcon(new javax.swing.ImageIcon(getClass().getResource("/img/redo.png"))); // NOI18N
         redoToolButton.setEnabled(false);
         redoToolButton.setRequestFocusEnabled(false);
         redoToolButton.addActionListener(new java.awt.event.ActionListener() {
@@ -522,7 +633,7 @@ public class MainFrame extends javax.swing.JFrame implements FlavorListener {
         jSeparator9.setMaximumSize(new java.awt.Dimension(5, 32767));
         jToolBar1.add(jSeparator9);
 
-        neuesSpielToolButton.setIcon(new javax.swing.ImageIcon(getClass().getResource("/img/neuesSudoku.png"))); // NOI18N
+        neuesSpielToolButton.setIcon(new javax.swing.ImageIcon(getClass().getResource("/img/hodoku02-32.png"))); // NOI18N
         neuesSpielToolButton.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 neuesSpielToolButtonActionPerformed(evt);
@@ -551,9 +662,9 @@ public class MainFrame extends javax.swing.JFrame implements FlavorListener {
         jSeparator11.setMaximumSize(new java.awt.Dimension(5, 32767));
         jToolBar1.add(jSeparator11);
 
-        redGreenToggleButton.setIcon(new javax.swing.ImageIcon(getClass().getResource("/img/rgDeselected.png"))); // NOI18N
+        redGreenToggleButton.setIcon(new javax.swing.ImageIcon(getClass().getResource("/img/rgDeselected1.png"))); // NOI18N
         redGreenToggleButton.setSelected(true);
-        redGreenToggleButton.setSelectedIcon(new javax.swing.ImageIcon(getClass().getResource("/img/rgSelected.png"))); // NOI18N
+        redGreenToggleButton.setSelectedIcon(new javax.swing.ImageIcon(getClass().getResource("/img/rgSelected1.png"))); // NOI18N
         redGreenToggleButton.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 redGreenToggleButtonActionPerformed(evt);
@@ -561,7 +672,7 @@ public class MainFrame extends javax.swing.JFrame implements FlavorListener {
         });
         jToolBar1.add(redGreenToggleButton);
 
-        f1ToggleButton.setIcon(new javax.swing.ImageIcon(getClass().getResource("/img/f_1.png"))); // NOI18N
+        f1ToggleButton.setIcon(new javax.swing.ImageIcon(getClass().getResource("/img/f_1c.png"))); // NOI18N
         f1ToggleButton.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 f1ToggleButtonActionPerformed1(evt);
@@ -569,7 +680,7 @@ public class MainFrame extends javax.swing.JFrame implements FlavorListener {
         });
         jToolBar1.add(f1ToggleButton);
 
-        f2ToggleButton.setIcon(new javax.swing.ImageIcon(getClass().getResource("/img/f_2.png"))); // NOI18N
+        f2ToggleButton.setIcon(new javax.swing.ImageIcon(getClass().getResource("/img/f_2c.png"))); // NOI18N
         f2ToggleButton.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 f1ToggleButtonActionPerformed(evt);
@@ -577,7 +688,7 @@ public class MainFrame extends javax.swing.JFrame implements FlavorListener {
         });
         jToolBar1.add(f2ToggleButton);
 
-        f3ToggleButton.setIcon(new javax.swing.ImageIcon(getClass().getResource("/img/f_3.png"))); // NOI18N
+        f3ToggleButton.setIcon(new javax.swing.ImageIcon(getClass().getResource("/img/f_3c.png"))); // NOI18N
         f3ToggleButton.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 f1ToggleButtonActionPerformed(evt);
@@ -585,7 +696,7 @@ public class MainFrame extends javax.swing.JFrame implements FlavorListener {
         });
         jToolBar1.add(f3ToggleButton);
 
-        f4ToggleButton.setIcon(new javax.swing.ImageIcon(getClass().getResource("/img/f_4.png"))); // NOI18N
+        f4ToggleButton.setIcon(new javax.swing.ImageIcon(getClass().getResource("/img/f_4c.png"))); // NOI18N
         f4ToggleButton.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 f1ToggleButtonActionPerformed(evt);
@@ -593,7 +704,7 @@ public class MainFrame extends javax.swing.JFrame implements FlavorListener {
         });
         jToolBar1.add(f4ToggleButton);
 
-        f5ToggleButton.setIcon(new javax.swing.ImageIcon(getClass().getResource("/img/f_5.png"))); // NOI18N
+        f5ToggleButton.setIcon(new javax.swing.ImageIcon(getClass().getResource("/img/f_5c.png"))); // NOI18N
         f5ToggleButton.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 f1ToggleButtonActionPerformed(evt);
@@ -601,7 +712,7 @@ public class MainFrame extends javax.swing.JFrame implements FlavorListener {
         });
         jToolBar1.add(f5ToggleButton);
 
-        f6ToggleButton.setIcon(new javax.swing.ImageIcon(getClass().getResource("/img/f_6.png"))); // NOI18N
+        f6ToggleButton.setIcon(new javax.swing.ImageIcon(getClass().getResource("/img/f_6c.png"))); // NOI18N
         f6ToggleButton.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 f1ToggleButtonActionPerformed(evt);
@@ -609,7 +720,7 @@ public class MainFrame extends javax.swing.JFrame implements FlavorListener {
         });
         jToolBar1.add(f6ToggleButton);
 
-        f7ToggleButton.setIcon(new javax.swing.ImageIcon(getClass().getResource("/img/f_7.png"))); // NOI18N
+        f7ToggleButton.setIcon(new javax.swing.ImageIcon(getClass().getResource("/img/f_7c.png"))); // NOI18N
         f7ToggleButton.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 f1ToggleButtonActionPerformed(evt);
@@ -617,7 +728,7 @@ public class MainFrame extends javax.swing.JFrame implements FlavorListener {
         });
         jToolBar1.add(f7ToggleButton);
 
-        f8ToggleButton.setIcon(new javax.swing.ImageIcon(getClass().getResource("/img/f_8.png"))); // NOI18N
+        f8ToggleButton.setIcon(new javax.swing.ImageIcon(getClass().getResource("/img/f_8c.png"))); // NOI18N
         f8ToggleButton.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 f1ToggleButtonActionPerformed(evt);
@@ -625,7 +736,7 @@ public class MainFrame extends javax.swing.JFrame implements FlavorListener {
         });
         jToolBar1.add(f8ToggleButton);
 
-        f9ToggleButton.setIcon(new javax.swing.ImageIcon(getClass().getResource("/img/f_9.png"))); // NOI18N
+        f9ToggleButton.setIcon(new javax.swing.ImageIcon(getClass().getResource("/img/f_9c.png"))); // NOI18N
         f9ToggleButton.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 f1ToggleButtonActionPerformed(evt);
@@ -698,7 +809,7 @@ public class MainFrame extends javax.swing.JFrame implements FlavorListener {
         hintPanelLayout.setHorizontalGroup(
             hintPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, hintPanelLayout.createSequentialGroup()
-                .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 298, Short.MAX_VALUE)
+                .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 402, Short.MAX_VALUE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(hintPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
                     .addComponent(neuerHinweisButton)
@@ -744,25 +855,43 @@ public class MainFrame extends javax.swing.JFrame implements FlavorListener {
         dateiMenu.add(neuMenuItem);
         dateiMenu.add(jSeparator14);
 
-        loadMenuItem.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_O, java.awt.event.InputEvent.CTRL_MASK));
-        loadMenuItem.setMnemonic(java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.loadMenuItemMnemonic").charAt(0));
-        loadMenuItem.setText(bundle.getString("MainFrame.loadMenuItem.text")); // NOI18N
-        loadMenuItem.addActionListener(new java.awt.event.ActionListener() {
+        loadPuzzleMenuItem.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_O, java.awt.event.InputEvent.CTRL_MASK));
+        loadPuzzleMenuItem.setMnemonic(java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.loadMenuItemMnemonic").charAt(0));
+        loadPuzzleMenuItem.setText(bundle.getString("MainFrame.loadPuzzleMenuItem.text")); // NOI18N
+        loadPuzzleMenuItem.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                loadMenuItemActionPerformed(evt);
+                loadPuzzleMenuItemActionPerformed(evt);
             }
         });
-        dateiMenu.add(loadMenuItem);
+        dateiMenu.add(loadPuzzleMenuItem);
 
-        saveAsMenuItem.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_S, java.awt.event.InputEvent.CTRL_MASK));
-        saveAsMenuItem.setMnemonic(java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.saveAsMenuItemMnemonic").charAt(0));
-        saveAsMenuItem.setText(bundle.getString("MainFrame.saveAsMenuItem.text")); // NOI18N
-        saveAsMenuItem.addActionListener(new java.awt.event.ActionListener() {
+        savePuzzleAsMenuItem.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_S, java.awt.event.InputEvent.CTRL_MASK));
+        savePuzzleAsMenuItem.setMnemonic(java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.saveAsMenuItemMnemonic").charAt(0));
+        savePuzzleAsMenuItem.setText(bundle.getString("MainFrame.savePuzzleAsMenuItem.text")); // NOI18N
+        savePuzzleAsMenuItem.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                saveAsMenuItemActionPerformed(evt);
+                savePuzzleAsMenuItemActionPerformed(evt);
             }
         });
-        dateiMenu.add(saveAsMenuItem);
+        dateiMenu.add(savePuzzleAsMenuItem);
+
+        loadConfigMenuItem.setMnemonic(java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.loadConfigMenuItem.mnemonic").charAt(0));
+        loadConfigMenuItem.setText(bundle.getString("MainFrame.loadConfigMenuItem.text")); // NOI18N
+        loadConfigMenuItem.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                loadConfigMenuItemActionPerformed(evt);
+            }
+        });
+        dateiMenu.add(loadConfigMenuItem);
+
+        saveConfigAsMenuItem.setMnemonic(java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.saveConfigAsMenuItem.mnemonic").charAt(0));
+        saveConfigAsMenuItem.setText(bundle.getString("MainFrame.saveConfigAsMenuItem.text")); // NOI18N
+        saveConfigAsMenuItem.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                saveConfigAsMenuItemActionPerformed(evt);
+            }
+        });
+        dateiMenu.add(saveConfigAsMenuItem);
         dateiMenu.add(jSeparator4);
 
         seiteEinrichtenMenuItem.setMnemonic(java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.seiteEinrichtenMenuItemMnemonic").charAt(0));
@@ -951,6 +1080,42 @@ public class MainFrame extends javax.swing.JFrame implements FlavorListener {
 
         jMenuBar1.add(bearbeitenMenu);
 
+        modeMenu.setMnemonic(java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.modeMenu.mnemonic").charAt(0));
+        modeMenu.setText(bundle.getString("MainFrame.modeMenu.text")); // NOI18N
+
+        modeButtonGroup.add(playingMenuItem);
+        playingMenuItem.setMnemonic(java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.playingMenuItem.mnemonic").charAt(0));
+        playingMenuItem.setSelected(true);
+        playingMenuItem.setText(bundle.getString("MainFrame.playingMenuItem.text")); // NOI18N
+        playingMenuItem.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                playingMenuItemActionPerformed(evt);
+            }
+        });
+        modeMenu.add(playingMenuItem);
+
+        modeButtonGroup.add(learningMenuItem);
+        learningMenuItem.setMnemonic(java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.learningMenuItem.mnemonic").charAt(0));
+        learningMenuItem.setText(bundle.getString("MainFrame.learningMenuItem.text")); // NOI18N
+        learningMenuItem.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                learningMenuItemActionPerformed(evt);
+            }
+        });
+        modeMenu.add(learningMenuItem);
+
+        modeButtonGroup.add(practisingMenuItem);
+        practisingMenuItem.setMnemonic(java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.practisingMenuItem.mnemonic").charAt(0));
+        practisingMenuItem.setText(bundle.getString("MainFrame.practisingMenuItem.text")); // NOI18N
+        practisingMenuItem.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                practisingMenuItemActionPerformed(evt);
+            }
+        });
+        modeMenu.add(practisingMenuItem);
+
+        jMenuBar1.add(modeMenu);
+
         optionenMenu.setMnemonic(java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.optionenMenuMnemonic").charAt(0));
         optionenMenu.setText(bundle.getString("MainFrame.optionenMenu.text")); // NOI18N
 
@@ -982,6 +1147,28 @@ public class MainFrame extends javax.swing.JFrame implements FlavorListener {
         });
         optionenMenu.add(showDeviationsMenuItem);
         optionenMenu.add(jSeparator10);
+
+        colorButtonGroup.add(colorCellsMenuItem);
+        colorCellsMenuItem.setMnemonic(java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.colorCellsMenuItem.mnemonic").charAt(0));
+        colorCellsMenuItem.setSelected(true);
+        colorCellsMenuItem.setText(bundle.getString("MainFrame.colorCellsMenuItem.text")); // NOI18N
+        colorCellsMenuItem.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                colorCellsMenuItemActionPerformed(evt);
+            }
+        });
+        optionenMenu.add(colorCellsMenuItem);
+
+        colorButtonGroup.add(colorCandidatesMenuItem);
+        colorCandidatesMenuItem.setMnemonic(java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.colorCandidatesMenuItem.mnemonic").charAt(0));
+        colorCandidatesMenuItem.setText(bundle.getString("MainFrame.colorCandidatesMenuItem.text")); // NOI18N
+        colorCandidatesMenuItem.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                colorCandidatesMenuItemActionPerformed(evt);
+            }
+        });
+        optionenMenu.add(colorCandidatesMenuItem);
+        optionenMenu.add(jSeparator19);
 
         levelMenu.setMnemonic(java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.levelMenuMnemonic").charAt(0));
         levelMenu.setText(bundle.getString("MainFrame.levelMenu.text")); // NOI18N
@@ -1073,6 +1260,43 @@ public class MainFrame extends javax.swing.JFrame implements FlavorListener {
             }
         });
         rätselMenu.add(lösungsSchrittMenuItem);
+        rätselMenu.add(jSeparator21);
+
+        backdoorSearchMenuItem.setMnemonic(java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.backdoorSearchMenuItem.mnemonic").charAt(0));
+        backdoorSearchMenuItem.setText(bundle.getString("MainFrame.backdoorSearchMenuItem.text")); // NOI18N
+        backdoorSearchMenuItem.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                backdoorSearchMenuItemActionPerformed(evt);
+            }
+        });
+        rätselMenu.add(backdoorSearchMenuItem);
+
+        historyMenuItem.setMnemonic(java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.historyMenuItem.mnemonic").charAt(0));
+        historyMenuItem.setText(bundle.getString("MainFrame.historyMenuItem.text")); // NOI18N
+        historyMenuItem.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                historyMenuItemActionPerformed(evt);
+            }
+        });
+        rätselMenu.add(historyMenuItem);
+
+        createSavePointMenuItem.setMnemonic(java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.setSavePointMenuItem.mnemonic").charAt(0));
+        createSavePointMenuItem.setText(bundle.getString("MainFrame.createSavePointMenuItem.text")); // NOI18N
+        createSavePointMenuItem.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                createSavePointMenuItemActionPerformed(evt);
+            }
+        });
+        rätselMenu.add(createSavePointMenuItem);
+
+        restoreSavePointMenuItem.setMnemonic(java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.restoreSavePointMenuItem.mnemonic").charAt(0));
+        restoreSavePointMenuItem.setText(bundle.getString("MainFrame.restoreSavePointMenuItem.text")); // NOI18N
+        restoreSavePointMenuItem.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                restoreSavePointMenuItemActionPerformed(evt);
+            }
+        });
+        rätselMenu.add(restoreSavePointMenuItem);
         rätselMenu.add(jSeparator5);
 
         alleHiddenSinglesSetzenMenuItem.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_F11, 0));
@@ -1135,6 +1359,17 @@ public class MainFrame extends javax.swing.JFrame implements FlavorListener {
             }
         });
         ansichtMenu.add(allStepsMenuItem);
+
+        cellZoomMenuItem.setAccelerator(KeyStroke.getKeyStroke("shift control " + java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.cellZoomMenuItemMnemonic").toUpperCase().charAt(0)));
+        viewButtonGroup.add(cellZoomMenuItem);
+        cellZoomMenuItem.setMnemonic(java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.cellZoomMenuItemMnemonic").charAt(0));
+        cellZoomMenuItem.setText(bundle.getString("MainFrame.cellZoomMenuItem.text")); // NOI18N
+        cellZoomMenuItem.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                cellZoomMenuItemActionPerformed(evt);
+            }
+        });
+        ansichtMenu.add(cellZoomMenuItem);
         ansichtMenu.add(jSeparator7);
 
         resetViewMenuItem.setMnemonic(java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.resetViewMenuItemMnemonic").charAt(0));
@@ -1161,6 +1396,34 @@ public class MainFrame extends javax.swing.JFrame implements FlavorListener {
         helpMenu.add(keyMenuItem);
         helpMenu.add(jSeparator6);
 
+        userManualMenuItem.setMnemonic(java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.userManualMenuItem.mnemonic").charAt(0));
+        userManualMenuItem.setText(bundle.getString("MainFrame.userManualMenuItem.text")); // NOI18N
+        userManualMenuItem.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                userManualMenuItemActionPerformed(evt);
+            }
+        });
+        helpMenu.add(userManualMenuItem);
+
+        solvingGuideMenuItem.setMnemonic(java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.solvingGuideMenuItem.mnemonic").charAt(0));
+        solvingGuideMenuItem.setText(bundle.getString("MainFrame.solvingGuideMenuItem.text")); // NOI18N
+        solvingGuideMenuItem.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                solvingGuideMenuItemActionPerformed(evt);
+            }
+        });
+        helpMenu.add(solvingGuideMenuItem);
+
+        projectHomePageMenuItem.setMnemonic(java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.projectHomePageMenuItem.mnemonic").charAt(0));
+        projectHomePageMenuItem.setText(bundle.getString("MainFrame.projectHomePageMenuItem.text")); // NOI18N
+        projectHomePageMenuItem.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                projectHomePageMenuItemActionPerformed(evt);
+            }
+        });
+        helpMenu.add(projectHomePageMenuItem);
+        helpMenu.add(jSeparator20);
+
         aboutMenuItem.setMnemonic(java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.aboutMenuItem.").charAt(0));
         aboutMenuItem.setText(bundle.getString("MainFrame.aboutMenuItem.text")); // NOI18N
         aboutMenuItem.addActionListener(new java.awt.event.ActionListener() {
@@ -1177,181 +1440,31 @@ public class MainFrame extends javax.swing.JFrame implements FlavorListener {
         pack();
     }// </editor-fold>//GEN-END:initComponents
 
-    private void saveAsMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_saveAsMenuItemActionPerformed
-        JFileChooser chooser = new JFileChooser(Options.getInstance().defaultFileDir);
-        for (int i = 0; i < fileFilters.length; i++) {
-            chooser.addChoosableFileFilter(fileFilters[i]);
-        }
-        chooser.setAcceptAllFileFilterUsed(false);
-        int returnVal = chooser.showSaveDialog(this);
-        if (returnVal == JFileChooser.APPROVE_OPTION) {
-            try {
-                String path = chooser.getSelectedFile().getPath();
-                path = path.substring(0, path.lastIndexOf(File.separatorChar));
-                Options.getInstance().defaultFileDir = path;
-                MyFileFilter actFilter = (MyFileFilter) chooser.getFileFilter();
-                path = chooser.getSelectedFile().getAbsolutePath();
-                if (actFilter == fileFilters[0] || path.endsWith("." + configFileExt)) {
-                    // Options
-                    if (!path.endsWith("." + configFileExt)) {
-                        path += "." + configFileExt;
-                    }
-                    //Options.getInstance().writeOptions(path);
-                    writeOptionsWithWindowState(path);
-                } else if (actFilter == fileFilters[1] || path.endsWith("." + solutionFileExt)) {
-                    // Sudoku und Lösung
-                    if (!path.endsWith("." + solutionFileExt)) {
-                        path += "." + solutionFileExt;
-                    }
-                    ZipOutputStream zOut = new ZipOutputStream(new FileOutputStream(path));
-                    zOut.putNextEntry(new ZipEntry("SudokuData"));
-                    XMLEncoder out = new XMLEncoder(zOut);
-//                    out.writeObject(sudokuPanel.getSudoku());
-//                    out.writeObject(sudokuPanel.getSolvedSudoku());
-//                    SudokuSolver s = SudokuSolver.getInstance();
-//                    out.writeObject(s.getAnzSteps());
-//                    for (int i = 0; i < s.getSteps().size(); i++) {
-//                        out.writeObject(s.getSteps().get(i));
-//                    }
-                    out.writeObject(sudokuPanel.getSudoku());
-                    out.writeObject(sudokuPanel.getSolvedSudoku());
-                    out.writeObject(SudokuSolver.getInstance().getAnzSteps());
-                    out.writeObject(SudokuSolver.getInstance().getSteps());
-                    out.writeObject(solutionPanel.getTitels());
-                    out.writeObject(solutionPanel.getTabSteps());
-                    out.close();
-                    zOut.flush();
-                    zOut.close();
-                } else {
-                    formatter.applyPattern(java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.invalid_filename"));
-                    String msg = formatter.format(new Object[]{path});
-                    JOptionPane.showMessageDialog(this, msg,
-                            java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.error"), JOptionPane.ERROR_MESSAGE);
-                }
-            } catch (Exception ex2) {
-                JOptionPane.showMessageDialog(this, ex2.toString(), java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.error"), JOptionPane.ERROR_MESSAGE);
-            }
-        }
-    }//GEN-LAST:event_saveAsMenuItemActionPerformed
+    private void savePuzzleAsMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_savePuzzleAsMenuItemActionPerformed
+        saveToFile(true);
+    }//GEN-LAST:event_savePuzzleAsMenuItemActionPerformed
 
-    private void loadMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_loadMenuItemActionPerformed
-        JFileChooser chooser = new JFileChooser(Options.getInstance().defaultFileDir);
-        for (int i = 0; i < fileFilters.length; i++) {
-            chooser.addChoosableFileFilter(fileFilters[i]);
-        }
-        chooser.setAcceptAllFileFilterUsed(false);
-        int returnVal = chooser.showOpenDialog(this);
-        if (returnVal == JFileChooser.APPROVE_OPTION) {
-            try {
-                String path = chooser.getSelectedFile().getPath();
-                path = path.substring(0, path.lastIndexOf(File.separatorChar));
-                Options.getInstance().defaultFileDir = path;
-                path = chooser.getSelectedFile().getAbsolutePath();
-                MyFileFilter actFilter = (MyFileFilter) chooser.getFileFilter();
-                if (actFilter == fileFilters[0] || path.endsWith("." + configFileExt)) {
-                    // Options
-                    Options.readOptions(path);
-                } else if (actFilter == fileFilters[1] || path.endsWith("." + solutionFileExt)) {
-                    ZipInputStream zIn = new ZipInputStream(new FileInputStream(path));
-                    zIn.getNextEntry();
-                    XMLDecoder in = new XMLDecoder(zIn);
-//                    Sudoku s = (Sudoku) in.readObject();
-//                    Sudoku ss = (Sudoku) in.readObject();
-//                    SudokuSolver solv = SudokuSolver.getInstance();
-//                    solv.setAnzSteps((int[]) in.readObject());
-//                    solv.getSteps().clear();
-//                    try {
-//                        while (true) {
-//                            solv.getSteps().add((SolutionStep) in.readObject());
-//                        }
-//                    } catch (ArrayIndexOutOfBoundsException ex) {
-//                        // alles gelesen
-//                    }
-                    Sudoku s = (Sudoku) in.readObject();
-                    Sudoku ss = (Sudoku) in.readObject();
-                    SudokuSolver solv = SudokuSolver.getInstance();
-                    solv.setAnzSteps((int[]) in.readObject());
-                    solv.setSteps((List<SolutionStep>) in.readObject());
-                    List<String> titles = (List<String>) in.readObject();
-                    List<List<SolutionStep>> solutions = (List<List<SolutionStep>>) in.readObject();
-                    in.close();
-                    sudokuPanel.loadFromFile(s, ss);
-                    summaryPanel.initialize(SudokuSolver.getInstance());
-                    //solutionPanel.initialize(SudokuSolver.getInstance().getSteps());
-                    solutionPanel.initialize(titles, solutions);
-                    sudokuPanel.abortStep();
-                    allStepsPanel.setSudoku(sudokuPanel.getSudoku());
-                    hinweisTextArea.setText("");
-                    hinweisAbbrechenButton.setEnabled(false);
-                    hinweisAusführenButton.setEnabled(false);
-                    fixFocus();
-                } else {
-                    formatter.applyPattern(java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.invalid_filename"));
-                    String msg = formatter.format(new Object[]{path});
-                    JOptionPane.showMessageDialog(this, msg,
-                            java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.error"), JOptionPane.ERROR_MESSAGE);
-                }
-            } catch (Exception ex2) {
-                JOptionPane.showMessageDialog(this, ex2.toString(), java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.error"), JOptionPane.ERROR_MESSAGE);
-            }
-        }
-    }//GEN-LAST:event_loadMenuItemActionPerformed
+    private void loadPuzzleMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_loadPuzzleMenuItemActionPerformed
+        loadFromFile(true);
+    }//GEN-LAST:event_loadPuzzleMenuItemActionPerformed
 
     private void configMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_configMenuItemActionPerformed
         new ConfigDialog(this, true, -1).setVisible(true);
+        sudokuPanel.resetActiveColor();
+        if (sudokuPanel.getActiveColor() != -1) {
+            statusPanelColorResult.setBackground(Options.getInstance().coloringColors[sudokuPanel.getActiveColor()]);
+        }
+        sudokuPanel.setColorIconsInPopupMenu();
         fixFocus();
         sudokuPanel.repaint();
+        repaint();
     }//GEN-LAST:event_configMenuItemActionPerformed
 
-    private void statusLabel1MouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_statusLabel1MouseClicked
-        setStatusLabel(1);
+    private void statusLabelCellCandidateMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_statusLabelCellCandidateMouseClicked
+        sudokuPanel.setColorCells(!sudokuPanel.isColorCells());
+        check();
         fixFocus();
-    }//GEN-LAST:event_statusLabel1MouseClicked
-
-    private void statusLabel2MouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_statusLabel2MouseClicked
-        setStatusLabel(2);
-        fixFocus();
-    }//GEN-LAST:event_statusLabel2MouseClicked
-
-    private void statusLabel3MouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_statusLabel3MouseClicked
-        setStatusLabel(3);
-        fixFocus();
-    }//GEN-LAST:event_statusLabel3MouseClicked
-
-    private void statusLabel4MouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_statusLabel4MouseClicked
-        setStatusLabel(4);
-        fixFocus();
-    }//GEN-LAST:event_statusLabel4MouseClicked
-
-    private void statusLabel5MouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_statusLabel5MouseClicked
-        setStatusLabel(5);
-        fixFocus();
-    }//GEN-LAST:event_statusLabel5MouseClicked
-
-    private void statusLabel6MouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_statusLabel6MouseClicked
-        setStatusLabel(6);
-        fixFocus();
-    }//GEN-LAST:event_statusLabel6MouseClicked
-
-    private void statusLabel7MouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_statusLabel7MouseClicked
-        setStatusLabel(7);
-        fixFocus();
-    }//GEN-LAST:event_statusLabel7MouseClicked
-
-    private void statusLabel8MousePressed(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_statusLabel8MousePressed
-        setStatusLabel(8);
-        fixFocus();
-    }//GEN-LAST:event_statusLabel8MousePressed
-
-    private void statusLabel9MouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_statusLabel9MouseClicked
-        setStatusLabel(9);
-        fixFocus();
-    }//GEN-LAST:event_statusLabel9MouseClicked
-
-    private void statusLabelAusMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_statusLabelAusMouseClicked
-        setStatusLabel(0);
-        fixFocus();
-    }//GEN-LAST:event_statusLabelAusMouseClicked
+    }//GEN-LAST:event_statusLabelCellCandidateMouseClicked
 
     private void allStepsMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_allStepsMenuItemActionPerformed
         allStepsPanel.setSudoku(sudokuPanel.getSudoku());
@@ -1443,7 +1556,7 @@ public class MainFrame extends javax.swing.JFrame implements FlavorListener {
             repaint();
             setSpielen(true);
             check();
-            fixFocus();        
+            fixFocus();
         }
 }//GEN-LAST:event_restartSpielMenuItemActionPerformed
 
@@ -1482,14 +1595,32 @@ public class MainFrame extends javax.swing.JFrame implements FlavorListener {
 
     private void neuesSpielToolButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_neuesSpielToolButtonActionPerformed
         // neues Spiel in der gewünschten Schwierigkeitsstufe erzeugen
-        GenerateSudokuProgressDialog dlg = new GenerateSudokuProgressDialog(this, true, level);
+        GenerateSudokuProgressDialog dlg = new GenerateSudokuProgressDialog(this, true, level, mode);
         dlg.setVisible(true);
         Sudoku tmpSudoku = dlg.getSudoku();
         if (tmpSudoku != null) {
             sudokuPanel.setSudoku(tmpSudoku, true);
             allStepsPanel.setSudoku(sudokuPanel.getSudoku());
             initializeResultPanels();
-            repaint();
+            addSudokuToHistory(tmpSudoku);
+            sudokuPanel.clearColoring();
+            sudokuPanel.setShowHintCellValue(0);
+            sudokuPanel.setShowInvalidOrPossibleCells(false);
+            if (mode == GameMode.LEARNING) {
+                // solve the sudoku up until the first trainingStep
+                Sudoku trainingSudoku = sudokuPanel.getSudoku();
+                List<SolutionStep> steps = sudokuPanel.getSolver().getSteps();
+                for (SolutionStep step : steps) {
+                    if (step.getType().getStepConfig().isEnabledTraining()) {
+                        break;
+                    } else {
+                        //System.out.println("doStep(): " + step.getType().getStepName());
+                        sudokuPanel.getSolver().doStep(trainingSudoku, step);
+                    }
+                }
+            }
+            clearSavePoints();
+            check();
         }
         setSpielen(true);
         fixFocus();
@@ -1685,44 +1816,47 @@ public class MainFrame extends javax.swing.JFrame implements FlavorListener {
             Transferable clipboardContent = clip.getContents(this);
             if ((clipboardContent != null) && (clipboardContent.isDataFlavorSupported(DataFlavor.stringFlavor))) {
                 String content = (String) clipboardContent.getTransferData(DataFlavor.stringFlavor);
-                sudokuPanel.setSudoku(content);
-                allStepsPanel.setSudoku(sudokuPanel.getSudoku());
-                initializeResultPanels();
-                repaint();
+                setPuzzle(content);
+                clearSavePoints();
             }
         } catch (Exception ex) {
             Logger.getLogger(getClass().getName()).log(Level.SEVERE, "Error pasting from clipboard", ex);
         }
-        setSpielen(true);
         check();
         fixFocus();
     }//GEN-LAST:event_pasteMenuItemActionPerformed
 
 private void outerSplitPanePropertyChange(java.beans.PropertyChangeEvent evt) {//GEN-FIRST:event_outerSplitPanePropertyChange
+    // if the hintPanel is to small, the horizontal divider is moved up
     if (!outerSplitPaneInitialized && outerSplitPane.getSize().getHeight() != 0 &&
             hintPanel.getSize().getHeight() != 0) {
         // adjust to minimum size of hintPanel to allow for LAF differences
         outerSplitPaneInitialized = true; // beware of recursion!
         int diff = (int) (hintPanel.getMinimumSize().getHeight() - hintPanel.getSize().getHeight());
         if (diff > 0) {
-            resetHDivLocLoc = outerSplitPane.getDividerLocation() - diff - 1;
+            resetHDivLocLoc = outerSplitPane.getDividerLocation() - diff - 5;
             outerSplitPane.setDividerLocation(resetHDivLocLoc);
-            //System.out.println("Divider adjusted (" + (diff + 1) + ")!");
-            //System.out.println("   absolut position: " + outerSplitPane.getDividerLocation());
+//            System.out.println("Divider adjusted (" + (diff + 1) + ")!");
+//            System.out.println("   absolut position: " + outerSplitPane.getDividerLocation());
         }
-        //System.out.println("outerSplitPaneinitialized = true!");
+        outerSplitPaneInitialized = false;
+//        System.out.println("outerSplitPaneinitialized = true!");
     }
 //    System.out.println("gdl: " + outerSplitPane.getDividerLocation() + " (" +
 //            outerSplitPaneInitialized + "/" + outerSplitPane.getSize().getHeight() + "/" +
-//            hintPanel.getSize().getHeight());
+//            hintPanel.getMinimumSize().getHeight() + "/" + hintPanel.getSize().getHeight() + "/" + resetHDivLocLoc);
+    // if the window layout is reset, the horizontal divider is moved back to its
+    // default location; since we dont know, how large toolbar and statu line are
+    // in each and every laf, this value is too small and has to be
+    // adjusted again!
     if (resetHDivLoc && outerSplitPane.getDividerLocation() != resetHDivLocLoc) {
         resetHDivLoc = false;
         if (System.currentTimeMillis() - resetHDivLocTicks < 1000) {
-            //System.out.println("Reset adjusted!");
+//            System.out.println("Reset adjusted!");
             outerSplitPane.setDividerLocation(resetHDivLocLoc);
             setSize(getWidth() + 1, getHeight());
         } else {
-            //System.out.println("Reset: nothing done!");
+//            System.out.println("Reset: nothing done!");
         }
     }
 }//GEN-LAST:event_outerSplitPanePropertyChange
@@ -1770,54 +1904,315 @@ private void hintPanelPropertyChange(java.beans.PropertyChangeEvent evt) {//GEN-
 }//GEN-LAST:event_hintPanelPropertyChange
 
 private void spielEingebenMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_spielEingebenMenuItemActionPerformed
-        // bestehendes Sudoku kann gelöscht werden, muss aber nicht
-        if (sudokuPanel.getAnzFilled() != 0) {
-            int antwort = JOptionPane.showConfirmDialog(this, java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.delete_sudoku"),
-                    java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.new_input"),
-                    JOptionPane.YES_NO_OPTION);
-            if (antwort != JOptionPane.YES_OPTION) {
-                // do nothing!
-                return;
-            }
+    // bestehendes Sudoku kann gelöscht werden, muss aber nicht
+    if (sudokuPanel.getAnzFilled() != 0) {
+        int antwort = JOptionPane.showConfirmDialog(this, java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.delete_sudoku"),
+                java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.new_input"),
+                JOptionPane.YES_NO_OPTION);
+        if (antwort != JOptionPane.YES_OPTION) {
+            // do nothing!
+            return;
         }
-        sudokuPanel.setSudoku((String) null);
-        allStepsPanel.setSudoku(sudokuPanel.getSudoku());
-        resetResultPanels();
-        sudokuPanel.setNoClues();
-        hinweisAbbrechenButtonActionPerformed(null);
-        setSpielen(false);
+    }
+    sudokuPanel.setSudoku((String) null);
+    allStepsPanel.setSudoku(sudokuPanel.getSudoku());
+    resetResultPanels();
+    sudokuPanel.setNoClues();
+    hinweisAbbrechenButtonActionPerformed(null);
+    setSpielen(false);
 }//GEN-LAST:event_spielEingebenMenuItemActionPerformed
 
 private void spielEditierenMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_spielEditierenMenuItemActionPerformed
-        resetResultPanels();
-        sudokuPanel.setNoClues();
-        hinweisAbbrechenButtonActionPerformed(null);
-        setSpielen(false);
+    resetResultPanels();
+    sudokuPanel.setNoClues();
+    hinweisAbbrechenButtonActionPerformed(null);
+    setSpielen(false);
 }//GEN-LAST:event_spielEditierenMenuItemActionPerformed
 
 private void spielSpielenMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_spielSpielenMenuItemActionPerformed
-        if (sudokuPanel.getAnzFilled() > 0) {
-            sudokuPanel.setSudoku(sudokuPanel.getSudokuString(ClipboardMode.VALUES_ONLY));
-            allStepsPanel.setSudoku(sudokuPanel.getSudoku());
-            initializeResultPanels();
-        }
-        setSpielen(true);
+    if (sudokuPanel.getAnzFilled() > 0) {
+        sudokuPanel.setSudoku(sudokuPanel.getSudokuString(ClipboardMode.VALUES_ONLY));
+        allStepsPanel.setSudoku(sudokuPanel.getSudoku());
+        initializeResultPanels();
+    }
+    setSpielen(true);
 }//GEN-LAST:event_spielSpielenMenuItemActionPerformed
 
 private void resetSpielMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_resetSpielMenuItemActionPerformed
-        if (JOptionPane.showConfirmDialog(this, java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.reset_game"),
-                java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.reset"),
-                JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION) {
-            sudokuPanel.setSudoku(sudokuPanel.getSudokuString(ClipboardMode.CLUES_ONLY));
-            allStepsPanel.setSudoku(sudokuPanel.getSudoku());
-            allStepsPanel.resetPanel();
-            repaint();
-            setSpielen(true);
-            check();
-            fixFocus();        
-        }
+    if (JOptionPane.showConfirmDialog(this, java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.reset_game"),
+            java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.reset"),
+            JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION) {
+        sudokuPanel.setSudoku(sudokuPanel.getSudokuString(ClipboardMode.CLUES_ONLY));
+        allStepsPanel.setSudoku(sudokuPanel.getSudoku());
+        allStepsPanel.resetPanel();
+        repaint();
+        setSpielen(true);
+        check();
+        fixFocus();
+    }
 }//GEN-LAST:event_resetSpielMenuItemActionPerformed
-    
+
+private void statusPanelColor1MouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_statusPanelColor1MouseClicked
+    coloringPanelClicked(0);
+}//GEN-LAST:event_statusPanelColor1MouseClicked
+
+private void statusPanelColor2MouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_statusPanelColor2MouseClicked
+    coloringPanelClicked(2);
+}//GEN-LAST:event_statusPanelColor2MouseClicked
+
+private void statusPanelColor3MouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_statusPanelColor3MouseClicked
+    coloringPanelClicked(4);
+}//GEN-LAST:event_statusPanelColor3MouseClicked
+
+private void statusPanelColor4MouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_statusPanelColor4MouseClicked
+    coloringPanelClicked(6);
+}//GEN-LAST:event_statusPanelColor4MouseClicked
+
+private void statusPanelColor5MouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_statusPanelColor5MouseClicked
+    coloringPanelClicked(8);
+}//GEN-LAST:event_statusPanelColor5MouseClicked
+
+private void statusPanelColorClearMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_statusPanelColorClearMouseClicked
+    coloringPanelClicked(-1);
+}//GEN-LAST:event_statusPanelColorClearMouseClicked
+
+private void statusPanelColorResetMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_statusPanelColorResetMouseClicked
+    coloringPanelClicked(-2);
+}//GEN-LAST:event_statusPanelColorResetMouseClicked
+
+private void colorCellsMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_colorCellsMenuItemActionPerformed
+    sudokuPanel.setColorCells(true);
+    check();
+    fixFocus();
+}//GEN-LAST:event_colorCellsMenuItemActionPerformed
+
+private void colorCandidatesMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_colorCandidatesMenuItemActionPerformed
+    sudokuPanel.setColorCells(false);
+    check();
+    fixFocus();
+}//GEN-LAST:event_colorCandidatesMenuItemActionPerformed
+
+private void cellZoomMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_cellZoomMenuItemActionPerformed
+    setSplitPane(cellZoomPanel);
+    //initializeResultPanels();
+    repaint();
+}//GEN-LAST:event_cellZoomMenuItemActionPerformed
+
+private void userManualMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_userManualMenuItemActionPerformed
+    MyBrowserLauncher.getInstance().launchUserManual();
+}//GEN-LAST:event_userManualMenuItemActionPerformed
+
+private void solvingGuideMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_solvingGuideMenuItemActionPerformed
+    MyBrowserLauncher.getInstance().launchSolvingGuide();
+}//GEN-LAST:event_solvingGuideMenuItemActionPerformed
+
+private void projectHomePageMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_projectHomePageMenuItemActionPerformed
+    MyBrowserLauncher.getInstance().launchHomePage();
+}//GEN-LAST:event_projectHomePageMenuItemActionPerformed
+
+private void loadConfigMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_loadConfigMenuItemActionPerformed
+    loadFromFile(false);
+}//GEN-LAST:event_loadConfigMenuItemActionPerformed
+
+private void saveConfigAsMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_saveConfigAsMenuItemActionPerformed
+    saveToFile(false);
+}//GEN-LAST:event_saveConfigAsMenuItemActionPerformed
+
+private void historyMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_historyMenuItemActionPerformed
+    GuiState state = new GuiState(sudokuPanel, sudokuPanel.getSolver(), solutionPanel);
+    state.get(true);
+    HistoryDialog dlg = new HistoryDialog(this, true);
+    dlg.setVisible(true);
+    String puzzle = dlg.getSelectedPuzzle();
+    if (puzzle != null) {
+        if (dlg.isDoubleClicked()) {
+            // everything is already initialized, so dont do anything
+        } else {
+            // act like paste
+            setPuzzle(puzzle);
+        }
+        clearSavePoints();
+    } else {
+        // restore everything
+        setState(state);
+    }
+    state = null;
+}//GEN-LAST:event_historyMenuItemActionPerformed
+
+private void createSavePointMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_createSavePointMenuItemActionPerformed
+    String defaultName = ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.createsp.default") +
+            " " + (savePoints.size() + 1);
+    String name = (String) JOptionPane.showInputDialog(this,
+            ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.createsp.message"),
+            ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.createsp.title"),
+            JOptionPane.QUESTION_MESSAGE, null, null, defaultName);
+    if (name != null) {
+        GuiState state = new GuiState(sudokuPanel, sudokuPanel.getSolver(), solutionPanel);
+        state.get(true);
+        state.name = name;
+        state.timestamp = new Date();
+        savePoints.add(state);
+    }
+}//GEN-LAST:event_createSavePointMenuItemActionPerformed
+
+private void restoreSavePointMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_restoreSavePointMenuItemActionPerformed
+    GuiState state = new GuiState(sudokuPanel, sudokuPanel.getSolver(), solutionPanel);
+    state.get(true);
+    RestoreSavePointDialog dlg = new RestoreSavePointDialog(this, true);
+    dlg.setVisible(true);
+    if (! dlg.isOkPressed()) {
+        // restore everything
+        setState(state);
+    }
+    state = null;
+}//GEN-LAST:event_restoreSavePointMenuItemActionPerformed
+
+private void playingMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_playingMenuItemActionPerformed
+    setMode(GameMode.PLAYING);
+    check();
+}//GEN-LAST:event_playingMenuItemActionPerformed
+
+private void learningMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_learningMenuItemActionPerformed
+    setMode(GameMode.LEARNING);
+    check();
+}//GEN-LAST:event_learningMenuItemActionPerformed
+
+private void practisingMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_practisingMenuItemActionPerformed
+    setMode(GameMode.PRACTISING);
+    check();
+}//GEN-LAST:event_practisingMenuItemActionPerformed
+
+private void backdoorSearchMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_backdoorSearchMenuItemActionPerformed
+    new BackdoorSearchDialog(this, true, sudokuPanel).setVisible(true);
+}//GEN-LAST:event_backdoorSearchMenuItemActionPerformed
+
+    /**
+     * Sets a new mode ({@link GameMode#LEARNING}, {@link GameMode#PLAYING} or
+     * {@link GameMode#PRACTISING}). If the new mode is "playing", no further
+     * action is necessary. If the new mode is "learning" or "practising",
+     * steps have to be selected.<br>
+     * If a user tries to set "learning" or "practising", but doesnt select any steps,
+     * "playing" is set.<br>
+     * If the configuration dialog is cancelled, the mode is not changed.
+     * @param newMode
+     */
+    private void setMode(GameMode newMode) {
+        if (newMode == GameMode.PLAYING) {
+            mode = newMode;
+        } else {
+            // show config dialog
+            ConfigTrainingDialog dlg = new ConfigTrainingDialog(this, true);
+            dlg.setVisible(true);
+            if (dlg.isOkPressed()) {
+                String techniques = Options.getInstance().getTrainingStepsString(true);
+                if (techniques.equals("")) {
+                    JOptionPane.showMessageDialog(this,
+                            ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.notechniques"),
+                            ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.error"), JOptionPane.ERROR_MESSAGE);
+                    mode = GameMode.PLAYING;
+                } else {
+                    mode = newMode;
+                }
+            }
+        }
+    }
+
+    /**
+     * Sets a puzzle and initializes all views. Used by {@link #pasteMenuItemActionPerformed} and
+     * {@link #historyMenuItemActionPerformed(java.awt.event.ActionEvent)}. This
+     * method should only be used if the puzzle is only available as String. If more state information
+     * is saved, use {@link #setPuzzle(java.lang.String)} instead.
+     * @param puzzle
+     */
+    public void setPuzzle(String puzzle) {
+        try {
+            sudokuPanel.setSudoku(puzzle);
+        } catch (Exception ex) {
+            Logger.getLogger(getClass().getName()).log(Level.SEVERE, "Error setting sudoku in SudokuPanel", ex);
+        }
+        allStepsPanel.setSudoku(sudokuPanel.getSudoku());
+        initializeResultPanels();
+        sudokuPanel.clearColoring();
+        sudokuPanel.setShowHintCellValue(0);
+        sudokuPanel.setShowInvalidOrPossibleCells(false);
+        setSpielen(true);
+        check();
+        repaint();
+    }
+
+    /**
+     * Restores a complete GUI state including puzzle (optionally with coloring
+     * and selected step), solutions and summary. Used by {@link #loadFromFile(boolean)} and
+     * {@link RestoreSavePointDialog}.<br>
+     * @param state
+     * @param ignoreSolutions
+     */
+    public void setState(GuiState state) {
+        state.set();
+        summaryPanel.initialize(SudokuSolver.getInstance());
+        allStepsPanel.setSudoku(sudokuPanel.getSudoku());
+        setSolutionStep(state.step, true);
+        setSpielen(true);
+        check();
+        repaint();
+    }
+
+    /**
+     * Adds a new sudoku to the creation history. The size of the history buffer
+     * is adjusted accordingly. New sudokus are always inserted at the start of
+     * the list and deleted from the end of the list, effectively turning the list in
+     * a queue (the performance overhead can be ignored here).
+     * @param sudoku
+     */
+    private void addSudokuToHistory(Sudoku sudoku) {
+        List<String> history = Options.getInstance().historyOfCreatedPuzzles;
+        while (history.size() > Options.getInstance().historySize - 1) {
+            history.remove(history.size() - 1);
+        }
+        String str = sudoku.getSudoku(ClipboardMode.CLUES_ONLY) + "#" + 
+                sudoku.getLevel().getOrdinal() + "#" + sudoku.getScore() + "#" +
+                new Date().getTime();
+        history.add(0, str);
+    }
+
+    /**
+     * Old GuiStates remain in memory as long as they are not overwritten.
+     * Since that can comsume quite a lot of memory, they should be nulled
+     * out before clearing the list.
+     */
+    private void clearSavePoints() {
+        for (int i = 0; i < savePoints.size(); i++) {
+            savePoints.set(i, null);
+        }
+        savePoints.clear();
+    }
+
+    /**
+     * Should be called only from {@link CellZoomPanel}.
+     * @param colorNumber
+     * @param isCell
+     */
+    public void setColoring(int colorNumber, boolean isCell) {
+        sudokuPanel.setColorCells(isCell);
+        coloringPanelClicked(colorNumber);
+        check();
+        fixFocus();
+    }
+
+    public void coloringPanelClicked(int colorNumber) {
+        if (colorNumber == -1 || colorNumber == -2) {
+            statusPanelColorResult.setBackground(Options.getInstance().defaultCellColor);
+            sudokuPanel.setActiveColor(-1);
+            if (colorNumber == -2) {
+                sudokuPanel.clearColoring();
+                repaint();
+            }
+        } else {
+            statusPanelColorResult.setBackground(Options.getInstance().coloringColors[colorNumber]);
+            sudokuPanel.setActiveColor(colorNumber);
+        }
+    }
+
     private void tabPaneMouseClicked(java.awt.event.MouseEvent evt) {
         if (evt.getButton() == MouseEvent.BUTTON1) {
             //System.out.println("tab clicked: " + tabPane.getSelectedIndex());
@@ -1830,6 +2225,9 @@ private void resetSpielMenuItemActionPerformed(java.awt.event.ActionEvent evt) {
                     break;
                 case 2:
                     allStepsMenuItem.setSelected(true);
+                    break;
+                case 3:
+                    cellZoomMenuItem.setSelected(true);
                     break;
             }
         }
@@ -1853,6 +2251,9 @@ private void resetSpielMenuItemActionPerformed(java.awt.event.ActionEvent evt) {
         if (allStepsMenuItem.isSelected()) {
             o.initialDisplayMode = 3;
         }
+        if (cellZoomMenuItem.isSelected()) {
+            o.initialDisplayMode = 4;
+        }
         o.initialVertDividerLoc = -1;
         if (o.initialDisplayMode != 0) {
             splitPanel.getDividerLocation();
@@ -1863,7 +2264,7 @@ private void resetSpielMenuItemActionPerformed(java.awt.event.ActionEvent evt) {
             Options.getInstance().writeOptions(fileName);
         }
     }
-    
+
     private void setWindowLayout(boolean reset) {
         Options o = Options.getInstance();
         //System.out.println("initialHorzDividerLoc: " + o.initialHorzDividerLoc);
@@ -1876,18 +2277,25 @@ private void resetSpielMenuItemActionPerformed(java.awt.event.ActionEvent evt) {
             o.initialWidth = Options.INITIAL_WIDTH;
         }
         //System.out.println("initialHorzDividerLoc: " + o.initialHorzDividerLoc);
-        
+
         Toolkit t = Toolkit.getDefaultToolkit();
         Dimension screenSize = t.getScreenSize();
+//        System.out.println("setWindowLayout() - init: " + getWidth() + "/" + getHeight() + "/" + screenSize);
         int width = o.initialWidth;
         int height = o.initialHeight;
         int horzDivLoc = o.initialHorzDividerLoc;
-        if (screenSize.height - 40 < height) {
-            height = screenSize.height - 40;
+//        System.out.println("soll: " + width + "/" + height + "/" + horzDivLoc);
+
+        if (screenSize.height - 45 < height) {
+            height = screenSize.height - 45;
         }
         if (horzDivLoc > height - 204) {
             horzDivLoc = height - 204;
         }
+        if (screenSize.width - 20 < width) {
+            width = screenSize.width - 20;
+        }
+//        System.out.println("adjusted: " + width + "/" + height + "/" + horzDivLoc);
         setSize(width, height);
         switch (o.initialDisplayMode) {
             case 0:
@@ -1907,41 +2315,45 @@ private void resetSpielMenuItemActionPerformed(java.awt.event.ActionEvent evt) {
                 setSplitPane(allStepsPanel);
                 allStepsMenuItem.setSelected(true);
                 break;
+            case 4:
+                setSplitPane(cellZoomPanel);
+                cellZoomMenuItem.setSelected(true);
         }
         if (o.initialVertDividerLoc != -1) {
             splitPanel.setDividerLocation(o.initialVertDividerLoc);
         }
         //System.out.println("horzDivLoc: " + horzDivLoc);
         outerSplitPane.setDividerLocation(horzDivLoc);
-        
+
         // doesnt work at reset sometimes -> adjust in PropertyChangeListener
         if (reset) {
             outerSplitPaneInitialized = false;
             resetHDivLocLoc = horzDivLoc;
             resetHDivLocTicks = System.currentTimeMillis();
             resetHDivLoc = true;
+//            System.out.println("reset: " + resetHDivLocLoc);
         }
     }
-    
+
     private void resetResultPanels() {
         summaryPanel.initialize(null);
         solutionPanel.initialize(null);
         allStepsPanel.resetPanel();
     }
-    
+
     private void initializeResultPanels() {
         summaryPanel.initialize(sudokuPanel.getSolver());
         solutionPanel.initialize(sudokuPanel.getSolver().getSteps());
         allStepsPanel.resetPanel();
     }
-    
+
     private void setSplitPane(JPanel panel) {
-        if (! splitPanel.hasRight()) {
+        if (!splitPanel.hasRight()) {
             splitPanel.setRight(tabPane);
         }
         tabPane.setSelectedComponent(panel);
     }
-    
+
     private void setSpielen(boolean isSpielen) {
         if (isSpielen) {
             showDeviationsMenuItem.setSelected(oldShowDeviations);
@@ -1950,17 +2362,17 @@ private void resetSpielMenuItemActionPerformed(java.awt.event.ActionEvent evt) {
             showDeviationsMenuItem.setSelected(false);
         }
         showDeviationsMenuItemActionPerformed(null);
-        
+
         vageHintMenuItem.setEnabled(isSpielen);
         mediumHintMenuItem.setEnabled(isSpielen);
         lösungsSchrittMenuItem.setEnabled(isSpielen);
         alleHiddenSinglesSetzenMenuItem.setEnabled(isSpielen);
         showDeviationsMenuItem.setEnabled(isSpielen);
-        
-        spielSpielenMenuItem.setEnabled(! isSpielen);
+
+        spielSpielenMenuItem.setEnabled(!isSpielen);
         spielEditierenMenuItem.setEnabled(isSpielen);
     }
-    
+
     public void setSolutionStep(SolutionStep step, boolean setInSudokuPanel) {
         if (setInSudokuPanel) {
             if (step == null) {
@@ -1970,16 +2382,19 @@ private void resetSpielMenuItemActionPerformed(java.awt.event.ActionEvent evt) {
             }
         }
         if (step == null) {
-            return;
+            hinweisTextArea.setText("");
+            hinweisAbbrechenButton.setEnabled(false);
+            hinweisAusführenButton.setEnabled(false);
+        } else {
+            hinweisTextArea.setText(step.toString());
+            hinweisTextArea.setCaretPosition(0);
+            hinweisAbbrechenButton.setEnabled(true);
+            hinweisAusführenButton.setEnabled(true);
+            getRootPane().setDefaultButton(hinweisAusführenButton);
         }
-        hinweisTextArea.setText(step.toString());
-        hinweisTextArea.setCaretPosition(0);
-        hinweisAbbrechenButton.setEnabled(true);
-        hinweisAusführenButton.setEnabled(true);
-        getRootPane().setDefaultButton(hinweisAusführenButton);
         fixFocus();
     }
-    
+
     private void copyToClipboard(ClipboardMode mode) {
         String clipStr = sudokuPanel.getSudokuString(mode);
         try {
@@ -1991,20 +2406,7 @@ private void resetSpielMenuItemActionPerformed(java.awt.event.ActionEvent evt) {
         }
         fixFocus();
     }
-    
-    public void setStatusLabel(int index) {
-        sudokuPanel.setCursor(numberCursors[index]);
-        statusLinePanel.setCursor(numberCursors[index]);
-        sudokuPanel.setAktNumber(index);
-        for (int i = 0; i < statusLabels.length; i++) {
-            if (i == index) {
-                statusLabels[i].setForeground(statusLabelAktColor);
-            } else {
-                statusLabels[i].setForeground(statusLabelNormColor);
-            }
-        }
-    }
-    
+
     private void setToggleButton(JToggleButton button) {
         if (button == null) {
             sudokuPanel.setShowHintCellValue(0);
@@ -2028,17 +2430,144 @@ private void resetSpielMenuItemActionPerformed(java.awt.event.ActionEvent evt) {
         sudokuPanel.repaint();
         fixFocus();
     }
-    
-    private void createNumberCursors() {
-        numberCursors[0] = getCursor();
-        Toolkit toolkit = Toolkit.getDefaultToolkit();
-        for (int i = 1; i <= 9; i++) {
-            Image cursorImage = toolkit.createImage(getClass().getResource("/img/c_" + i + ".gif"));
-            Point cursorHotSpot = new Point(2, 4);
-            numberCursors[i] = toolkit.createCustomCursor(cursorImage, cursorHotSpot, "c" + i);
+
+    /**
+     * Save puzzles/configurations.
+     * @param puzzle
+     */
+    private void saveToFile(boolean puzzle) {
+        JFileChooser chooser = new JFileChooser(Options.getInstance().defaultFileDir);
+        MyFileFilter[] filters = puzzleFileFilters;
+        if (!puzzle) {
+            filters = configFileFilters;
+        }
+        for (int i = 0; i < filters.length; i++) {
+            chooser.addChoosableFileFilter(filters[i]);
+        }
+        chooser.setAcceptAllFileFilterUsed(false);
+        int returnVal = chooser.showSaveDialog(this);
+        if (returnVal == JFileChooser.APPROVE_OPTION) {
+            try {
+                String path = chooser.getSelectedFile().getPath();
+                path = path.substring(0, path.lastIndexOf(File.separatorChar));
+                Options.getInstance().defaultFileDir = path;
+                MyFileFilter actFilter = (MyFileFilter) chooser.getFileFilter();
+                path = chooser.getSelectedFile().getAbsolutePath();
+                if (!puzzle) {
+                    // Options
+                    if (!path.endsWith("." + configFileExt)) {
+                        path += "." + configFileExt;
+                    }
+                    //Options.getInstance().writeOptions(path);
+                    writeOptionsWithWindowState(path);
+                } else {
+                    // Sudoku und Lösung
+                    if (!path.endsWith("." + solutionFileExt)) {
+                        path += "." + solutionFileExt;
+                    }
+                    ZipOutputStream zOut = new ZipOutputStream(new FileOutputStream(path));
+                    zOut.putNextEntry(new ZipEntry("SudokuData"));
+                    XMLEncoder out = new XMLEncoder(zOut);
+//                    out.writeObject(sudokuPanel.getSudoku());
+//                    out.writeObject(sudokuPanel.getSolvedSudoku());
+//                    SudokuSolver s = SudokuSolver.getInstance();
+//                    out.writeObject(s.getAnzSteps());
+//                    for (int i = 0; i < s.getSteps().size(); i++) {
+//                        out.writeObject(s.getSteps().get(i));
+//                    }
+                    out.writeObject(sudokuPanel.getSudoku());
+                    out.writeObject(sudokuPanel.getSolvedSudoku());
+                    out.writeObject(SudokuSolver.getInstance().getAnzSteps());
+                    out.writeObject(SudokuSolver.getInstance().getSteps());
+                    out.writeObject(solutionPanel.getTitels());
+                    out.writeObject(solutionPanel.getTabSteps());
+                    out.writeObject(savePoints);
+                    out.close();
+                    zOut.flush();
+                    zOut.close();
+//                } else {
+//                    formatter.applyPattern(java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.invalid_filename"));
+//                    String msg = formatter.format(new Object[]{path});
+//                    JOptionPane.showMessageDialog(this, msg,
+//                            java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.error"), JOptionPane.ERROR_MESSAGE);
+                }
+            } catch (Exception ex2) {
+                JOptionPane.showMessageDialog(this, ex2.toString(), java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.error"), JOptionPane.ERROR_MESSAGE);
+            }
         }
     }
-    
+
+    /**
+     * Loads puzzles and/or configurations from files. loading either type
+     * resets the mode to "playing".
+     * @param puzzle
+     */
+    private void loadFromFile(boolean puzzle) {
+        JFileChooser chooser = new JFileChooser(Options.getInstance().defaultFileDir);
+        MyFileFilter[] filters = puzzleFileFilters;
+        if (!puzzle) {
+            filters = configFileFilters;
+        }
+        for (int i = 0; i < filters.length; i++) {
+            chooser.addChoosableFileFilter(filters[i]);
+        }
+        chooser.setAcceptAllFileFilterUsed(false);
+        int returnVal = chooser.showOpenDialog(this);
+        if (returnVal == JFileChooser.APPROVE_OPTION) {
+            String path = chooser.getSelectedFile().getPath();
+            path = path.substring(0, path.lastIndexOf(File.separatorChar));
+            Options.getInstance().defaultFileDir = path;
+            path = chooser.getSelectedFile().getAbsolutePath();
+            loadFromFile(path);
+        }
+    }
+
+    /**
+     * Loads a file
+     * @param path
+     */
+    private void loadFromFile(String path) {
+        try {
+            if (path.endsWith("." + configFileExt)) {
+                // Options
+                Options.readOptions(path);
+            } else if (path.endsWith("." + solutionFileExt)) {
+                // Puzzle
+                ZipInputStream zIn = new ZipInputStream(new FileInputStream(path));
+                zIn.getNextEntry();
+                XMLDecoder in = new XMLDecoder(zIn);
+                GuiState state = new GuiState(sudokuPanel, sudokuPanel.getSolver(), solutionPanel);
+                state.sudoku = (Sudoku) in.readObject();
+                state.solvedSudoku = (Sudoku) in.readObject();
+                state.anzSteps = (int[]) in.readObject();
+                state.steps = (List<SolutionStep>) in.readObject();
+                state.titels = (List<String>) in.readObject();
+                state.tabSteps = (List<List<SolutionStep>>) in.readObject();
+                try {
+                    savePoints = (List<GuiState>) in.readObject();
+                    for (int i = 0; i < savePoints.size(); i++) {
+                        // internal fields must be set!
+                        savePoints.get(i).initialize(sudokuPanel, SudokuSolver.getInstance(), solutionPanel);
+                    }
+                } catch (Exception ex) {
+                    // when an older puzzle file is loaded, savepoints are not in the file
+                    clearSavePoints();
+                }
+                in.close();
+                setState(state);
+                setMode(GameMode.PLAYING);
+            } else {
+                formatter.applyPattern(java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.invalid_filename"));
+                String msg = formatter.format(new Object[]{path});
+                JOptionPane.showMessageDialog(this, msg,
+                        java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.error"), JOptionPane.ERROR_MESSAGE);
+            }
+        } catch (Exception ex2) {
+            JOptionPane.showMessageDialog(this, ex2.toString(), java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.error"), JOptionPane.ERROR_MESSAGE);
+            //ex2.printStackTrace();
+            }
+    }
+
     /**
      * @param args the command line arguments
      */
@@ -2049,16 +2578,17 @@ private void resetSpielMenuItemActionPerformed(java.awt.event.ActionEvent evt) {
             Logger.getLogger(MainFrame.class.getName()).log(Level.SEVERE, "Error setting LaF", ex);
         }
         java.awt.EventQueue.invokeLater(new Runnable() {
+
             @Override
             public void run() {
-                new MainFrame().setVisible(true);
+                new MainFrame(null).setVisible(true);
             }
         });
     }
-    
+
     private void setLevelFromMenu() {
         int selected = 0;
-        for (int i = 1; i < levelMenuItems.length; i++) {
+        for (int i = 0; i < levelMenuItems.length; i++) {
             if (levelMenuItems[i].isSelected()) {
                 selected = i + 1;
                 break;
@@ -2068,23 +2598,23 @@ private void resetSpielMenuItemActionPerformed(java.awt.event.ActionEvent evt) {
         check();
         fixFocus();
     }
-    
+
     public void stepAusführen() {
         hinweisAusführenButtonActionPerformed(null);
     }
-    
+
     public void fixFocus() {
         sudokuPanel.requestFocusInWindow();
     }
-    
+
     public SudokuPanel getSudokuPanel() {
         return sudokuPanel;
     }
-    
+
     public SolutionPanel getSolutionPanel() {
         return solutionPanel;
     }
-    
+
     public void check() {
         if (sudokuPanel != null) {
             undoMenuItem.setEnabled(sudokuPanel.undoPossible());
@@ -2105,9 +2635,7 @@ private void resetSpielMenuItemActionPerformed(java.awt.event.ActionEvent evt) {
                     }
                 }
             }
-            if (sudokuPanel.getShowHintCellValue() != 0) {
-                redGreenToggleButton.setSelected(sudokuPanel.isInvalidCells());
-            }
+            redGreenToggleButton.setSelected(sudokuPanel.isInvalidCells());
             Sudoku sudoku = sudokuPanel.getSudoku();
             if (sudoku != null) {
                 DifficultyLevel tmpLevel = sudoku.getLevel();
@@ -2115,11 +2643,49 @@ private void resetSpielMenuItemActionPerformed(java.awt.event.ActionEvent evt) {
                     statusLabelLevel.setText(StepConfig.getLevelName(tmpLevel) + " (" + sudoku.getScore() + ")");
                 }
             }
+            if (sudokuPanel.isColorCells()) {
+                colorCellsMenuItem.setSelected(true);
+                statusLabelCellCandidate.setText(ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.statusLabelCellCandidate.text.cell"));
+            } else {
+                colorCandidatesMenuItem.setSelected(true);
+                statusLabelCellCandidate.setText(ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.statusLabelCellCandidate.text.candidate"));
+            }
+            fixFocus();
         }
-        if (levelMenuItems[level.getOrdinal() - 1] != null) {
-            levelMenuItems[level.getOrdinal() - 1].setSelected(true);
-            levelComboBox.setSelectedIndex(level.getOrdinal() - 1);
+        // adjust mode menus and labels
+        if (level != null) {
+            if (mode != GameMode.PLAYING) {
+                // we cant have a level that is easier than the easiest
+                // selected training/practising puzzle -> we could never
+                // find a new sudoku for that
+                int tmpLevel = level.getOrdinal();
+                for (StepConfig act : Options.getInstance().orgSolverSteps) {
+                    if (act.isEnabledTraining() && act.getLevel() > tmpLevel) {
+                        tmpLevel = act.getLevel();
+                    }
+                }
+                if (tmpLevel != level.getOrdinal()) {
+                    level = Options.getInstance().getDifficultyLevel(tmpLevel);
+                }
+            }
+            if (levelMenuItems[level.getOrdinal() - 1] != null) {
+                levelMenuItems[level.getOrdinal() - 1].setSelected(true);
+                levelComboBox.setSelectedIndex(level.getOrdinal() - 1);
+            }
+            if (modeMenuItems != null && modeMenuItems[mode.ordinal()] != null) {
+                modeMenuItems[mode.ordinal()].setSelected(true);
+                String labelStr = modeMenuItems[mode.ordinal()].getText();
+                if (labelStr.endsWith("...")) {
+                    labelStr = labelStr.substring(0, labelStr.length() - 3);
+                }
+                if (mode != GameMode.PLAYING) {
+                    labelStr += " (" + Options.getInstance().getTrainingStepsString(true) + ")";
+                }
+                statusLabelModus.setText(labelStr);
+            }
         }
+        // repaint StatusPanels to adjust colors
+        statusLinePanel.invalidate();
     }
 
     private boolean isStringFlavorInClipboard() {
@@ -2129,7 +2695,7 @@ private void resetSpielMenuItemActionPerformed(java.awt.event.ActionEvent evt) {
         }
         return false;
     }
-    
+
     private void adjustPasteMenuItem() {
         if (isStringFlavorInClipboard()) {
             pasteMenuItem.setEnabled(true);
@@ -2137,47 +2703,56 @@ private void resetSpielMenuItemActionPerformed(java.awt.event.ActionEvent evt) {
             pasteMenuItem.setEnabled(false);
         }
     }
-    
+
     @Override
     public void flavorsChanged(FlavorEvent e) {
         adjustPasteMenuItem();
     }
-    
+
     private Image getIcon() {
-        URL url = getClass().getResource("/img/hodoku01.png");
-        //URL url = getClass().getResource("/img/hodoku_16.png");
+        URL url = getClass().getResource("/img/hodoku02-32.png");
+        //URL url = getClass().getResource("/img/hodoku02-16.png");
         return getToolkit().getImage(url);
     }
-    
+
+    public List<GuiState> getSavePoints() {
+        return savePoints;
+    }
+
     class MyFileFilter extends FileFilter {
+
         private int type;
-        
+
         MyFileFilter(int type) {
             this.type = type;
         }
-        
+
         @Override
         public boolean accept(File f) {
-            if (f.isDirectory()) return true;
+            if (f.isDirectory()) {
+                return true;
+            }
             String[] parts = f.getName().split("\\.");
             if (parts.length > 1) {
                 String ext = parts[parts.length - 1];
                 switch (type) {
                     case 0:
                         // Configuration Files
-                        if (ext.equalsIgnoreCase(java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.config_file_ext")))
+                        if (ext.equalsIgnoreCase(java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.config_file_ext"))) {
                             return true;
+                        }
                     case 1:
                         // Puzzles with Solutions
-                        if (ext.equalsIgnoreCase(java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.solution_file_ext")))
+                        if (ext.equalsIgnoreCase(java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.solution_file_ext"))) {
                             return true;
+                        }
                     default:
                         return false;
                 }
             }
             return false;
         }
-        
+
         @Override
         public String getDescription() {
             switch (type) {
@@ -2190,9 +2765,9 @@ private void resetSpielMenuItemActionPerformed(java.awt.event.ActionEvent evt) {
             }
         }
     }
-    
-    
+
     class MyCaretListener implements CaretListener {
+
         private boolean inUpdate = false;
 
         @Override
@@ -2245,22 +2820,26 @@ private void resetSpielMenuItemActionPerformed(java.awt.event.ActionEvent evt) {
                 inUpdate = false;
             }
         }
-        
     }
-    
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JMenuItem aboutMenuItem;
     private javax.swing.JRadioButtonMenuItem allStepsMenuItem;
     private javax.swing.JMenuItem alleHiddenSinglesSetzenMenuItem;
     private javax.swing.JMenu ansichtMenu;
+    private javax.swing.JMenuItem backdoorSearchMenuItem;
     private javax.swing.JMenu bearbeitenMenu;
     private javax.swing.JMenuItem beendenMenuItem;
+    private javax.swing.JRadioButtonMenuItem cellZoomMenuItem;
+    private javax.swing.ButtonGroup colorButtonGroup;
+    private javax.swing.JRadioButtonMenuItem colorCandidatesMenuItem;
+    private javax.swing.JRadioButtonMenuItem colorCellsMenuItem;
     private javax.swing.JMenuItem configMenuItem;
     private javax.swing.JMenuItem copyCluesMenuItem;
     private javax.swing.JMenuItem copyFilledMenuItem;
     private javax.swing.JMenuItem copyLibraryMenuItem;
     private javax.swing.JMenuItem copyPmGridMenuItem;
     private javax.swing.JMenuItem copyPmGridWithStepMenuItem;
+    private javax.swing.JMenuItem createSavePointMenuItem;
     private javax.swing.JMenu dateiMenu;
     private javax.swing.JMenuItem druckenMenuItem;
     private javax.swing.JToggleButton f1ToggleButton;
@@ -2278,7 +2857,9 @@ private void resetSpielMenuItemActionPerformed(java.awt.event.ActionEvent evt) {
     private javax.swing.JButton hinweisAusführenButton;
     private javax.swing.JButton hinweisKonfigurierenButton;
     private javax.swing.JTextArea hinweisTextArea;
+    private javax.swing.JMenuItem historyMenuItem;
     private javax.swing.JMenuBar jMenuBar1;
+    private javax.swing.JPanel jPanel1;
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JSeparator jSeparator1;
     private javax.swing.JSeparator jSeparator10;
@@ -2290,15 +2871,20 @@ private void resetSpielMenuItemActionPerformed(java.awt.event.ActionEvent evt) {
     private javax.swing.JSeparator jSeparator16;
     private javax.swing.JSeparator jSeparator17;
     private javax.swing.JSeparator jSeparator18;
+    private javax.swing.JSeparator jSeparator19;
     private javax.swing.JSeparator jSeparator2;
+    private javax.swing.JSeparator jSeparator20;
+    private javax.swing.JSeparator jSeparator21;
     private javax.swing.JSeparator jSeparator3;
     private javax.swing.JSeparator jSeparator4;
     private javax.swing.JSeparator jSeparator5;
     private javax.swing.JSeparator jSeparator6;
     private javax.swing.JSeparator jSeparator7;
+    private javax.swing.JSeparator jSeparator8;
     private javax.swing.JSeparator jSeparator9;
     private javax.swing.JToolBar jToolBar1;
     private javax.swing.JMenuItem keyMenuItem;
+    private javax.swing.JRadioButtonMenuItem learningMenuItem;
     private javax.swing.ButtonGroup levelButtonGroup;
     private javax.swing.JComboBox levelComboBox;
     private javax.swing.JRadioButtonMenuItem levelExtremMenuItem;
@@ -2307,50 +2893,59 @@ private void resetSpielMenuItemActionPerformed(java.awt.event.ActionEvent evt) {
     private javax.swing.JMenu levelMenu;
     private javax.swing.JRadioButtonMenuItem levelMittelMenuItem;
     private javax.swing.JRadioButtonMenuItem levelSchwerMenuItem;
-    private javax.swing.JMenuItem loadMenuItem;
+    private javax.swing.JMenuItem loadConfigMenuItem;
+    private javax.swing.JMenuItem loadPuzzleMenuItem;
     private javax.swing.JMenuItem lösungsSchrittMenuItem;
     private javax.swing.JMenuItem mediumHintMenuItem;
+    private javax.swing.ButtonGroup modeButtonGroup;
+    private javax.swing.JMenu modeMenu;
     private javax.swing.JMenuItem neuMenuItem;
     private javax.swing.JButton neuerHinweisButton;
     private javax.swing.JButton neuesSpielToolButton;
     private javax.swing.JMenu optionenMenu;
     private javax.swing.JSplitPane outerSplitPane;
     private javax.swing.JMenuItem pasteMenuItem;
+    private javax.swing.JRadioButtonMenuItem playingMenuItem;
+    private javax.swing.JRadioButtonMenuItem practisingMenuItem;
+    private javax.swing.JMenuItem projectHomePageMenuItem;
     private javax.swing.JToggleButton redGreenToggleButton;
     private javax.swing.JMenuItem redoMenuItem;
     private javax.swing.JButton redoToolButton;
     private javax.swing.JMenuItem resetSpielMenuItem;
     private javax.swing.JMenuItem resetViewMenuItem;
     private javax.swing.JMenuItem restartSpielMenuItem;
+    private javax.swing.JMenuItem restoreSavePointMenuItem;
     private javax.swing.JMenu rätselMenu;
-    private javax.swing.JMenuItem saveAsMenuItem;
+    private javax.swing.JMenuItem saveConfigAsMenuItem;
+    private javax.swing.JMenuItem savePuzzleAsMenuItem;
     private javax.swing.JMenuItem seiteEinrichtenMenuItem;
     private javax.swing.JCheckBoxMenuItem showCandidatesMenuItem;
     private javax.swing.JCheckBoxMenuItem showDeviationsMenuItem;
     private javax.swing.JCheckBoxMenuItem showWrongValuesMenuItem;
     private javax.swing.JRadioButtonMenuItem solutionMenuItem;
+    private javax.swing.JMenuItem solvingGuideMenuItem;
     private javax.swing.JMenuItem speichernAlsBildMenuItem;
     private javax.swing.JMenuItem spielEditierenMenuItem;
     private javax.swing.JMenuItem spielEingebenMenuItem;
     private javax.swing.JMenuItem spielSpielenMenuItem;
-    private javax.swing.JLabel statusLabel1;
-    private javax.swing.JLabel statusLabel2;
-    private javax.swing.JLabel statusLabel3;
-    private javax.swing.JLabel statusLabel4;
-    private javax.swing.JLabel statusLabel5;
-    private javax.swing.JLabel statusLabel6;
-    private javax.swing.JLabel statusLabel7;
-    private javax.swing.JLabel statusLabel8;
-    private javax.swing.JLabel statusLabel9;
-    private javax.swing.JLabel statusLabelAus;
+    private javax.swing.JLabel statusLabelCellCandidate;
     private javax.swing.JLabel statusLabelLevel;
+    private javax.swing.JLabel statusLabelModus;
     private javax.swing.JPanel statusLinePanel;
+    private javax.swing.JPanel statusPanelColor1;
+    private javax.swing.JPanel statusPanelColor2;
+    private javax.swing.JPanel statusPanelColor3;
+    private javax.swing.JPanel statusPanelColor4;
+    private javax.swing.JPanel statusPanelColor5;
+    private javax.swing.JPanel statusPanelColorClear;
+    private javax.swing.JPanel statusPanelColorReset;
+    private javax.swing.JPanel statusPanelColorResult;
     private javax.swing.JRadioButtonMenuItem sudokuOnlyMenuItem;
     private javax.swing.JRadioButtonMenuItem summaryMenuItem;
     private javax.swing.JMenuItem undoMenuItem;
     private javax.swing.JButton undoToolButton;
+    private javax.swing.JMenuItem userManualMenuItem;
     private javax.swing.JMenuItem vageHintMenuItem;
     private javax.swing.ButtonGroup viewButtonGroup;
     // End of variables declaration//GEN-END:variables
-
 }

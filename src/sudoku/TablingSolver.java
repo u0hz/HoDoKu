@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008/09  Bernhard Hobiger
+ * Copyright (C) 2008/09/10  Bernhard Hobiger
  *
  * This file is part of HoDoKu.
  *
@@ -1283,7 +1283,8 @@ public class TablingSolver extends AbstractSolver {
             // ACHTUNG: Erste Zelle mit berücksichtigen!
             for (int i = 0; i <= nlChainIndex; i++) {
                 if ((i == 0 && (firstLinkStrong && lastLinkStrong)) ||
-                        (i > 0 && (Chain.isSStrong(nlChain[i]) && i <= nlChainIndex - 2 && Chain.getSCellIndex(nlChain[i - 1]) != Chain.getSCellIndex(nlChain[i])))) {
+                        (i > 0 && (Chain.isSStrong(nlChain[i]) && i <= nlChainIndex - 2 &&
+                        Chain.getSCellIndex(nlChain[i - 1]) != Chain.getSCellIndex(nlChain[i])))) {
                     // mögliche Zelle mit zwei strong links: nächster Link muss weak sein auf selbe Zelle, danach strong auf nächste Zelle
                     if (i == 0 || (!Chain.isSStrong(nlChain[i + 1]) && Chain.getSCellIndex(nlChain[i]) == Chain.getSCellIndex(nlChain[i + 1]) &&
                             Chain.isSStrong(nlChain[i + 2]) && Chain.getSCellIndex(nlChain[i + 1]) != Chain.getSCellIndex(nlChain[i + 2]))) {
@@ -1317,6 +1318,10 @@ public class TablingSolver extends AbstractSolver {
                     //          same house that dont belong to the node or the ALS can be eliminated
                     //          plus: all ALS candidates that are not entry/exit candidates eliminate all
                     //          candidates they can see
+                    // 20100218: If an ALS node forces a digit (ALS left via more than one candidate -> all
+                    //          candidates except one are eliminated in another cell) the leaving weak link is
+                    //          missing (next link is strong to forced cell); in that case all other candidates
+                    //          in the forced cell are exit candidates and may not be eliminated
 //                    if (Chain.getSNodeType(nlChain[i]) != Chain.ALS_NODE && Chain.getSNodeType(nlChain[i - 1]) != Chain.ALS_NODE) {
 //                        tmpSet.set(Sudoku.buddies[Chain.getSCellIndex(nlChain[i - 1])]);
 //                        // check for group nodes
@@ -1349,21 +1354,37 @@ public class TablingSolver extends AbstractSolver {
                     tmpSet.and(tmpSet1);
                     tmpSet.andNot(tmpSetC);
                     tmpSet.remove(startIndex);
-                    tmpSet.and(sudoku.getAllowedPositions()[Chain.getSCandidate(nlChain[i])]);
+//                    tmpSet.and(sudoku.getAllowedPositions()[Chain.getSCandidate(nlChain[i])]);
+                    tmpSet.and(sudoku.getAllowedPositions()[actCand]);
                     if (!tmpSet.isEmpty()) {
                         for (int j = 0; j < tmpSet.size(); j++) {
                             globalStep.addCandidateToDelete(tmpSet.get(j), Chain.getSCandidate(nlChain[i]));
                         }
                     }
                     if (Chain.getSNodeType(nlChain[i]) == Chain.ALS_NODE) {
-                        int nextCand = -1; // exit candidate if applicable
-                        if (i < nlChainIndex) {
-                            nextCand = Chain.getSCandidate(nlChain[i + 1]);
+                        // there could be more than one exit candidate (the node following an ALS node
+                        // must be weak; if it is strong, the weak link contains more than one
+                        // candidate and was omitted
+                        boolean isForceExit = i < nlChainIndex && Chain.isSStrong(nlChain[i + 1]);
+                        int nextCellIndex = Chain.getSCellIndex(nlChain[i + 1]);
+                        tmpSet2.clear();
+                        if (isForceExit) {
+                            // all candidates in the next cell (except the one providing the strong link)
+                            // are exit candidates
+                            int forceCand = Chain.getSCandidate(nlChain[i + 1]);
+                            SudokuCell nextCell = sudoku.getCell(nextCellIndex);
+                            nextCell.getCandidateSet(tmpSet2);
+                            tmpSet2.remove(forceCand);
+                        } else {
+                            if (i < nlChainIndex) {
+                                tmpSet2.add(Chain.getSCandidate(nlChain[i + 1]));
+                            }
                         }
                         Als als = alses.get(Chain.getSAlsIndex(nlChain[i]));
                         for (int j = 1; j < als.buddiesPerCandidat.length; j++) {
-                            if (j == actCand || j == nextCand || als.buddiesPerCandidat[j] == null) {
+                            if (j == actCand || tmpSet2.contains(j) || als.buddiesPerCandidat[j] == null) {
                                 // RC -> handled from code above
+                                // or exit candidate (handled by the next link or below)
                                 // or candidate not in ALS
                                 continue;
                             }
@@ -1374,6 +1395,25 @@ public class TablingSolver extends AbstractSolver {
                             if (!tmpSet.isEmpty()) {
                                 for (int k = 0; k < tmpSet.size(); k++) {
                                     globalStep.addCandidateToDelete(tmpSet.get(k), j);
+                                }
+                            }
+                        }
+                        // special case forced next cell: exit candidates have to be handled here
+                        if (isForceExit) {
+                            // for all exit candidates: eliminate everything that sees all instances
+                            // of that cand in the als and in the next cell
+                            tmpSet1.set(Sudoku.buddies[nextCellIndex]);
+                            for (int j = 0; j < tmpSet2.size(); j++) {
+                                int actExitCand = tmpSet2.get(j);
+                                tmpSet.set(als.buddiesPerCandidat[actExitCand]);
+                                tmpSet.and(tmpSet1);
+                                //tmpSet.andNot(tmpSetC);
+                                //tmpSet.remove(startIndex);
+                                tmpSet.and(sudoku.getAllowedPositions()[actExitCand]);
+                                if (!tmpSet.isEmpty()) {
+                                    for (int k = 0; k < tmpSet.size(); k++) {
+                                        globalStep.addCandidateToDelete(tmpSet.get(k), actExitCand);
+                                    }
                                 }
                             }
                         }
@@ -2693,6 +2733,10 @@ public class TablingSolver extends AbstractSolver {
         //sudoku.setSudoku(":0711:5:4+8..+12.391+953..28......+9+4...+1.4..9.886+4.+9+1....79...1+4..+5123.+8.4..+89........1.8...:248 269 369:557 558 559 564 565 566:");
         // Continuous Nice Loop 2- r4c4 =2= r5c6 -2- ALS:r156c7(2|78|4) -4- ALS:r3c49(4|7|2) -2 => r2c4 <> 2, r2c789<>4, r1c9<> 4, r3c8<>4, r3c128<>7, r289c7<>7, r28c7<>8
         sudoku.setSudoku(":0000:x:9...6..2............1.893.......65..41.8...96..24.......352.1..1.........8..1...5:316 716 221 521 621 721 325 725 326 726 741 344 744 944 345 348 748 848 349 749 849 361 861 362 365 366 384 784 985 394 794::");
+        // Wrong elminations in grouped continuous nice loop (issue 2795464)
+        // 1/2/3/4/6/7/9 3= r2c4 =5= r2c9 -5- ALS:r13c7,r3c9 =7= r6c7 -7- ALS:r4c3,r56c2 -3- r4c4 =3= r2c4 =5 => r2c28,r3456c1,r46c7<>1, r12c9<>2, r4c18<>3, r456c1<>4, r2c4<>6, r6c19<>7, r1c9,r468c7<>9
+        // r1c9<>9, r6c7<>9 are invalid
+        sudoku.setSudoku(":0709:1234679:5.81...6.....9.4...39.8..7..6...5.....27.95....58...2..8..5134..51.3.....9...8651:221 224 231 743 445 349 666 793:122 128 131 141 147 151 161 167 219 229 341 348 441 451 461 624 761 769 919 947 967 987::11");
         ts.setSudoku(sudoku);
         List<SolutionStep> steps = null;
         long ticks = System.currentTimeMillis();

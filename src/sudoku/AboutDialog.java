@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008/09  Bernhard Hobiger
+ * Copyright (C) 2008/09/10  Bernhard Hobiger
  *
  * This file is part of HoDoKu.
  *
@@ -36,7 +36,7 @@ public class AboutDialog extends javax.swing.JDialog {
         super(parent, modal);
         initComponents();
 
-        versionLabel.setText(MainFrame.VERSION);
+        versionLabel.setText(MainFrame.VERSION + " (" + MainFrame.BUILD + ")");
         getRootPane().setDefaultButton(closeButton);
 
         KeyStroke escapeKeyStroke = KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0, false);
@@ -119,7 +119,7 @@ public class AboutDialog extends javax.swing.JDialog {
                 .addComponent(copyleftLabel)
                 .addGap(18, 18, 18)
                 .addComponent(logoLabel)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 56, Short.MAX_VALUE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 41, Short.MAX_VALUE)
                 .addComponent(closeButton)
                 .addContainerGap())
         );

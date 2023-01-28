@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008/09  Bernhard Hobiger
+ * Copyright (C) 2008/09/10  Bernhard Hobiger
  *
  * This file is part of HoDoKu.
  *
@@ -446,7 +446,7 @@ private void krakenFishCandidatesButtonActionPerformed(java.awt.event.ActionEven
 
     public void okPressed() {
         // Alle Werte übernehmen
-        // Caution: steps[] is shared by COnfigSolverPanel and ConfigFindAllStepsPanel
+        // Caution: steps[] is shared by ConfigSolverPanel and ConfigFindAllStepsPanel
         // okPressed() in ConfigSolverPanel has to be called first, here only the values
         // for allStepsEnabled are set
         StepConfig[] orgSteps1 = Options.getInstance().solverSteps;
@@ -604,12 +604,12 @@ private void krakenFishCandidatesButtonActionPerformed(java.awt.event.ActionEven
                 // neue Kategorie
                 act = new CheckNode(steps[i].getCategoryName(), true,
                         steps[i].isAllStepsEnabled() ? CheckNode.FULL : CheckNode.NONE,
-                        null, true, steps[i].getCategory());
+                        null, true, false, false, steps[i].getCategory());
                 root.add(act);
             }
             act.add(new CheckNode(steps[i].getType().getStepName(), false,
                     steps[i].isAllStepsEnabled() ? CheckNode.FULL : CheckNode.NONE,
-                    steps[i], true, null));
+                    steps[i], true, false, false, null));
             if (act.getSelectionState() == CheckNode.FULL && ! steps[i].isAllStepsEnabled()) {
                 act.setSelectionState(CheckNode.HALF);
             }
