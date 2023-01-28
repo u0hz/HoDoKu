@@ -24,7 +24,6 @@ import java.awt.Font;
 import java.awt.Graphics;
 import java.awt.Image;
 import java.awt.image.BufferedImage;
-import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -38,8 +37,6 @@ import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
-import javax.swing.event.DocumentEvent;
-import javax.swing.event.DocumentListener;
 
 /**
  *
@@ -183,6 +180,7 @@ public class ConfigGeneralPanel extends javax.swing.JPanel {
         deleteCursorAfterCheckBox = new javax.swing.JCheckBox();
         deleteCursorAfterMsTextField = new javax.swing.JTextField();
         jLabel1 = new javax.swing.JLabel();
+        toggleFilterAndOrCheckBox = new javax.swing.JCheckBox();
 
         java.util.ResourceBundle bundle = java.util.ResourceBundle.getBundle("intl/ConfigGeneralPanel"); // NOI18N
         jPanel1.setBorder(javax.swing.BorderFactory.createTitledBorder(bundle.getString("ConfigGeneralPanel.jPanel1.border.title"))); // NOI18N
@@ -679,6 +677,9 @@ public class ConfigGeneralPanel extends javax.swing.JPanel {
 
         jLabel1.setText(bundle.getString("ConfigGeneralPanel.jLabel1.text")); // NOI18N
 
+        toggleFilterAndOrCheckBox.setMnemonic(java.util.ResourceBundle.getBundle("intl/ConfigGeneralPanel").getString("ConfigGeneralPanel.toggleFilterAndOrCheckBox.mnemonic").charAt(0));
+        toggleFilterAndOrCheckBox.setText(bundle.getString("ConfigGeneralPanel.toggleFilterAndOrCheckBox.text")); // NOI18N
+
         javax.swing.GroupLayout jPanel4Layout = new javax.swing.GroupLayout(jPanel4);
         jPanel4.setLayout(jPanel4Layout);
         jPanel4Layout.setHorizontalGroup(
@@ -690,13 +691,14 @@ public class ConfigGeneralPanel extends javax.swing.JPanel {
                     .addComponent(colorValuesCheckBox)
                     .addComponent(onlySmallCursorsCheckBox)
                     .addComponent(shiftKeyCheckBox)
+                    .addComponent(toggleFilterAndOrCheckBox)
                     .addComponent(deleteCursorAfterCheckBox)
                     .addGroup(jPanel4Layout.createSequentialGroup()
                         .addGap(21, 21, 21)
                         .addComponent(deleteCursorAfterMsTextField, javax.swing.GroupLayout.PREFERRED_SIZE, 51, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(jLabel1)))
-                .addContainerGap(30, Short.MAX_VALUE))
+                .addContainerGap(24, Short.MAX_VALUE))
         );
         jPanel4Layout.setVerticalGroup(
             jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -710,12 +712,14 @@ public class ConfigGeneralPanel extends javax.swing.JPanel {
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(showSudokuSolvedCheckBox)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(toggleFilterAndOrCheckBox)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(deleteCursorAfterCheckBox)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(deleteCursorAfterMsTextField, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(jLabel1))
-                .addContainerGap(34, Short.MAX_VALUE))
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(this);
@@ -882,6 +886,7 @@ public class ConfigGeneralPanel extends javax.swing.JPanel {
             number = "0";
         }
         Options.getInstance().setDeleteCursorDisplayLength(Integer.parseInt(number));
+        Options.getInstance().setUseOrInsteadOfAndForFilter(toggleFilterAndOrCheckBox.isSelected());
     }
     
     private void initAll(boolean setDefault) {
@@ -911,6 +916,7 @@ public class ConfigGeneralPanel extends javax.swing.JPanel {
             showSudokuSolvedCheckBox.setSelected(Options.SHOW_SUDOKU_SOLVED);
             deleteCursorAfterCheckBox.setSelected(Options.DELETE_CURSOR_DISPLAY);
             deleteCursorAfterMsTextField.setText(String.valueOf(Options.DELETE_CURSOR_DISPLAY_LENGTH));
+            toggleFilterAndOrCheckBox.setSelected(Options.USE_OR_INSTEAD_OF_AND_FOR_FILTER);
         } else {
             levels = Options.getInstance().copyDifficultyLevels(Options.getInstance().getDifficultyLevels());
             
@@ -937,6 +943,7 @@ public class ConfigGeneralPanel extends javax.swing.JPanel {
             showSudokuSolvedCheckBox.setSelected(Options.getInstance().isShowSudokuSolved());
             deleteCursorAfterCheckBox.setSelected(Options.getInstance().isDeleteCursorDisplay());
             deleteCursorAfterMsTextField.setText(String.valueOf(Options.getInstance().getDeleteCursorDisplayLength()));
+            toggleFilterAndOrCheckBox.setSelected(Options.getInstance().isUseOrInsteadOfAndForFilter());
         }
         
         initButtons();
@@ -1136,6 +1143,7 @@ public class ConfigGeneralPanel extends javax.swing.JPanel {
     private javax.swing.JCheckBox showDeviationsCheckBox;
     private javax.swing.JCheckBox showSudokuSolvedCheckBox;
     private javax.swing.JCheckBox showWrongValuesCheckBox;
+    private javax.swing.JCheckBox toggleFilterAndOrCheckBox;
     private javax.swing.JButton unfairBGButton;
     private javax.swing.JButton unfairFGButton;
     private javax.swing.JLabel unfairLabel;

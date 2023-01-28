@@ -1872,10 +1872,22 @@ public class SolutionStep implements Comparable<SolutionStep>, Cloneable {
      * 20081013: Problems with AllStepsPanel, so new try:
      *    two steps cannot be equal, if they have not the same SolutionType
      *    Exception: both steps are fish
+     * 20120112: All steps handled specially in compareTo() are
+     *    to be treated as equivalent!
      */
     public boolean isEquivalent(SolutionStep s) {
-        if (getType() != s.getType() && (!SolutionType.isFish(getType()) ||
-                !SolutionType.isFish(s.getType()))) {
+        // Special steps first:
+//        if (getType() != s.getType() && (!SolutionType.isFish(getType()) ||
+//                !SolutionType.isFish(s.getType()))) {
+//            return false;
+//        }
+        if (type.isFish() && s.getType().isFish()) {
+            return true;
+        }
+        if (type.isKrakenFish() && s.getType().isKrakenFish()) {
+            return true;
+        }
+        if (getType() != s.getType()) {
             return false;
         }
 
@@ -1997,18 +2009,22 @@ public class SolutionStep implements Comparable<SolutionStep>, Cloneable {
             if (!isEqualInteger(values, o.values)) {
                 sum1 = getSumme(values);
                 sum2 = getSumme(o.values);
-                return sum1 == sum2 ? 1 : sum1 - sum2;
+                //return sum1 == sum2 ? 1 : sum1 - sum2;
+                return sum1 - sum2;
             }
             return 0;
         }
 
         // kraken fish: sort for (fish type, chain length)
+//        System.out.println("c: " + getType()+ "/"+ getSubType()+" - " + o.getType() + "/" + o.getSubType());
         if (type.isKrakenFish() && o.getType().isKrakenFish()) {
             //if (type == SolutionType.KRAKEN_FISH && o.getType() == SolutionType.KRAKEN_FISH) {
             int ret = subType.compare(o.getSubType());
+//            System.out.println("ck1: " + ret);
             if (ret != 0) {
                 return ret;
             }
+//            System.out.println("ck2: " + compareChainLengths(o));
             return compareChainLengths(o);
         }
 
@@ -2025,7 +2041,8 @@ public class SolutionStep implements Comparable<SolutionStep>, Cloneable {
         if (!isEqualInteger(values, o.values)) {
             sum1 = getSumme(values);
             sum2 = getSumme(o.values);
-            return sum1 == sum2 ? 1 : sum1 - sum2;
+//            return sum1 == sum2 ? 1 : sum1 - sum2;
+            return sum1 - sum2;
         }
 
         // Neuer Versuch: Nach Kandidaten, Fins und Typ
@@ -2038,7 +2055,8 @@ public class SolutionStep implements Comparable<SolutionStep>, Cloneable {
             // dann nach Indexsumme (wieder aufsteigend)
             sum1 = getSumme(indices);
             sum2 = getSumme(o.indices);
-            return sum1 == sum2 ? 1 : sum2 - sum1;
+//            return sum1 == sum2 ? 1 : sum2 - sum1;
+            return sum2 - sum1;
         }
 
         // Kandidaten sind gleich: nach Fins (je weniger desto besser)
@@ -2050,7 +2068,8 @@ public class SolutionStep implements Comparable<SolutionStep>, Cloneable {
             // gleich Anzahl Fins -> nach Indexsumme
             sum1 = getIndexSumme(fins);
             sum2 = getIndexSumme(o.fins);
-            return sum1 == sum2 ? 1 : sum2 - sum1;
+//            return sum1 == sum2 ? 1 : sum2 - sum1;
+            return sum2 - sum1;
         }
 
         // zuletzt nach Typ
@@ -2080,6 +2099,10 @@ public class SolutionStep implements Comparable<SolutionStep>, Cloneable {
         return true;
     }
 
+    public boolean isEqualCandidate(SolutionStep s) {
+        return isEqualCandidate(candidatesToDelete, s.getCandidatesToDelete());
+    }
+    
     private boolean isEqualCandidate(List<Candidate> l1, List<Candidate> l2) {
         if (l1.size() != l2.size()) {
             return false;

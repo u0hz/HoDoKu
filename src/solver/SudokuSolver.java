@@ -26,6 +26,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import sudoku.ClipboardMode;
 import sudoku.DifficultyLevel;
 import sudoku.DifficultyType;
 import sudoku.FindAllStepsProgressDialog;
@@ -114,12 +115,14 @@ public class SudokuSolver {
     public boolean solveSinglesOnly(Sudoku2 newSudoku) {
         Sudoku2 tmpSudoku = sudoku;
         List<SolutionStep> oldList = steps;
-        sudoku = newSudoku;
+        //sudoku = newSudoku;
+        setSudoku(newSudoku);
         steps = tmpSteps;
         SudokuUtil.clearStepListWithNullify(steps);
         boolean solved = solve(Options.getInstance().getDifficultyLevel(DifficultyType.EXTREME.ordinal()), null, false, null, true);
         steps = oldList;
-        sudoku = tmpSudoku;
+        //sudoku = tmpSudoku;
+        setSudoku(tmpSudoku);
         return solved;
     }
 
@@ -132,14 +135,16 @@ public class SudokuSolver {
     public boolean solveWithSteps(Sudoku2 newSudoku, StepConfig[] stepConfigs) {
         Sudoku2 tmpSudoku = sudoku;
         List<SolutionStep> oldList = steps;
-        sudoku = newSudoku;
+        //sudoku = newSudoku;
+        setSudoku(newSudoku);
         steps = tmpSteps;
         SudokuUtil.clearStepListWithNullify(steps);
 //        boolean solved = solve(Options.getInstance().getDifficultyLevels()[DifficultyType.EXTREME.ordinal()], null, false, null, true);
         boolean solved = solve(Options.getInstance().getDifficultyLevel(DifficultyType.EXTREME.ordinal()),
                     null, false, null, false, stepConfigs, GameMode.PLAYING);
         steps = oldList;
-        sudoku = tmpSudoku;
+        //sudoku = tmpSudoku;
+        setSudoku(tmpSudoku);
         return solved;
     }
 
@@ -436,6 +441,7 @@ public class SudokuSolver {
             return null;
         }
         SolutionStep hint = null;
+        //System.out.println("  sudoku: " + getStepFinder().getSudoku().getSudoku(ClipboardMode.VALUES_ONLY));
 
         for (int i = 0; i < solverSteps.length; i++) {
             if (solverSteps == Options.getInstance().solverStepsProgress) {

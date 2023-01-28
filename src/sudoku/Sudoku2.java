@@ -1430,18 +1430,21 @@ public class Sudoku2 implements Cloneable {
         if (candidates[candidates.length - 1] == true) {
             return getAnzCandidates(index) == 2;
         }
-        for (int i = 1; i < candidates.length - 1; i++) {
-            if (candidates[i] && ! isCandidate(index, i, user)) {
-                return false;
+        if (!Options.getInstance().isUseOrInsteadOfAndForFilter()) {
+            for (int i = 1; i < candidates.length - 1; i++) {
+                if (candidates[i] && !isCandidate(index, i, user)) {
+                    return false;
+                }
             }
+            return true;
+        } else {
+            for (int i = 1; i < candidates.length; i++) {
+                if (candidates[i] && isCandidate(index, i, user)) {
+                    return true;
+                }
+            }
+            return false;
         }
-        return true;
-//        for (int i = 1; i < candidates.length; i++) {
-//            if (candidates[i] && isCandidate(index, i, user)) {
-//                return true;
-//            }
-//        }
-//        return false;
     }
 
     /**

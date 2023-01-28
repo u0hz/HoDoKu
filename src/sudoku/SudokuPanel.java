@@ -85,6 +85,11 @@ import solver.SudokuStepFinder;
  */
 public class SudokuPanel extends javax.swing.JPanel implements Printable {
     // Konstante
+    /** Translation of KeyChars in KeyCodes for laptops that use special key combinations for number */
+    private static final int[] KEY_CODES = new int[] {
+        KeyEvent.VK_0, KeyEvent.VK_1, KeyEvent.VK_2, KeyEvent.VK_3, KeyEvent.VK_4, 
+        KeyEvent.VK_5, KeyEvent.VK_6, KeyEvent.VK_7, KeyEvent.VK_8, KeyEvent.VK_9
+    };
     private static final int DELTA = 5; // Abstand zwischen den Quadraten in Pixel
     private static final int DELTA_RAND = 5; // Abstand zu den R‰ndern
     // Konfigurationseigenschaften
@@ -979,6 +984,12 @@ public class SudokuPanel extends javax.swing.JPanel implements Printable {
 
         // "normale" Tastaturbehandlung
         // bei keyPressed funktioniert getKeyChar() nicht zuverl‰ssig, daher die Zahl selbst ermitteln
+        // 20120111: makes problems on certain laptops where key combinations are
+        // used to produce numbers. New try: If getKeyChar() gives a number, the corresponding key code is set
+        char keyChar = evt.getKeyChar();
+        if (Character.isDigit(keyChar)) {
+            keyCode = KEY_CODES[keyChar - '0'];
+        }
         int number = 0;
         boolean clearSelectedRegion = true;
         switch (keyCode) {
@@ -1206,8 +1217,10 @@ public class SudokuPanel extends javax.swing.JPanel implements Printable {
                         }
                     }
                     changed = true;
-                } else if ((modifiers & KeyEvent.SHIFT_DOWN_MASK) == 0) {
+//                } else if ((modifiers & KeyEvent.SHIFT_DOWN_MASK) == 0) {
+                } else {
                     // only when shift is NOT pressed (if pressed its a menu accelerator)
+                    // 20120115: the accelerators have been removed!
                     if (selectedCells.isEmpty()) {
                         toggleCandidateInCell(aktLine, aktCol, number);
                         changed = true;
@@ -1881,6 +1894,10 @@ public class SudokuPanel extends javax.swing.JPanel implements Printable {
 
                 // Hintergrund zeichnen (ignore allBlack here!)
                 g2.setColor(Options.getInstance().getDefaultCellColor()); // normal ist weiﬂ
+                if (Sudoku2.getBlock(Sudoku2.getIndex(line, col)) % 2 != 0) {
+                    // every other block may have a different background color
+                    g2.setColor(Options.getInstance().getAlternateCellColor());
+                }
 
                 int cellIndex = Sudoku2.getIndex(line, col);
 //                if (line == aktLine && col == aktCol && !isPrint) {

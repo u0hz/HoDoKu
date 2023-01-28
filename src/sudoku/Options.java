@@ -46,7 +46,6 @@ public final class Options {
 
     public static final String FILE_NAME = "hodoku.hcfg";
     private static final ProgressComparator progressComparator = new ProgressComparator();
-
     // Schwierigkeitsstufen
     public static final DifficultyLevel[] DEFAULT_DIFFICULTY_LEVELS = {
         new DifficultyLevel(DifficultyType.INCOMPLETE, 0, java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.incomplete"), Color.BLACK, Color.WHITE),
@@ -287,6 +286,7 @@ public final class Options {
     public static final boolean ALTERNATIVE_MOUSE_MODE = false; // use simpler mouse mode (less clicks required)
     public static final boolean DELETE_CURSOR_DISPLAY = false; // let the cursor disappear after a while
     public static final int DELETE_CURSOR_DISPLAY_LENGTH = 1000; // time in ms
+    public static final boolean USE_OR_INSTEAD_OF_AND_FOR_FILTER = false; // used when filtering more than one candidate
     public static final int DRAW_MODE = 1;
     //public static final int INITIAL_HEIGHT = 728;           // used to store window layout at shutdown
     public static final int INITIAL_HEIGHT = 844;           // used to store window layout at shutdown
@@ -311,6 +311,7 @@ public final class Options {
     private boolean alternativeMouseMode = ALTERNATIVE_MOUSE_MODE;
     private boolean deleteCursorDisplay = DELETE_CURSOR_DISPLAY;
     private int deleteCursorDisplayLength = DELETE_CURSOR_DISPLAY_LENGTH;
+    private boolean useOrInsteadOfAndForFilter = USE_OR_INSTEAD_OF_AND_FOR_FILTER;
     private int drawMode = DRAW_MODE;
     private int initialHeight = INITIAL_HEIGHT;
     private int initialWidth = INITIAL_WIDTH;
@@ -335,6 +336,7 @@ public final class Options {
     public static final Color CELL_VALUE_COLOR = Color.BLUE;                                  // korrekte selbst eingegebene Zellenwerte
     public static final Color CANDIDATE_COLOR = new Color(100, 100, 100);                     // korrekte Kandidaten
     public static final Color DEFAULT_CELL_COLOR = Color.WHITE;                               // Hintergrund normale Zelle
+    public static final Color ALTERNATE_CELL_COLOR = Color.WHITE;                             // Hintergrund normale Zelle in jedem zweiten Block
     public static final Color AKT_CELL_COLOR = new Color(255, 255, 150);                      // Hintergrund aktuell markierte Zelle
     public static final Color INVALID_CELL_COLOR = new Color(255, 185, 185);                  // Hintergrund Zelle mit ungültigen Wert
     public static final Color POSSIBLE_CELL_COLOR = new Color(185, 255, 185);                 // Hintergrund Zelle mit möglichem Wert
@@ -380,6 +382,7 @@ public final class Options {
     private Color cellValueColor = CELL_VALUE_COLOR;
     private Color candidateColor = CANDIDATE_COLOR;
     private Color defaultCellColor = DEFAULT_CELL_COLOR;
+    private Color alternateCellColor = ALTERNATE_CELL_COLOR;
     private Color aktCellColor = AKT_CELL_COLOR;
     private Color invalidCellColor = INVALID_CELL_COLOR;
     private Color possibleCellColor = POSSIBLE_CELL_COLOR;
@@ -503,6 +506,15 @@ public final class Options {
         return false;
     }
 
+    /**
+     * Reset all options to their default values by simply creating
+     * an new instance. {@link #getInstance() } must
+     * be called afterwards to get the new options.
+     */
+    public static void resetAll() {
+        instance = new Options();
+    }
+
     public static Options getInstance() {
         if (instance == null) {
             readOptions();
@@ -597,12 +609,12 @@ public final class Options {
                 Logger.getLogger(getClass().getName()).log(Level.WARNING, "StepConfig not found!");
                 continue;
             }
-            if (step.getAdminScore() != orgStep.getAdminScore() ||
-                    step.getBaseScore() != orgStep.getBaseScore() ||
-                    step.getCategory() != orgStep.getCategory()||
-                    step.isEnabled() != orgStep.isEnabled() ||
-                    step.getIndex() != orgStep.getIndex() ||
-                    step.getLevel() != orgStep.getLevel()) {
+            if (step.getAdminScore() != orgStep.getAdminScore()
+                    || step.getBaseScore() != orgStep.getBaseScore()
+                    || step.getCategory() != orgStep.getCategory()
+                    || step.isEnabled() != orgStep.isEnabled()
+                    || step.getIndex() != orgStep.getIndex()
+                    || step.getLevel() != orgStep.getLevel()) {
                 somethingChanged = true;
             }
             orgStep.setAdminScore(step.getAdminScore());
@@ -697,7 +709,15 @@ public final class Options {
     }
 
     public void writeOptions() throws FileNotFoundException {
-        writeOptions(System.getProperty("java.io.tmpdir") + File.separator + FILE_NAME);
+        String tmp = System.getProperty("java.io.tmpdir");
+        String fileName = null;
+        if (tmp.endsWith(File.separator)) {
+            fileName = tmp + FILE_NAME;
+        } else {
+            fileName = tmp + File.separator + FILE_NAME;
+        }
+//        readOptions(System.getProperty("java.io.tmpdir") + File.separator + FILE_NAME);
+        writeOptions(fileName);
     }
 
     public void writeOptions(String fileName) throws FileNotFoundException {
@@ -708,7 +728,15 @@ public final class Options {
     }
 
     public static void readOptions() {
-        readOptions(System.getProperty("java.io.tmpdir") + File.separator + FILE_NAME);
+        String tmp = System.getProperty("java.io.tmpdir");
+        String fileName = null;
+        if (tmp.endsWith(File.separator)) {
+            fileName = tmp + FILE_NAME;
+        } else {
+            fileName = tmp + File.separator + FILE_NAME;
+        }
+//        readOptions(System.getProperty("java.io.tmpdir") + File.separator + FILE_NAME);
+        readOptions(fileName);
     }
 
     public static void readOptions(String fileName) {
@@ -1126,6 +1154,34 @@ public final class Options {
      */
     public void setDeleteCursorDisplayLength(int deleteCursorDisplayLength) {
         this.deleteCursorDisplayLength = deleteCursorDisplayLength;
+    }
+
+    /**
+     * @return the alternateCellColor
+     */
+    public Color getAlternateCellColor() {
+        return alternateCellColor;
+    }
+
+    /**
+     * @param alternateCellColor the alternateCellColor to set
+     */
+    public void setAlternateCellColor(Color alternateCellColor) {
+        this.alternateCellColor = alternateCellColor;
+    }
+
+    /**
+     * @return the useOrInsteadOfAndForFilter
+     */
+    public boolean isUseOrInsteadOfAndForFilter() {
+        return useOrInsteadOfAndForFilter;
+    }
+
+    /**
+     * @param useOrInsteadOfAndForFilter the useOrInsteadOfAndForFilter to set
+     */
+    public void setUseOrInsteadOfAndForFilter(boolean useOrInsteadOfAndForFilter) {
+        this.useOrInsteadOfAndForFilter = useOrInsteadOfAndForFilter;
     }
 
     private static class ProgressComparator implements Comparator<StepConfig> {

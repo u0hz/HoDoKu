@@ -48,7 +48,7 @@ public class BackdoorSearchDialog extends javax.swing.JDialog implements Runnabl
     private BlockingQueue<String> singlesQueue = new ArrayBlockingQueue<String>(20);
     private BlockingQueue<String> progressQueue = new ArrayBlockingQueue<String>(20);
     private Thread thread;
-    private volatile int anzFound = 0;
+    private volatile int anzFound;
     private Runnable updateRunnable = new Runnable() {
 
         @Override
@@ -423,7 +423,7 @@ public class BackdoorSearchDialog extends javax.swing.JDialog implements Runnabl
      */
     @Override
     public void run() {
-        System.out.println("Thread started!");
+//        System.out.println("Thread started!");
         orgSudoku = sudokuPanel.getSudoku().clone();
         //solvedSudoku = sudokuPanel.getSolvedSudoku();
         sudoku = orgSudoku.clone();
@@ -437,7 +437,7 @@ public class BackdoorSearchDialog extends javax.swing.JDialog implements Runnabl
                 int anz = orgSudoku.getUnsolvedCellsAnz();
                 //System.out.println("thread: search 1");
                 // singles backdoor: singles only
-                anzFound = 0;
+                setAnzFound(0);
                 if (!checkSingles(1, anz, null)) {
                     int maxAnz = SudokuUtil.combinations(anz, 2);
                     //System.out.println("thread: search 2");
@@ -449,7 +449,7 @@ public class BackdoorSearchDialog extends javax.swing.JDialog implements Runnabl
                     }
                 }
                 // singles backdoor: progress measure
-                anzFound = 0;
+                setAnzFound(0);
                 if (!checkSingles(1, anz, Options.getInstance().solverStepsProgress)) {
                     int maxAnz = SudokuUtil.combinations(anz, 2);
                     //System.out.println("thread: search 2");
@@ -479,7 +479,7 @@ public class BackdoorSearchDialog extends javax.swing.JDialog implements Runnabl
                     }
                 }
                 // candidates backdoor: singles only
-                anzFound = 0;
+                setAnzFound(0);
                 int maxDepth = Options.getInstance().getBdsSearchCandidatesAnz() + 1;
                 if (!checkCandidates(1, anz, candidates, null) && maxDepth > 1) {
                     int maxAnz = SudokuUtil.combinations(anz, 2);
@@ -492,7 +492,7 @@ public class BackdoorSearchDialog extends javax.swing.JDialog implements Runnabl
                     }
                 }
                 // candidates backdoor: progress measure
-                anzFound = 0;
+                setAnzFound(0);
                 if (!checkCandidates(1, anz, candidates, Options.getInstance().solverStepsProgress) && maxDepth > 1) {
                     int maxAnz = SudokuUtil.combinations(anz, 2);
                     //System.out.println("thread: search 2 (" + maxAnz + ")");
@@ -623,8 +623,8 @@ public class BackdoorSearchDialog extends javax.swing.JDialog implements Runnabl
             if (depth == 1) {
                 if (checkSingleOrCandidate(-1, -1, -1, candidates.get(i), null, null, stepConfigs)) {
                     found = true;
-                    anzFound++;
-                    if (anzFound > MAX_FOUND) {
+                    incAnzFound();
+                    if (getAnzFound() > MAX_FOUND) {
                         return true;
                     }
                 }
@@ -634,8 +634,8 @@ public class BackdoorSearchDialog extends javax.swing.JDialog implements Runnabl
                     if (depth == 2) {
                         if (checkSingleOrCandidate(-1, -1, -1, candidates.get(i), candidates.get(j), null, stepConfigs)) {
                             found = true;
-                            anzFound++;
-                            if (anzFound > MAX_FOUND) {
+                            incAnzFound();
+                            if (getAnzFound() > MAX_FOUND) {
                                 return true;
                             }
                         }
@@ -644,8 +644,8 @@ public class BackdoorSearchDialog extends javax.swing.JDialog implements Runnabl
                         for (int k = j + 1; k < end; k++) {
                             if (checkSingleOrCandidate(-1, -1, -1, candidates.get(i), candidates.get(j), candidates.get(k), stepConfigs)) {
                                 found = true;
-                                anzFound++;
-                                if (anzFound > MAX_FOUND) {
+                                incAnzFound();
+                                if (getAnzFound() > MAX_FOUND) {
                                     return true;
                                 }
                             }
@@ -693,8 +693,8 @@ public class BackdoorSearchDialog extends javax.swing.JDialog implements Runnabl
             if (depth == 1) {
                 if (checkSingleOrCandidate(i, -1, -1, null, null, null, stepConfigs)) {
                     found = true;
-                    anzFound++;
-                    if (anzFound > MAX_FOUND) {
+                    incAnzFound();
+                    if (getAnzFound() > MAX_FOUND) {
                         return true;
                     }
                 }
@@ -708,8 +708,8 @@ public class BackdoorSearchDialog extends javax.swing.JDialog implements Runnabl
                     if (depth == 2) {
                         if (checkSingleOrCandidate(i, j, -1, null, null, null, stepConfigs)) {
                             found = true;
-                            anzFound++;
-                            if (anzFound > MAX_FOUND) {
+                            incAnzFound();
+                            if (getAnzFound() > MAX_FOUND) {
                                 return true;
                             }
                         }
@@ -722,8 +722,8 @@ public class BackdoorSearchDialog extends javax.swing.JDialog implements Runnabl
                             }
                             if (checkSingleOrCandidate(i, j, k, null, null, null, stepConfigs)) {
                                 found = true;
-                                anzFound++;
-                                if (anzFound > MAX_FOUND) {
+                                incAnzFound();
+                                if (getAnzFound() > MAX_FOUND) {
                                     return true;
                                 }
                             }
@@ -763,13 +763,19 @@ public class BackdoorSearchDialog extends javax.swing.JDialog implements Runnabl
         sudoku.set(orgSudoku);
         if (cand1 == null) {
             // set the cells to the correct values
+//            System.out.println("index1: " + sudoku.getSolution(index1) + "/" + sudoku.getValue(index1));
             sudoku.setCell(index1, sudoku.getSolution(index1));
-            if (index2 >= 0) {
-                sudoku.setCell(index2, sudoku.getValue(index2));
-            }
-            if (index3 >= 0) {
-                sudoku.setCell(index3, sudoku.getValue(index3));
-            }
+//            System.out.println("sudoku: " + sudoku.getSudoku(ClipboardMode.VALUES_ONLY));
+//            if (index2 >= 0) {
+////                sudoku.setCell(index2, sudoku.getValue(index2));
+//                System.out.println("index2: " + sudoku.getSolution(index2) + "/" + sudoku.getValue(index2));
+//                sudoku.setCell(index2, sudoku.getSolution(index2));
+//            }
+//            if (index3 >= 0) {
+////                sudoku.setCell(index3, sudoku.getValue(index3));
+//                System.out.println("index3: " + sudoku.getSolution(index3) + "/" + sudoku.getValue(index3));
+//                sudoku.setCell(index3, sudoku.getSolution(index3));
+//            }
         } else {
             // remove the candidates
             sudoku.setCandidate(cand1.getIndex(), cand1.getValue(), false);
@@ -871,6 +877,27 @@ public class BackdoorSearchDialog extends javax.swing.JDialog implements Runnabl
      */
     private synchronized void setFinished(boolean finished) {
         this.finished = finished;
+    }
+
+    /**
+     * @return the anzFound
+     */
+    private synchronized int getAnzFound() {
+        return anzFound;
+    }
+
+    /**
+     * @param anzFound the anzFound to set
+     */
+    private synchronized void setAnzFound(int anzFound) {
+        this.anzFound = anzFound;
+    }
+
+    /**
+     * Increment anzFound
+     */
+    private synchronized void incAnzFound() {
+        anzFound++;
     }
 
     /**

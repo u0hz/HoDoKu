@@ -260,9 +260,11 @@
                           <Component id="validBGLabel" min="-2" max="-2" attributes="0"/>
                           <Component id="invalidBGLabel" min="-2" max="-2" attributes="0"/>
                           <Component id="cursorBGLabel" alignment="0" min="-2" max="-2" attributes="0"/>
+                          <Component id="alternateBGLabel" alignment="0" min="-2" max="-2" attributes="0"/>
                       </Group>
                       <EmptySpace max="32767" attributes="0"/>
                       <Group type="103" groupAlignment="0" attributes="0">
+                          <Component id="alternateBGButton" alignment="0" min="-2" pref="40" max="-2" attributes="0"/>
                           <Component id="validBGButton" alignment="0" min="-2" pref="40" max="-2" attributes="0"/>
                           <Component id="invalidBGButton" alignment="0" min="-2" pref="40" max="-2" attributes="0"/>
                           <Component id="cursorBGButton" alignment="0" min="-2" pref="40" max="-2" attributes="0"/>
@@ -304,7 +306,7 @@
                               </Group>
                           </Group>
                       </Group>
-                      <EmptySpace min="-2" pref="4" max="-2" attributes="0"/>
+                      <EmptySpace min="-2" pref="10" max="-2" attributes="0"/>
                   </Group>
               </Group>
             </DimensionLayout>
@@ -359,7 +361,12 @@
                               </Group>
                           </Group>
                       </Group>
-                      <EmptySpace pref="38" max="32767" attributes="0"/>
+                      <EmptySpace max="-2" attributes="0"/>
+                      <Group type="103" groupAlignment="3" attributes="0">
+                          <Component id="alternateBGLabel" alignment="3" min="-2" max="-2" attributes="0"/>
+                          <Component id="alternateBGButton" alignment="3" min="-2" pref="21" max="-2" attributes="0"/>
+                      </Group>
+                      <EmptySpace max="32767" attributes="0"/>
                   </Group>
               </Group>
             </DimensionLayout>
@@ -516,6 +523,21 @@
                   <ResourceString bundle="intl/ConfigColorPanel.properties" key="ConfigColorPanel.alsLabel1.text" replaceFormat="java.util.ResourceBundle.getBundle(&quot;{bundleNameSlashes}&quot;).getString(&quot;{key}&quot;)"/>
                 </Property>
               </Properties>
+            </Component>
+            <Component class="javax.swing.JLabel" name="alternateBGLabel">
+              <Properties>
+                <Property name="text" type="java.lang.String" editor="org.netbeans.modules.i18n.form.FormI18nStringEditor">
+                  <ResourceString bundle="intl/ConfigColorPanel.properties" key="ConfigColorPanel.alternateBGLabel.text" replaceFormat="java.util.ResourceBundle.getBundle(&quot;{bundleNameSlashes}&quot;).getString(&quot;{key}&quot;)"/>
+                </Property>
+              </Properties>
+            </Component>
+            <Component class="javax.swing.JButton" name="alternateBGButton">
+              <Properties>
+                <Property name="text" type="java.lang.String" value="..." noResource="true"/>
+              </Properties>
+              <Events>
+                <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="alternateBGButtonActionPerformed"/>
+              </Events>
             </Component>
           </SubComponents>
         </Container>

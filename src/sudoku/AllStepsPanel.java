@@ -398,11 +398,17 @@ public final class AllStepsPanel extends javax.swing.JPanel implements TreeSelec
             // normaler Betrieb, mitten im Baum
             if (lastStep == null || step.getType() != lastStep.getType()) {
                 // new top category
+                // if it is not the first, change the last cat to the number
+                // of different eliminations
+                if (lastStep != null) {
+                    String dummy = (String) lastCat1.getUserObject();
+                    lastCat1.setUserObject(dummy + " (" + lastCat1.getChildCount() + ")");
+                }
                 lastCat1 = new DefaultMutableTreeNode(step.getType().getStepName());
                 root.add(lastCat1);
                 lastEntry = new DefaultMutableTreeNode(step);
                 lastCat1.add(lastEntry);
-            } else if (step.isEqual(lastStep)) {
+            } else if (step.isEqualCandidate(lastStep)) {
                 // same step -> put step under lastStep
                 lastEntry.add(new DefaultMutableTreeNode(step));
             } else {
@@ -411,6 +417,10 @@ public final class AllStepsPanel extends javax.swing.JPanel implements TreeSelec
                 lastCat1.add(lastEntry);
             }
             lastStep = step;
+        }
+        if (lastStep != null) {
+            String dummy = (String) lastCat1.getUserObject();
+            lastCat1.setUserObject(dummy + " (" + lastCat1.getChildCount() + ")");
         }
     }
 

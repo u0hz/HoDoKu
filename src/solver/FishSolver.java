@@ -16,9 +16,14 @@
  * You should have received a copy of the GNU General Public License
  * along with HoDoKu. If not, see <http://www.gnu.org/licenses/>.
  */
-
 package solver;
 
+import java.beans.XMLDecoder;
+import java.beans.XMLEncoder;
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import sudoku.Chain;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -91,7 +96,6 @@ public class FishSolver extends AbstractSolver {
     private static final SolutionType[] MUTANT_TYPES = {SolutionType.MUTANT_X_WING, SolutionType.MUTANT_SWORDFISH, SolutionType.MUTANT_JELLYFISH, SolutionType.MUTANT_SQUIRMBAG, SolutionType.MUTANT_WHALE, SolutionType.MUTANT_LEVIATHAN};
     /** All finned mutant {@link SolutionType SolutionTypes} */
     private static final SolutionType[] FINNED_MUTANT_TYPES = {SolutionType.FINNED_MUTANT_X_WING, SolutionType.FINNED_MUTANT_SWORDFISH, SolutionType.FINNED_MUTANT_JELLYFISH, SolutionType.FINNED_MUTANT_SQUIRMBAG, SolutionType.FINNED_MUTANT_WHALE, SolutionType.FINNED_MUTANT_LEVIATHAN};
-    
     /** Set if search is for kraken fish */
     private static final int UNDEFINED = -1;
     /** Search for basic fish */
@@ -107,10 +111,11 @@ public class FishSolver extends AbstractSolver {
     /** Mask for determining the fish shape */
     private static final int BLOCK_MASK = 0x4;
     /** Array with constraint type masks for speedup. */
-    private static final int[] MASKS = { BLOCK_MASK, LINE_MASK, COL_MASK };
+    private static final int[] MASKS = {BLOCK_MASK, LINE_MASK, COL_MASK};
 
     /** One entry in the recursion stack for the base unit search */
     private class BaseStackEntry {
+
         /** The index of the base unit that is currently tried */
         int aktIndex = 0;
         /** The number of the unit that was set previously */
@@ -127,6 +132,7 @@ public class FishSolver extends AbstractSolver {
 
     /** One entry in the recursion stack for the cover unit search */
     private class CoverStackEntry {
+
         /** The index of the base unit that is currently tried */
         int aktIndex = 0;
         /** The number of the unit that was set previously */
@@ -140,7 +146,6 @@ public class FishSolver extends AbstractSolver {
         /** All cells that are in more than one cover set and have to be treated as potential eliminations (high order DWORD). */
         long cannibalisticM2 = 0;
     }
-
     /** The fish candidate */
     private int candidate;
     /** A set with all positions where the fish candidate is still possible (low order DWORD) */
@@ -166,9 +171,9 @@ public class FishSolver extends AbstractSolver {
     /** The fish type: {@link #BASIC}, {@link #FRANKEN}, {@link #MUTANT} or {@link #UNDEFINED} for kraken search. */
     private int fishType = UNDEFINED;
     /** Minimum size of the fish */
-    private int minSize; 
+    private int minSize;
     /** Maximum size of the fish */
-    private int maxSize; 
+    private int maxSize;
     /** An array with all possible base units (indices in {@link Sudoku2#CONSTRAINTS}). */
     private int[] baseUnits = new int[Sudoku2.UNITS * 3];
     /** For every base unit all cells where the candiate is set (low order DWORD). */
@@ -229,8 +234,6 @@ public class FishSolver extends AbstractSolver {
     private SolutionStep globalStep = new SolutionStep(SolutionType.HIDDEN_SINGLE);
     /** A {@link TablingSolver} for Kraken Fish search */
     private TablingSolver tablingSolver = null;
- 
-
     /** for various checks (low order DWORD) */
     private long tmpSetM1;
     /** for various checks (high order DWORD) */
@@ -271,7 +274,6 @@ public class FishSolver extends AbstractSolver {
     private int lastStepNumber = 0;
     /** The maximum number of base unit combinations (for progress bar) */
     private int maxBaseCombinations = 0; // Anzahl möglicher Kombinationen aus base-units
-
     /** number of combinations of base units in fish search */
     private int baseGesamt = 0;
     /** number of combinations of base units in fish search for progress bar */
@@ -285,7 +287,6 @@ public class FishSolver extends AbstractSolver {
     /** number of tries for finned fish per number of fins */
     private int[] anzFins = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 
-    
     /** Creates a new instance of FishSolver */
     protected FishSolver(SudokuStepFinder finder) {
         super(finder);
@@ -296,7 +297,7 @@ public class FishSolver extends AbstractSolver {
             coverStack[i] = new CoverStackEntry();
         }
     }
-    
+
     @Override
     protected SolutionStep getStep(SolutionType type) {
         SolutionStep result = null;
@@ -556,12 +557,12 @@ public class FishSolver extends AbstractSolver {
                 SolutionType type = step.getType();
                 // for a step to fit it must: be the same size, the same category (BASIC, FRANKEN or MUTANT)
                 // and finned/sashimi
-                if (type.getFishSize() == size &&
-                        (fishType == BASIC && type.isBasicFish() || 
-                        fishType == FRANKEN && type.isFrankenFish() ||
-                        fishType == MUTANT && type.isMutantFish()) &&
-                        (withFins && (step.getFins().size() > 0 || step.getEndoFins().size() > 0)) &&
-                        sashimi == type.isSashimiFish()) {
+                if (type.getFishSize() == size
+                        && (fishType == BASIC && type.isBasicFish()
+                        || fishType == FRANKEN && type.isFrankenFish()
+                        || fishType == MUTANT && type.isMutantFish())
+                        && (withFins && (step.getFins().size() > 0 || step.getEndoFins().size() > 0))
+                        && sashimi == type.isSashimiFish()) {
                     cachedSteps.clear();
                     return step;
                 }
@@ -573,7 +574,7 @@ public class FishSolver extends AbstractSolver {
         SolutionStep step = null;
         for (int cand = 1; cand <= 9; cand++) {
             step = getFishes(cand, size, size, withoutFins, withFins, sashimi, withEndoFins, fishType);
-            if (!searchAll && ! siamese && step != null) {
+            if (!searchAll && !siamese && step != null) {
                 return step;
             }
         }
@@ -734,10 +735,10 @@ public class FishSolver extends AbstractSolver {
             delCandTemplatesM1 = finder.getDelCandTemplates(false)[candidate].getMask1();
             delCandTemplatesM2 = finder.getDelCandTemplates(false)[candidate].getMask2();
         }
-        
+
         // search in lines first
         SolutionStep step = getFishes(true);
-        if (fishType == MUTANT || (! searchAll && ! siamese && step != null)) {
+        if (fishType == MUTANT || (!searchAll && !siamese && step != null)) {
             return step;
         }
         // then in cols
@@ -830,8 +831,8 @@ public class FishSolver extends AbstractSolver {
             if (aktEndoFinSetM1 != 0 || aktEndoFinSetM2 != 0) {
                 // intersects() == true means: there are endoFins!
 //                if (!withFins || !withEndoFins || (baseStack[baseLevel - 1].endoFins.size() + aktEndoFinSet.size()) > Options.getInstance().maxEndoFins) {
-                if (!withFins || !withEndoFins || (getSize(baseStack[baseLevel - 1].endoFinsM1, baseStack[baseLevel - 1].endoFinsM2) +
-                        getSize(aktEndoFinSetM1, aktEndoFinSetM2)) > Options.getInstance().getMaxEndoFins()) {
+                if (!withFins || !withEndoFins || (getSize(baseStack[baseLevel - 1].endoFinsM1, baseStack[baseLevel - 1].endoFinsM2)
+                        + getSize(aktEndoFinSetM1, aktEndoFinSetM2)) > Options.getInstance().getMaxEndoFins()) {
                     // every invalid combination eliminates a lot of possibilities:
                     // (all non-zero baseUnits greater than i) over (maxSize - aktSize)
                     if (dlg != null) {
@@ -883,7 +884,7 @@ public class FishSolver extends AbstractSolver {
 //                SolutionStep step = searchCoverUnits(entry.candidates, entry.endoFins);
 //                System.out.println("baseLevel: " + baseLevel);
                 SolutionStep step = searchCoverUnits(bEntry.candidatesM1, bEntry.candidatesM2, bEntry.endoFinsM1, bEntry.endoFinsM2);
-                if (! searchAll && ! siamese && step != null) {
+                if (!searchAll && !siamese && step != null) {
                     return step;
                 }
             }
@@ -1030,7 +1031,7 @@ public class FishSolver extends AbstractSolver {
                                 cEntry.cannibalisticM1, cEntry.cannibalisticM2,
                                 endoFinSetM1, endoFinSetM2, tmpSetM1, tmpSetM2, false);
 //                        System.out.println(step + "/" + searchAll + "/" +siamese);
-                        if (! searchAll && ! siamese && step != null) {
+                        if (!searchAll && !siamese && step != null) {
                             return step;
                         }
                     }
@@ -1069,11 +1070,11 @@ public class FishSolver extends AbstractSolver {
 //                        tmpSet1.and(finBuddies);
                         tmpSet1M1 = cEntry.cannibalisticM1 & finBuddiesM1;
                         tmpSet1M2 = cEntry.cannibalisticM2 & finBuddiesM2;
-                        if (! kraken && (tmpSetM1 != 0 || tmpSetM2 != 0 || tmpSet1M1 != 0 || tmpSet1M2 != 0)) {
+                        if (!kraken && (tmpSetM1 != 0 || tmpSetM2 != 0 || tmpSet1M1 != 0 || tmpSet1M2 != 0)) {
                             SolutionStep step = createFishStep(coverLevel, true, finsM1, finsM2,
                                     tmpSetM1, tmpSetM2, tmpSet1M1, tmpSet1M2,
                                     endoFinSetM1, endoFinSetM2, tmpSet2M1, tmpSet2M2, false);
-                            if (step != null && ! searchAll && ! siamese) {
+                            if (step != null && !searchAll && !siamese) {
                                 return step;
                             }
                         } else if (kraken && tmpSetM1 == 0 && tmpSetM2 == 0 && tmpSet1M1 == 0 && tmpSet1M2 == 0) {
@@ -1116,7 +1117,7 @@ public class FishSolver extends AbstractSolver {
      * @return
      */
     private SolutionStep searchForKraken(long deleteSetM1, long deleteSetM2,
-            long baseSetM1, long baseSetM2, 
+            long baseSetM1, long baseSetM2,
             long finsM1, long finsM2, long cannibalisticM1, long cannibalisticM2,
             long endoFinsM1, long endoFinsM2) {
         // Type 1: We have fins but nothing to delete -> check all
@@ -1154,7 +1155,7 @@ public class FishSolver extends AbstractSolver {
                     }
                     tablingSolver.adjustChains(step);
                     step = addKrakenStep(step);
-                    if (step != null && ! searchAll) {
+                    if (step != null && !searchAll) {
                         return step;
                     }
                 }
@@ -1170,7 +1171,7 @@ public class FishSolver extends AbstractSolver {
 //        printSet("cannibalistic", cannibalisticM1, cannibalisticM2);
 //        for (int coverIndex = 0; coverIndex < coverUnits.length; coverIndex++) {
         for (int coverIndex = 0; coverIndex < numberOfCoverUnits; coverIndex++) {
-            if (! coverUnitsUsed[coverUnits[coverIndex]]) {
+            if (!coverUnitsUsed[coverUnits[coverIndex]]) {
                 continue;
             }
 //            System.out.println("cover unit: " + coverUnits[coverIndex]);
@@ -1187,8 +1188,8 @@ public class FishSolver extends AbstractSolver {
 //            if (coverCandidatesM1[coverUnits[coverIndex]] == tmpSetM1 &&
 //                coverCandidatesM2[coverUnits[coverIndex]] == tmpSetM2) {
 //            printSet("tmpSetM1", tmpSetM1, tmpSetM2);
-            if (coverCandidatesM1[coverIndex] == tmpSetM1 &&
-                coverCandidatesM2[coverIndex] == tmpSetM2) {
+            if (coverCandidatesM1[coverIndex] == tmpSetM1
+                    && coverCandidatesM2[coverIndex] == tmpSetM2) {
                 // would be a normal Forcing Chain -> skip it
                 continue;
             }
@@ -1238,18 +1239,18 @@ public class FishSolver extends AbstractSolver {
      * @return 
      */
     private SolutionStep addFishStep() {
-        if (! searchAll && ! siamese) {
+        if (!searchAll && !siamese) {
             return (SolutionStep) globalStep.clone();
         }
-        if (fishType != UNDEFINED && ! searchAll) {
+        if (fishType != UNDEFINED && !searchAll) {
             SolutionType type = globalStep.getType();
-            if (fishType == BASIC && ! type.isBasicFish()) {
+            if (fishType == BASIC && !type.isBasicFish()) {
                 return null;
             }
-            if (fishType == FRANKEN && ! type.isFrankenFish()) {
+            if (fishType == FRANKEN && !type.isFrankenFish()) {
                 return null;
             }
-            if (fishType == MUTANT && ! type.isMutantFish()) {
+            if (fishType == MUTANT && !type.isMutantFish()) {
                 return null;
             }
         }
@@ -1292,16 +1293,16 @@ public class FishSolver extends AbstractSolver {
         if (oldIndex != null) {
             tmpStep = steps.get(oldIndex);
         }
-        if (tmpStep == null || step.getSubType().compare(tmpStep.getSubType()) < 0 ||
-                (step.getSubType().compare(tmpStep.getSubType()) == 0 &&
-                step.getChainLength() < tmpStep.getChainLength())) {
+        if (tmpStep == null || step.getSubType().compare(tmpStep.getSubType()) < 0
+                || (step.getSubType().compare(tmpStep.getSubType()) == 0
+                && step.getChainLength() < tmpStep.getChainLength())) {
             steps.add(step);
             deletesMap.put(del, steps.size() - 1);
             return step;
         }
         return null;
     }
-    
+
     /**
      * Siamese Fish are two fishes that have the same base sets and differ
      * only in which candidates are fins; they provide different eliminations.
@@ -1314,7 +1315,7 @@ public class FishSolver extends AbstractSolver {
      * @param fishes All available fishes
      */
     private void findSiameseFish(List<SolutionStep> fishes) {
-        if (! Options.getInstance().isAllowDualsAndSiamese()) {
+        if (!Options.getInstance().isAllowDualsAndSiamese()) {
             // not allowed!
             return;
         }
@@ -1332,19 +1333,19 @@ public class FishSolver extends AbstractSolver {
                     // different fish size -> no dual
                     continue;
                 }
-                if (SolutionType.getStepConfig(step1.getType()).getCategory().ordinal() !=
-                        SolutionType.getStepConfig(step2.getType()).getCategory().ordinal()) {
+                if (SolutionType.getStepConfig(step1.getType()).getCategory().ordinal()
+                        != SolutionType.getStepConfig(step2.getType()).getCategory().ordinal()) {
                     // not the same type of fish
                     continue;
                 }
                 boolean baseSetEqual = true;
                 for (int k = 0; k < step1.getBaseEntities().size(); k++) {
-                    if (! step1.getBaseEntities().get(k).equals(step2.getBaseEntities().get(k))) {
+                    if (!step1.getBaseEntities().get(k).equals(step2.getBaseEntities().get(k))) {
                         baseSetEqual = false;
                         break;
                     }
                 }
-                if (! baseSetEqual) {
+                if (!baseSetEqual) {
                     // not the same base set -> cant be a siamese fish
                     continue;
                 }
@@ -1371,7 +1372,7 @@ public class FishSolver extends AbstractSolver {
             }
         }
     }
-    
+
     /**
      * Create a new fish step. The step is added to the step list if {@link #searchAll}
      * or {@link #siamese} are set.
@@ -1399,8 +1400,8 @@ public class FishSolver extends AbstractSolver {
 
         // check for Sashimi (only for BASIC FISH)
         boolean isSashimi = false;
-        if ((baseMask == LINE_MASK && coverMask == COL_MASK) ||
-                (baseMask == COL_MASK && coverMask == LINE_MASK)) {
+        if ((baseMask == LINE_MASK && coverMask == COL_MASK)
+                || (baseMask == COL_MASK && coverMask == LINE_MASK)) {
             // alle base units durchschauen: wenn eine base unit mindestens eine fin enthält, werden alle
             // fins gelöscht; es müssen dann noch mehr als ein base-Kandidat übrig sein
             for (int i = 0; i < numberOfBaseUnits; i++) {
@@ -1416,7 +1417,7 @@ public class FishSolver extends AbstractSolver {
                 }
             }
         }
-        
+
         // determine the type
         if ((baseMask == LINE_MASK && coverMask == COL_MASK) || (baseMask == COL_MASK && coverMask == LINE_MASK)) {
             // Basic Fish
@@ -1427,8 +1428,8 @@ public class FishSolver extends AbstractSolver {
             } else {
                 type = BASIC_TYPES[size - 2];
             }
-        } else if ((((baseMask == LINE_MASK) || (baseMask == (LINE_MASK | BLOCK_MASK))) && ((coverMask == COL_MASK) || (coverMask == (COL_MASK | BLOCK_MASK)))) ||
-                (((baseMask == COL_MASK) || (baseMask == (COL_MASK | BLOCK_MASK))) && ((coverMask == LINE_MASK) || (coverMask == (LINE_MASK | BLOCK_MASK))))) {
+        } else if ((((baseMask == LINE_MASK) || (baseMask == (LINE_MASK | BLOCK_MASK))) && ((coverMask == COL_MASK) || (coverMask == (COL_MASK | BLOCK_MASK))))
+                || (((baseMask == COL_MASK) || (baseMask == (COL_MASK | BLOCK_MASK))) && ((coverMask == LINE_MASK) || (coverMask == (LINE_MASK | BLOCK_MASK))))) {
             // Franken Fish
             if (withFins) {
                 type = FINNED_FRANKEN_TYPES[size - 2];
@@ -1494,8 +1495,8 @@ public class FishSolver extends AbstractSolver {
 
         // differentiate between finned and sashimi: if the type doesnt fit, cache the step
         // but only if the search is not for all fishes
-        if (! searchAll && fishType == BASIC && withFins && sashimi != isSashimi) {
-            cachedSteps.add((SolutionStep)globalStep.clone());
+        if (!searchAll && fishType == BASIC && withFins && sashimi != isSashimi) {
+            cachedSteps.add((SolutionStep) globalStep.clone());
             return null;
         }
 
@@ -1559,7 +1560,7 @@ public class FishSolver extends AbstractSolver {
                     if (fishType == MUTANT) {
                         addUnit(i, tmpSetM1, tmpSetM2, false, size, withFins);
                     }
-                } else if (! lines || fishType == MUTANT) {
+                } else if (!lines || fishType == MUTANT) {
                     addUnit(i, tmpSetM1, tmpSetM2, false, size, withFins);
                     if (fishType == MUTANT) {
                         addUnit(i, tmpSetM1, tmpSetM2, true, size, withFins);
@@ -1572,7 +1573,7 @@ public class FishSolver extends AbstractSolver {
                     if (fishType == MUTANT) {
                         addUnit(i, tmpSetM1, tmpSetM2, true, size, withFins);
                     }
-                } else if (! lines || fishType == MUTANT) {
+                } else if (!lines || fishType == MUTANT) {
                     addUnit(i, tmpSetM1, tmpSetM2, true, size, withFins);
                     if (fishType == MUTANT) {
                         addUnit(i, tmpSetM1, tmpSetM2, false, size, withFins);
@@ -1634,12 +1635,12 @@ public class FishSolver extends AbstractSolver {
         int anzahl = 0;
         if (mask1 != 0) {
             for (int i = 0; i < 64; i += 8) {
-                anzahl += SudokuSet.anzValues[(int)((mask1 >> i) & 0xFF)];
+                anzahl += SudokuSet.anzValues[(int) ((mask1 >> i) & 0xFF)];
             }
         }
         if (mask2 != 0) {
             for (int i = 0; i < 24; i += 8) {
-                anzahl += SudokuSet.anzValues[(int)((mask2 >> i) & 0xFF)];
+                anzahl += SudokuSet.anzValues[(int) ((mask2 >> i) & 0xFF)];
             }
         }
         return anzahl;
@@ -1656,16 +1657,16 @@ public class FishSolver extends AbstractSolver {
         int anzahl = 0;
         if (mask1 != 0) {
             for (int i = 0; i < 64; i += 8) {
-                anzahl += SudokuSet.anzValues[(int)((mask1 >> i) & 0xFF)];
-                if (anzahl > 1)  {
+                anzahl += SudokuSet.anzValues[(int) ((mask1 >> i) & 0xFF)];
+                if (anzahl > 1) {
                     return false;
                 }
             }
         }
         if (mask2 != 0) {
             for (int i = 0; i < 24; i += 8) {
-                anzahl += SudokuSet.anzValues[(int)((mask2 >> i) & 0xFF)];
-                if (anzahl > 1)  {
+                anzahl += SudokuSet.anzValues[(int) ((mask2 >> i) & 0xFF)];
+                if (anzahl > 1) {
                     return false;
                 }
             }
@@ -1701,52 +1702,125 @@ public class FishSolver extends AbstractSolver {
     }
 
     public static void main(String[] args) {
-        Sudoku2 sudoku = new Sudoku2();
-        // X-Wing: 3 r37 c34 => r1c34,r4c34,r5c34,r6c34,r9c4<>3
-        sudoku.setSudoku(":0300:3:9.....+5+6+1..+6.+1.7+937+1..962486...2+147+9........5....4...642..+586+1+75.71.+2..+4..1....+52::313 314 343 344 353 354 363 364 394::");
-//        // X-Wing: 1 c15 r25 => r2c4789,r5c34789<>1
-        sudoku.setSudoku(":0300:1:9+8..627+5+3.+65..3...+3+2+7.+5...67+9..3.+5...+5...9...8+32.45..9+6+735+91+428+24+9.+8+7..5+51+8.+2...+7::124 127 128 129 153 154 157 158 159::");
-//        // X-Wing: 7 c28 r47 => r4c1345,r7c1345<>7
-        sudoku.setSudoku(":0300:7:....+827...3...+1+8....8..7.9......+8..58+5...+4.6..6.1.59+84.....+3..8.45+819.3..+834.+651+9::741 743 744 745 771 773 774 775::");
-//        // Jellyfish: 8 r1468 c2679 => r235c2,r39c7,r9c9<>8
-        sudoku.setSudoku(":0302:8:+65+4.+2..7+12..+1.+7+5+46..+1456..+2+1+27+63.4+5...65.12.+7+5.9+27.1+6...+5812...9.+2....+15.1...+5.2.:317 331 332 997 999:822 832 837 852 897 899::");
-//        // Finned X-Wing: 9 r48 c38 fr8c7 => r7c8<>9
-        sudoku.setSudoku(":0310:9:..3..+67......91..+3.6...3.597+8.+25+43.+1...+3+1+7.8+22+3+16+89+4+75+6.813+2...+32.4+7...6...+9+6.23.::978::");
-//        // Finned Swordfish: 4 c168 r247 fr1c6 => r2c4<>4
-        sudoku.setSudoku(":0311:4:.3.2+6..+8.86..3.5.+2.+2487..+3+6.+8.39.+2.72..6.8..31.+3+527.+6...+2.863..+3.8.5+2+691.....3.2.:924 128 448 452 157 458 578 491 591 792 193 793:424::");
-//        // Finned Jellyfish: 7 r1569 c4689 fr9c7 => r7c9<>7
-        sudoku.setSudoku(":0312:7:+6.+4.5.9.2.596.+2.+4+8....+94.+56578+2+4+9..3+2+46.1.5..9+1+3.+6.8244..9+8.+2.......648.8.1+42...+5:314 754 756 376 776 178 778 382 783 384 784 789 398:779::");
-//        // Franken Swordfish: 8 r236 c24b3 => r7c2<>8
-        sudoku.setSudoku(":0331:8:52...617.174.536..6.9271..5..5.2...6.9.76..1...6.3...4..759236135261.9.79613.7.5.:814 819 928 842 844 944 856 861 964 866 867 868:872::");
-//        // Sashimi Jellyfish: 6 r1269 c5678 fr9c4 => r7c56<>6
-        sudoku.setSudoku(":0322:6:..+12.5....254+1....6.....1+5+2+2..1+5..7.5.....9.+1.+138...+25...+5..+21.15.+3..79..82.7+1+5.3:411 412 815 419 619 819 826 629 829 833 447 647 849 458 658 685 686:675 676::");
-//        // Finned X-Wing: 3 r24 c15 fr2c6 => r13c5<>3
-        sudoku.setSudoku(":0310:3:1.........5.....61..8+1..2...7...9.......1.3..4...5...6.+6.+398+14+2+9+42+5+71+6..+8+136+4279+5:962:315 335::");
-//        // Finned Franken Jellyfish: 3 r348b1 c3459 fr1c1 fr3c8 => r1c9<>3
-//        sudoku.setSudoku(":0342:3:..+5+648+1..+4...1.+6.86+1+8..75.+4+5+42..186.7+8+6...4.193+1...+7+521+6....34+5+85....+21+7..4+1..+9+86:218 918 222 923 924 344 955 386 986 295 296:319::");
-//        // Finned Franken Jellyfish: 7 r169b3 c2679 fr6c8 efr1c9 => r5c9<>7
-//        sudoku.setSudoku(":0342:7:+5.3+9641+8..+1.+5...69.9+6...53+4..7...84515.4........3+5...+1..+5.+4..1...18.54.+66..21..+58::759::");
-//        // Finned Mutant Jellyfish: 4 r36c15 r18c6b4 fr3c9 => r1c9<>4
-//        sudoku.setSudoku(":0362:4:.7+6+1.95..1..+6.5...+98+5+72.16.+7...1+6.......97.3.6+9.2+5.+7188.7.6..5...9+5..3.....+9...4.:211 319 425 227 228 229 443 449 172 272 376 476 885 286 486 289 895 396:419::");
-        // X-Wing: 1 c15 r25 => r2c4789,r5c34789<>1 (checks recursion)
-        sudoku.setSudoku(":0300:1:9+8..627+5+3.+65..3...+3+2+7.+5...67+9..3.+5...+5...9...8+32.45..9+6+735+91+428+24+9.+8+7..5+51+8.+2...+7::124 127 128 129 153 154 157 158 159:c15 r25");
-//        sudoku.setSudoku("");
-//        sudoku.setSudoku("");
-//        sudoku.setSudoku("");
-        SudokuSolver solver = SudokuSolverFactory.getDefaultSolverInstance();
-        boolean singleHint = true;
-        if (singleHint) {
-            SolutionStep step = solver.getHint(sudoku, false);
-            System.out.println(step);
-        } else {
-            List<SolutionStep> steps = solver.getStepFinder().getAllFishes(sudoku, 2, 2, 0, 0, null, 1, BASIC);
-            solver.getStepFinder().printStatistics();
-            if (steps.size() > 0) {
-                Collections.sort(steps);
-                for (SolutionStep actStep : steps) {
-                    System.out.println(actStep);
+//        Sudoku2 sudoku = new Sudoku2();
+//        // X-Wing: 3 r37 c34 => r1c34,r4c34,r5c34,r6c34,r9c4<>3
+//        sudoku.setSudoku(":0300:3:9.....+5+6+1..+6.+1.7+937+1..962486...2+147+9........5....4...642..+586+1+75.71.+2..+4..1....+52::313 314 343 344 353 354 363 364 394::");
+////        // X-Wing: 1 c15 r25 => r2c4789,r5c34789<>1
+//        sudoku.setSudoku(":0300:1:9+8..627+5+3.+65..3...+3+2+7.+5...67+9..3.+5...+5...9...8+32.45..9+6+735+91+428+24+9.+8+7..5+51+8.+2...+7::124 127 128 129 153 154 157 158 159::");
+////        // X-Wing: 7 c28 r47 => r4c1345,r7c1345<>7
+//        sudoku.setSudoku(":0300:7:....+827...3...+1+8....8..7.9......+8..58+5...+4.6..6.1.59+84.....+3..8.45+819.3..+834.+651+9::741 743 744 745 771 773 774 775::");
+////        // Jellyfish: 8 r1468 c2679 => r235c2,r39c7,r9c9<>8
+//        sudoku.setSudoku(":0302:8:+65+4.+2..7+12..+1.+7+5+46..+1456..+2+1+27+63.4+5...65.12.+7+5.9+27.1+6...+5812...9.+2....+15.1...+5.2.:317 331 332 997 999:822 832 837 852 897 899::");
+////        // Finned X-Wing: 9 r48 c38 fr8c7 => r7c8<>9
+//        sudoku.setSudoku(":0310:9:..3..+67......91..+3.6...3.597+8.+25+43.+1...+3+1+7.8+22+3+16+89+4+75+6.813+2...+32.4+7...6...+9+6.23.::978::");
+////        // Finned Swordfish: 4 c168 r247 fr1c6 => r2c4<>4
+//        sudoku.setSudoku(":0311:4:.3.2+6..+8.86..3.5.+2.+2487..+3+6.+8.39.+2.72..6.8..31.+3+527.+6...+2.863..+3.8.5+2+691.....3.2.:924 128 448 452 157 458 578 491 591 792 193 793:424::");
+////        // Finned Jellyfish: 7 r1569 c4689 fr9c7 => r7c9<>7
+//        sudoku.setSudoku(":0312:7:+6.+4.5.9.2.596.+2.+4+8....+94.+56578+2+4+9..3+2+46.1.5..9+1+3.+6.8244..9+8.+2.......648.8.1+42...+5:314 754 756 376 776 178 778 382 783 384 784 789 398:779::");
+////        // Franken Swordfish: 8 r236 c24b3 => r7c2<>8
+//        sudoku.setSudoku(":0331:8:52...617.174.536..6.9271..5..5.2...6.9.76..1...6.3...4..759236135261.9.79613.7.5.:814 819 928 842 844 944 856 861 964 866 867 868:872::");
+////        // Sashimi Jellyfish: 6 r1269 c5678 fr9c4 => r7c56<>6
+//        sudoku.setSudoku(":0322:6:..+12.5....254+1....6.....1+5+2+2..1+5..7.5.....9.+1.+138...+25...+5..+21.15.+3..79..82.7+1+5.3:411 412 815 419 619 819 826 629 829 833 447 647 849 458 658 685 686:675 676::");
+////        // Finned X-Wing: 3 r24 c15 fr2c6 => r13c5<>3
+//        sudoku.setSudoku(":0310:3:1.........5.....61..8+1..2...7...9.......1.3..4...5...6.+6.+398+14+2+9+42+5+71+6..+8+136+4279+5:962:315 335::");
+////        // Finned Franken Jellyfish: 3 r348b1 c3459 fr1c1 fr3c8 => r1c9<>3
+////        sudoku.setSudoku(":0342:3:..+5+648+1..+4...1.+6.86+1+8..75.+4+5+42..186.7+8+6...4.193+1...+7+521+6....34+5+85....+21+7..4+1..+9+86:218 918 222 923 924 344 955 386 986 295 296:319::");
+////        // Finned Franken Jellyfish: 7 r169b3 c2679 fr6c8 efr1c9 => r5c9<>7
+////        sudoku.setSudoku(":0342:7:+5.3+9641+8..+1.+5...69.9+6...53+4..7...84515.4........3+5...+1..+5.+4..1...18.54.+66..21..+58::759::");
+////        // Finned Mutant Jellyfish: 4 r36c15 r18c6b4 fr3c9 => r1c9<>4
+////        sudoku.setSudoku(":0362:4:.7+6+1.95..1..+6.5...+98+5+72.16.+7...1+6.......97.3.6+9.2+5.+7188.7.6..5...9+5..3.....+9...4.:211 319 425 227 228 229 443 449 172 272 376 476 885 286 486 289 895 396:419::");
+//        // X-Wing: 1 c15 r25 => r2c4789,r5c34789<>1 (checks recursion)
+//        sudoku.setSudoku(":0300:1:9+8..627+5+3.+65..3...+3+2+7.+5...67+9..3.+5...+5...9...8+32.45..9+6+735+91+428+24+9.+8+7..5+51+8.+2...+7::124 127 128 129 153 154 157 158 159:c15 r25");
+////        sudoku.setSudoku("");
+////        sudoku.setSudoku("");
+////        sudoku.setSudoku("");
+//        SudokuSolver solver = SudokuSolverFactory.getDefaultSolverInstance();
+//        boolean singleHint = true;
+//        if (singleHint) {
+//            SolutionStep step = solver.getHint(sudoku, false);
+//            System.out.println(step);
+//        } else {
+//            List<SolutionStep> steps = solver.getStepFinder().getAllFishes(sudoku, 2, 2, 0, 0, null, 1, BASIC);
+//            solver.getStepFinder().printStatistics();
+//            if (steps.size() > 0) {
+//                Collections.sort(steps);
+//                for (SolutionStep actStep : steps) {
+//                    System.out.println(actStep);
+//                }
+//            }
+//        }
+        try {
+            XMLDecoder in = new XMLDecoder(new BufferedInputStream(new FileInputStream("C:\\Sudoku\\Sonstiges\\Bug reports\\20111208 Comparison Exception\\fishse1326274402326.dat")));
+            List<SolutionStep> steps = (List<SolutionStep>) in.readObject();
+            in.close();
+            System.out.println("anz: " + steps.size());
+            for (int i = 0; i < steps.size(); i++) {
+                for (int j = i + 1; j < steps.size(); j++) {
+                    int c1 = steps.get(i).compareTo(steps.get(j));
+                    int c2 = steps.get(j).compareTo(steps.get(i));
+                    if (c1 == 0 && c2 == 0) {
+                        // ok!
+                        continue;
+                    }
+                    if (c1 == 0 && c2 != 0 || c2 == 0 && c1 != 0) {
+                        System.out.println("error: " + c1 + "/" + c2 + "/" + i + "/" + j);
+                    }
+                    if (c1 < 0 && c2 < 0 || c1 > 0 && c2 > 0) {
+                        System.out.println("error: " + c1 + "/" + c2 + "/" + i + "/" + j);
+                    }
                 }
             }
+            //zweiter Versuch:alleKombinationen aus 3steps
+            int counter = 0;
+            for (int i = 0; i < steps.size(); i++) {
+                for (int j = 0; j < steps.size(); j++) {
+                    if (j == i) {
+                        continue;
+                    }
+                    for (int k = 0; k < steps.size(); k++) {
+                        if (k == i || k == j) {
+                            continue;
+                        }
+                        counter++;
+                        int cij = steps.get(i).compareTo(steps.get(j));
+                        int cjk = steps.get(j).compareTo(steps.get(k));
+                        int cik = steps.get(i).compareTo(steps.get(k));
+                        if (cij == 0 && cik == 0 && cjk == 0) {
+                            // ok!
+                            continue;
+                        }
+                        if (cij <= 0 && cjk <= 0 && cik >= 0) {
+                            System.out.println("error: " + cij + "/" +cjk + "/" + cik + " - "+i + "/"+j+ "/" + k);
+                        }
+                        if (cij >= 0 && cjk >= 0 && cik <= 0) {
+                            System.out.println("error: " + cij + "/" +cjk + "/" + cik + " - "+i + "/"+j+ "/" + k);
+                        }
+                    }
+                }
+
+            }
+            System.out.println("Counter = " +counter);
+//            int i1 = 0;
+//            int i2 = 6;
+//            int i3 = 14;
+//            SolutionStep step1 = steps.get(i1);
+//            SolutionStep step2 = steps.get(i2);
+//            SolutionStep step3 = steps.get(i3);
+//            System.out.println("step[" + i1 + "]: " + step1.toString(2));
+//            System.out.println("step[" + i2 + "]: " + step2.toString(2));
+//            System.out.println("step[" + i3 + "]: " + step3.toString(2));
+//            System.out.println("type1:" + step1.getType().toString() + "/" + step1.getSubType().toString() + "/"+step1.getType().isKrakenFish());
+//            System.out.println("type2:" + step2.getType().toString() + "/" + step2.getSubType().toString() + "/"+step2.getType().isKrakenFish());
+//            System.out.println("type3:" + step3.getType().toString() + "/" + step3.getSubType().toString() + "/"+step3.getType().isKrakenFish());
+//            System.out.println(i1 + " ct " + i2 + " = " + step1.compareTo(step2));
+//            System.out.println(i2 + " ct " + i3 + " = " + step2.compareTo(step3));
+//            System.out.println(i1 + " ct " + i3 + " = " + step1.compareTo(step3));
+//            for (SolutionStep step : steps) {
+//                System.out.println("   " + step.toString(2));
+//            }
+            Collections.sort(steps);
+        } catch (Exception ex) {
+            ex.printStackTrace();
         }
         System.exit(0);
     }

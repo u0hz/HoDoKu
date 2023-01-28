@@ -16,7 +16,6 @@
  * You should have received a copy of the GNU General Public License
  * along with HoDoKu. If not, see <http://www.gnu.org/licenses/>.
  */
-
 package sudoku;
 
 import java.awt.Color;
@@ -33,14 +32,15 @@ import javax.swing.UIManager;
  * @author  hobiwan
  */
 public class ConfigColorPanel extends javax.swing.JPanel {
+
     private JButton[] buttons = null;
     private Color[] colors = null;
-    
+
     /** Creates new form ConfigColorPanel */
     public ConfigColorPanel() {
         initComponents();
-        
-        buttons = new JButton[] {
+
+        buttons = new JButton[]{
             frameStrongButton, frameWeakButton, cluesButton, valuesButton,
             candidatesButton, invalidFGButton, wrongButton, normalBGButton,
             cursorBGButton, invalidBGButton, validBGButton,
@@ -51,12 +51,13 @@ public class ConfigColorPanel extends javax.swing.JPanel {
             alsHintFGButton2, alsHintBGButton2, alsHintFGButton3, alsHintBGButton3,
             alsHintFGButton4, alsHintBGButton4, stiftButtona, stiftButtonA,
             stiftButtonb, stiftButtonB, stiftButtonc, stiftButtonC,
-            stiftButtond, stiftButtonD, stiftButtone, stiftButtonE
+            stiftButtond, stiftButtonD, stiftButtone, stiftButtonE,
+            alternateBGButton
         };
-        
+
         initAll(false);
     }
-    
+
     /** This method is called from within the constructor to
      * initialize the form.
      * WARNING: Do NOT modify this code. The content of this method is
@@ -101,6 +102,8 @@ public class ConfigColorPanel extends javax.swing.JPanel {
         alsHintBGButton1 = new javax.swing.JButton();
         alsHintFGButton1 = new javax.swing.JButton();
         alsLabel1 = new javax.swing.JLabel();
+        alternateBGLabel = new javax.swing.JLabel();
+        alternateBGButton = new javax.swing.JButton();
         jPanel2 = new javax.swing.JPanel();
         hintPanel = new javax.swing.JPanel();
         normHintBGLabel = new javax.swing.JLabel();
@@ -363,6 +366,15 @@ public class ConfigColorPanel extends javax.swing.JPanel {
 
         alsLabel1.setText(bundle.getString("ConfigColorPanel.alsLabel1.text")); // NOI18N
 
+        alternateBGLabel.setText(bundle.getString("ConfigColorPanel.alternateBGLabel.text")); // NOI18N
+
+        alternateBGButton.setText("..."); // NOI18N
+        alternateBGButton.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                alternateBGButtonActionPerformed(evt);
+            }
+        });
+
         javax.swing.GroupLayout backGroundPanelLayout = new javax.swing.GroupLayout(backGroundPanel);
         backGroundPanel.setLayout(backGroundPanelLayout);
         backGroundPanelLayout.setHorizontalGroup(
@@ -372,9 +384,11 @@ public class ConfigColorPanel extends javax.swing.JPanel {
                     .addComponent(normalBGLabel)
                     .addComponent(validBGLabel)
                     .addComponent(invalidBGLabel)
-                    .addComponent(cursorBGLabel))
+                    .addComponent(cursorBGLabel)
+                    .addComponent(alternateBGLabel))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                 .addGroup(backGroundPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(alternateBGButton, javax.swing.GroupLayout.PREFERRED_SIZE, 40, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(validBGButton, javax.swing.GroupLayout.PREFERRED_SIZE, 40, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(invalidBGButton, javax.swing.GroupLayout.PREFERRED_SIZE, 40, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(cursorBGButton, javax.swing.GroupLayout.PREFERRED_SIZE, 40, javax.swing.GroupLayout.PREFERRED_SIZE)
@@ -407,7 +421,7 @@ public class ConfigColorPanel extends javax.swing.JPanel {
                                 .addComponent(alsHintFGButton3, javax.swing.GroupLayout.PREFERRED_SIZE, 40, javax.swing.GroupLayout.PREFERRED_SIZE)
                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                                 .addComponent(alsHintBGButton3, javax.swing.GroupLayout.PREFERRED_SIZE, 40, javax.swing.GroupLayout.PREFERRED_SIZE)))))
-                .addGap(4, 4, 4))
+                .addGap(10, 10, 10))
         );
         backGroundPanelLayout.setVerticalGroup(
             backGroundPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -449,7 +463,11 @@ public class ConfigColorPanel extends javax.swing.JPanel {
                             .addComponent(alsLabel4)
                             .addComponent(alsHintFGButton4, javax.swing.GroupLayout.PREFERRED_SIZE, 21, javax.swing.GroupLayout.PREFERRED_SIZE)
                             .addComponent(alsHintBGButton4, javax.swing.GroupLayout.PREFERRED_SIZE, 21, javax.swing.GroupLayout.PREFERRED_SIZE))))
-                .addContainerGap(38, Short.MAX_VALUE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(backGroundPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(alternateBGLabel)
+                    .addComponent(alternateBGButton, javax.swing.GroupLayout.PREFERRED_SIZE, 21, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
 
         javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
@@ -602,7 +620,7 @@ public class ConfigColorPanel extends javax.swing.JPanel {
                         .addComponent(normalHintFGButton, javax.swing.GroupLayout.PREFERRED_SIZE, 40, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(normalHintBGButton, javax.swing.GroupLayout.PREFERRED_SIZE, 40, javax.swing.GroupLayout.PREFERRED_SIZE)))
-                .addContainerGap(82, Short.MAX_VALUE))
+                .addContainerGap(86, Short.MAX_VALUE))
         );
         hintPanelLayout.setVerticalGroup(
             hintPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -759,7 +777,7 @@ public class ConfigColorPanel extends javax.swing.JPanel {
                         .addComponent(stiftButtone, javax.swing.GroupLayout.PREFERRED_SIZE, 40, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(stiftButtonE, javax.swing.GroupLayout.PREFERRED_SIZE, 40, javax.swing.GroupLayout.PREFERRED_SIZE)))
-                .addContainerGap(110, Short.MAX_VALUE))
+                .addContainerGap(114, Short.MAX_VALUE))
         );
         coloringPanelLayout.setVerticalGroup(
             coloringPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -804,7 +822,7 @@ public class ConfigColorPanel extends javax.swing.JPanel {
         jPanel2Layout.setHorizontalGroup(
             jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel2Layout.createSequentialGroup()
-                .addContainerGap(137, Short.MAX_VALUE)
+                .addContainerGap(141, Short.MAX_VALUE)
                 .addComponent(resetButton)
                 .addGap(10, 10, 10))
             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel2Layout.createSequentialGroup()
@@ -844,123 +862,123 @@ public class ConfigColorPanel extends javax.swing.JPanel {
     private void resetButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_resetButtonActionPerformed
         initAll(true);
     }//GEN-LAST:event_resetButtonActionPerformed
-    
+
     private void alsHintBGButton4ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_alsHintBGButton4ActionPerformed
         chooseColor(29);
     }//GEN-LAST:event_alsHintBGButton4ActionPerformed
-    
+
     private void alsHintFGButton4ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_alsHintFGButton4ActionPerformed
         chooseColor(28);
     }//GEN-LAST:event_alsHintFGButton4ActionPerformed
-    
+
     private void alsHintBGButton3ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_alsHintBGButton3ActionPerformed
         chooseColor(27);
     }//GEN-LAST:event_alsHintBGButton3ActionPerformed
-    
+
     private void alsHintFGButton3ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_alsHintFGButton3ActionPerformed
         chooseColor(26);
     }//GEN-LAST:event_alsHintFGButton3ActionPerformed
-    
+
     private void alsHintBGButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_alsHintBGButton2ActionPerformed
         chooseColor(25);
     }//GEN-LAST:event_alsHintBGButton2ActionPerformed
-    
+
     private void alsHintFGButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_alsHintFGButton2ActionPerformed
         chooseColor(24);
     }//GEN-LAST:event_alsHintFGButton2ActionPerformed
-    
+
     private void alsHintBGButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_alsHintBGButton1ActionPerformed
         chooseColor(23);
     }//GEN-LAST:event_alsHintBGButton1ActionPerformed
-    
+
     private void alsHintFGButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_alsHintFGButton1ActionPerformed
         chooseColor(22);
     }//GEN-LAST:event_alsHintFGButton1ActionPerformed
-    
+
     private void cannibalisticHintBGButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_cannibalisticHintBGButtonActionPerformed
         chooseColor(20);
     }//GEN-LAST:event_cannibalisticHintBGButtonActionPerformed
-    
+
     private void endoFinsHintBGButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_endoFinsHintBGButtonActionPerformed
         chooseColor(18);
     }//GEN-LAST:event_endoFinsHintBGButtonActionPerformed
-    
+
     private void finsHintBGButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_finsHintBGButtonActionPerformed
         chooseColor(16);
     }//GEN-LAST:event_finsHintBGButtonActionPerformed
-    
+
     private void delHintBGButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_delHintBGButtonActionPerformed
         chooseColor(14);
     }//GEN-LAST:event_delHintBGButtonActionPerformed
-    
+
     private void normalHintBGButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_normalHintBGButtonActionPerformed
         chooseColor(12);
     }//GEN-LAST:event_normalHintBGButtonActionPerformed
-    
+
     private void arrowButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_arrowButtonActionPerformed
         chooseColor(21);
     }//GEN-LAST:event_arrowButtonActionPerformed
-    
+
     private void cannibalisticHintFGButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_cannibalisticHintFGButtonActionPerformed
         chooseColor(19);
     }//GEN-LAST:event_cannibalisticHintFGButtonActionPerformed
-    
+
     private void endoFinsHintFGButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_endoFinsHintFGButtonActionPerformed
         chooseColor(17);
     }//GEN-LAST:event_endoFinsHintFGButtonActionPerformed
-    
+
     private void finsHintFGButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_finsHintFGButtonActionPerformed
         chooseColor(15);
     }//GEN-LAST:event_finsHintFGButtonActionPerformed
-    
+
     private void delHintFGButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_delHintFGButtonActionPerformed
         chooseColor(13);
     }//GEN-LAST:event_delHintFGButtonActionPerformed
-    
+
     private void normalHintFGButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_normalHintFGButtonActionPerformed
         chooseColor(11);
     }//GEN-LAST:event_normalHintFGButtonActionPerformed
-    
+
     private void validBGButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_validBGButtonActionPerformed
         chooseColor(10);
     }//GEN-LAST:event_validBGButtonActionPerformed
-    
+
     private void invalidBGButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_invalidBGButtonActionPerformed
         chooseColor(9);
     }//GEN-LAST:event_invalidBGButtonActionPerformed
-    
+
     private void cursorBGButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_cursorBGButtonActionPerformed
         chooseColor(8);
     }//GEN-LAST:event_cursorBGButtonActionPerformed
-    
+
     private void normalBGButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_normalBGButtonActionPerformed
         chooseColor(7);
     }//GEN-LAST:event_normalBGButtonActionPerformed
-    
+
     private void wrongButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_wrongButtonActionPerformed
         chooseColor(6);
     }//GEN-LAST:event_wrongButtonActionPerformed
-    
+
     private void invalidFGButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_invalidFGButtonActionPerformed
         chooseColor(5);
     }//GEN-LAST:event_invalidFGButtonActionPerformed
-    
+
     private void candidatesButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_candidatesButtonActionPerformed
         chooseColor(4);
     }//GEN-LAST:event_candidatesButtonActionPerformed
-    
+
     private void valuesButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_valuesButtonActionPerformed
         chooseColor(3);
     }//GEN-LAST:event_valuesButtonActionPerformed
-    
+
     private void cluesButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_cluesButtonActionPerformed
         chooseColor(2);
     }//GEN-LAST:event_cluesButtonActionPerformed
-    
+
     private void frameWeakButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_frameWeakButtonActionPerformed
         chooseColor(1);
     }//GEN-LAST:event_frameWeakButtonActionPerformed
-    
+
     private void frameStrongButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_frameStrongButtonActionPerformed
         chooseColor(0);
     }//GEN-LAST:event_frameStrongButtonActionPerformed
@@ -1004,7 +1022,11 @@ private void stiftButtoneActionPerformed(java.awt.event.ActionEvent evt) {//GEN-
 private void stiftButtonEActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_stiftButtonEActionPerformed
     chooseColor(39);
 }//GEN-LAST:event_stiftButtonEActionPerformed
-    
+
+    private void alternateBGButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_alternateBGButtonActionPerformed
+        chooseColor(40);
+    }//GEN-LAST:event_alternateBGButtonActionPerformed
+
     private void chooseColor(int index) {
         Color init = colors[index];
         Color color = JColorChooser.showDialog(this, java.util.ResourceBundle.getBundle("intl/ConfigColorPanel").getString("ConfigColorPanel.choose_color"), init);
@@ -1013,7 +1035,7 @@ private void stiftButtonEActionPerformed(java.awt.event.ActionEvent evt) {//GEN-
             initButton(buttons[index], color);
         }
     }
-    
+
     public void okPressed() {
         Options.getInstance().setGridColor(colors[0]);
         Options.getInstance().setInnerGridColor(colors[1]);
@@ -1055,8 +1077,9 @@ private void stiftButtonEActionPerformed(java.awt.event.ActionEvent evt) {//GEN-
         Options.getInstance().getColoringColors()[7] = colors[37];
         Options.getInstance().getColoringColors()[8] = colors[38];
         Options.getInstance().getColoringColors()[9] = colors[39];
+        Options.getInstance().setAlternateCellColor(colors[40]);
     }
-    
+
     private void initAll(boolean setDefault) {
         if (colors == null) {
             colors = new Color[buttons.length];
@@ -1102,6 +1125,7 @@ private void stiftButtonEActionPerformed(java.awt.event.ActionEvent evt) {//GEN-
             colors[37] = Options.COLORING_COLORS[7];
             colors[38] = Options.COLORING_COLORS[8];
             colors[39] = Options.COLORING_COLORS[9];
+            colors[40] = Options.ALTERNATE_CELL_COLOR;
         } else {
             colors[0] = Options.getInstance().getGridColor();
             colors[1] = Options.getInstance().getInnerGridColor();
@@ -1143,13 +1167,14 @@ private void stiftButtonEActionPerformed(java.awt.event.ActionEvent evt) {//GEN-
             colors[37] = Options.getInstance().getColoringColors()[7];
             colors[38] = Options.getInstance().getColoringColors()[8];
             colors[39] = Options.getInstance().getColoringColors()[9];
+            colors[40] = Options.getInstance().getAlternateCellColor();
         }
-        
+
         for (int i = 0; i < buttons.length; i++) {
             initButton(buttons[i], colors[i]);
         }
     }
-    
+
     private void initButton(JButton button, Color color) {
         //button.setText(" ");
         Image img = new BufferedImage(10, 10, BufferedImage.TYPE_INT_RGB);
@@ -1161,7 +1186,6 @@ private void stiftButtonEActionPerformed(java.awt.event.ActionEvent evt) {//GEN-
             button.setBackground(color);
         }
     }
-    
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton alsHintBGButton1;
     private javax.swing.JButton alsHintBGButton2;
@@ -1175,6 +1199,8 @@ private void stiftButtonEActionPerformed(java.awt.event.ActionEvent evt) {//GEN-
     private javax.swing.JLabel alsLabel2;
     private javax.swing.JLabel alsLabel3;
     private javax.swing.JLabel alsLabel4;
+    private javax.swing.JButton alternateBGButton;
+    private javax.swing.JLabel alternateBGLabel;
     private javax.swing.JButton arrowButton;
     private javax.swing.JLabel arrowLabel;
     private javax.swing.JPanel backGroundPanel;
@@ -1236,5 +1262,4 @@ private void stiftButtonEActionPerformed(java.awt.event.ActionEvent evt) {//GEN-
     private javax.swing.JButton wrongButton;
     private javax.swing.JLabel wrongLabel;
     // End of variables declaration//GEN-END:variables
-    
 }

@@ -85,8 +85,8 @@ import solver.SudokuSolverFactory;
  */
 public class MainFrame extends javax.swing.JFrame implements FlavorListener {
 
-    public static final String VERSION = "HoDoKu - v2.1.1";
-    public static final String BUILD = "Build 43";
+    public static final String VERSION = "HoDoKu - v2.1.3";
+    public static final String BUILD = "Build 51";
     private SudokuPanel sudokuPanel;
     //private DifficultyLevel level = Options.getInstance().getDifficultyLevels()[DifficultyType.EASY.ordinal()];
     private JToggleButton[] toggleButtons = new JToggleButton[10];
@@ -692,7 +692,7 @@ public class MainFrame extends javax.swing.JFrame implements FlavorListener {
 
         statusLinePanel.add(jPanel1);
 
-        statusLabelCellCandidate.setFont(new java.awt.Font("Tahoma", 0, 12)); // NOI18N
+        statusLabelCellCandidate.setFont(new java.awt.Font("Tahoma", 0, 12));
         statusLabelCellCandidate.setText(bundle.getString("MainFrame.statusLabelCellCandidate.text.cell")); // NOI18N
         statusLabelCellCandidate.setToolTipText(bundle.getString("MainFrame.statusLabelCellCandidate.toolTipText")); // NOI18N
         statusLabelCellCandidate.addMouseListener(new java.awt.event.MouseAdapter() {
@@ -706,7 +706,7 @@ public class MainFrame extends javax.swing.JFrame implements FlavorListener {
         jSeparator1.setPreferredSize(new java.awt.Dimension(2, 17));
         statusLinePanel.add(jSeparator1);
 
-        statusLabelLevel.setFont(new java.awt.Font("Tahoma", 0, 12)); // NOI18N
+        statusLabelLevel.setFont(new java.awt.Font("Tahoma", 0, 12));
         statusLabelLevel.setText(bundle.getString("MainFrame.statusLabelLevel.text")); // NOI18N
         statusLabelLevel.setToolTipText(bundle.getString("MainFrame.statusLabelLevel.toolTipText")); // NOI18N
         statusLinePanel.add(statusLabelLevel);
@@ -715,7 +715,7 @@ public class MainFrame extends javax.swing.JFrame implements FlavorListener {
         jSeparator8.setPreferredSize(new java.awt.Dimension(2, 17));
         statusLinePanel.add(jSeparator8);
 
-        progressLabel.setFont(new java.awt.Font("Tahoma", 0, 12)); // NOI18N
+        progressLabel.setFont(new java.awt.Font("Tahoma", 0, 12));
         progressLabel.setIcon(new javax.swing.ImageIcon(getClass().getResource("/img/invalid20.png"))); // NOI18N
         progressLabel.setText("null");
         progressLabel.setToolTipText(bundle.getString("MainFrame.progressLabel.toolTipText")); // NOI18N
@@ -725,7 +725,7 @@ public class MainFrame extends javax.swing.JFrame implements FlavorListener {
         jSeparator24.setPreferredSize(new java.awt.Dimension(2, 17));
         statusLinePanel.add(jSeparator24);
 
-        statusLabelModus.setFont(new java.awt.Font("Tahoma", 0, 12)); // NOI18N
+        statusLabelModus.setFont(new java.awt.Font("Tahoma", 0, 12));
         statusLabelModus.setText(bundle.getString("MainFrame.statusLabelModus.textPlay")); // NOI18N
         statusLabelModus.setToolTipText(bundle.getString("MainFrame.statusLabelModus.toolTipText")); // NOI18N
         statusLinePanel.add(statusLabelModus);
@@ -1335,7 +1335,6 @@ public class MainFrame extends javax.swing.JFrame implements FlavorListener {
         levelMenu.setMnemonic(java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.levelMenuMnemonic").charAt(0));
         levelMenu.setText(bundle.getString("MainFrame.levelMenu.text")); // NOI18N
 
-        levelLeichtMenuItem.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_1, java.awt.event.InputEvent.SHIFT_MASK | java.awt.event.InputEvent.CTRL_MASK));
         levelButtonGroup.add(levelLeichtMenuItem);
         levelLeichtMenuItem.setSelected(true);
         levelLeichtMenuItem.setText("Leicht"); // NOI18N
@@ -1346,7 +1345,6 @@ public class MainFrame extends javax.swing.JFrame implements FlavorListener {
         });
         levelMenu.add(levelLeichtMenuItem);
 
-        levelMittelMenuItem.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_2, java.awt.event.InputEvent.SHIFT_MASK | java.awt.event.InputEvent.CTRL_MASK));
         levelButtonGroup.add(levelMittelMenuItem);
         levelMittelMenuItem.setText("Mittel"); // NOI18N
         levelMittelMenuItem.addActionListener(new java.awt.event.ActionListener() {
@@ -1356,7 +1354,6 @@ public class MainFrame extends javax.swing.JFrame implements FlavorListener {
         });
         levelMenu.add(levelMittelMenuItem);
 
-        levelKniffligMenuItem.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_3, java.awt.event.InputEvent.SHIFT_MASK | java.awt.event.InputEvent.CTRL_MASK));
         levelButtonGroup.add(levelKniffligMenuItem);
         levelKniffligMenuItem.setText("Schwer\n"); // NOI18N
         levelKniffligMenuItem.addActionListener(new java.awt.event.ActionListener() {
@@ -1366,7 +1363,6 @@ public class MainFrame extends javax.swing.JFrame implements FlavorListener {
         });
         levelMenu.add(levelKniffligMenuItem);
 
-        levelSchwerMenuItem.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_4, java.awt.event.InputEvent.SHIFT_MASK | java.awt.event.InputEvent.CTRL_MASK));
         levelButtonGroup.add(levelSchwerMenuItem);
         levelSchwerMenuItem.setText("Unfair"); // NOI18N
         levelSchwerMenuItem.addActionListener(new java.awt.event.ActionListener() {
@@ -1376,7 +1372,6 @@ public class MainFrame extends javax.swing.JFrame implements FlavorListener {
         });
         levelMenu.add(levelSchwerMenuItem);
 
-        levelExtremMenuItem.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_5, java.awt.event.InputEvent.SHIFT_MASK | java.awt.event.InputEvent.CTRL_MASK));
         levelButtonGroup.add(levelExtremMenuItem);
         levelExtremMenuItem.setText("Extrem"); // NOI18N
         levelExtremMenuItem.addActionListener(new java.awt.event.ActionListener() {
@@ -3127,10 +3122,14 @@ private void extendedPrintMenuItemActionPerformed(java.awt.event.ActionEvent evt
 
     private void adjustPasteMenuItem() {
         try {
-            if (isStringFlavorInClipboard()) {
+            if (Main.OS_NAME.contains("mac")) {
                 pasteMenuItem.setEnabled(true);
             } else {
-                pasteMenuItem.setEnabled(false);
+                if (isStringFlavorInClipboard()) {
+                    pasteMenuItem.setEnabled(true);
+                } else {
+                    pasteMenuItem.setEnabled(false);
+                }
             }
         } catch (IllegalStateException ex) {
             // try again later
