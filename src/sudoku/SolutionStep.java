@@ -131,6 +131,11 @@ public class SolutionStep implements Comparable<SolutionStep>, Cloneable {
         appendForcingChainEntry(tmp, chain[start]);
         for (int i = start + 1; i <= end - 1; i++) {
             boolean blank = true;
+            if (chain[i] == Integer.MIN_VALUE) {
+                tmp.append(")");
+                inMin = false;
+                continue;
+            }
             if (!weakLinks && !Chain.isSStrong(chain[i]) &&
                     (chain[i] > 0 || chain[i] < 0 && chain[i + 1] < 0 && chain[i + 1] != Integer.MIN_VALUE)) {
                 // weak link überspringen, wenn er nicht am Ende eines inMins ist
@@ -140,11 +145,6 @@ public class SolutionStep implements Comparable<SolutionStep>, Cloneable {
                 if (Chain.getSNodeType(chain[i]) == Chain.NORMAL_NODE) {
                     continue;
                 }
-            }
-            if (chain[i] == Integer.MIN_VALUE) {
-                tmp.append(")");
-                inMin = false;
-                continue;
             }
             if (chain[i] < 0 && !inMin) {
                 tmp.append(" (");
@@ -604,7 +604,7 @@ public class SolutionStep implements Comparable<SolutionStep>, Cloneable {
                     }
                 }
                 if (art >= 2) {
-                    tmp.append(java.util.ResourceBundle.getBundle("intl/SolutionStep").getString("SolutionStep.in") + 
+                    tmp.append(" " + java.util.ResourceBundle.getBundle("intl/SolutionStep").getString("SolutionStep.in") + " " +
                             getCompactCellPrint(indices));
                     getCandidatesToDelete(tmp);
                 }
@@ -716,7 +716,33 @@ public class SolutionStep implements Comparable<SolutionStep>, Cloneable {
                     }
                 }
                 if (art >= 2) {
-                    str += " " + getChainString(getChains().get(0));
+                    StringBuffer tmpChain = getChainString(getChains().get(0));
+                    // adjust nice loop notation
+                    if (type == SolutionType.CONTINUOUS_NICE_LOOP || type == SolutionType.GROUPED_CONTINUOUS_NICE_LOOP) {
+                        Chain ch = getChains().get(0);
+                        int start = ch.start;
+                        int cellIndex = ch.getCellIndex(start);
+                        while (ch.getCellIndex(start) == cellIndex) {
+                            start++;
+                        }
+                        int end = ch.end;
+                        cellIndex = ch.getCellIndex(end);
+                        while (ch.getCellIndex(end) == cellIndex) {
+                            end--;
+                        }
+                        end++;
+                        tmpChain.insert(0, ch.getCandidate(end) + "= ");
+                        tmpChain.append(" =" + ch.getCandidate(start));
+                        //System.out.println(Chain.toString(ch.chain[start]) + "/" + Chain.toString(ch.chain[ch.end]));
+                    }
+                    if (type == SolutionType.AIC || type == SolutionType.GROUPED_AIC) {
+                        Chain ch = getChains().get(0);
+                        //System.out.println(Chain.toString(ch.chain[ch.start]) + "/" + Chain.toString(ch.chain[ch.end]));
+                        tmpChain.insert(0, ch.getCandidate(ch.start) + "- ");
+                        tmpChain.append(" -" + ch.getCandidate(ch.end));
+                    }
+                    //str += " " + getChainString(getChains().get(0));
+                    str += " " + tmpChain;
                     tmp = new StringBuffer(str);
                     getCandidatesToDelete(tmp);
                     str = tmp.toString();

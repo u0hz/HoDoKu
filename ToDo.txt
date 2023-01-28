@@ -24,7 +24,7 @@ ok BUG:
    :1101:24567:......695.3.5..4.85...4.3.7..63...4.154276839.23..47......9....2.5..897.391....8.:921 168 674 774 776 178 278:299 685:
    Eliminierungen für 1 fehlen in r7c6 und r8c5
 ok Mehrere Lösungen zulassen (inkl. speichern)
- - Konfigurationsdialoge überarbeiten (Farben für Coloring?)
+ok Konfigurationsdialoge überarbeiten (Farben für Coloring?)
  - BUG: Bei Continuous Nice Lops und AICs Chaindarstellung erweitern
 
 ok Hilfe Menü mit About (License)

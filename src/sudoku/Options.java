@@ -16,7 +16,6 @@
  * You should have received a copy of the GNU General Public License
  * along with HoDoKu. If not, see <http://www.gnu.org/licenses/>.
  */
-
 package sudoku;
 
 import java.awt.Color;
@@ -40,8 +39,7 @@ import java.util.logging.Logger;
  */
 public class Options {
 
-    private static final String FILE_NAME = "hodoku.hcfg";    
-    // Schwierigkeitsstufen
+    private static final String FILE_NAME = "hodoku.hcfg";    // Schwierigkeitsstufen
     public static final DifficultyLevel[] DEFAULT_DIFFICULTY_LEVELS = {
         new DifficultyLevel(DifficultyType.INCOMPLETE, 0, java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.incomplete"), Color.BLACK, Color.WHITE),
         new DifficultyLevel(DifficultyType.EASY, 600, java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.easy"), Color.WHITE, Color.BLACK),
@@ -168,15 +166,15 @@ public class Options {
     public boolean checkTemplates = CHECK_TEMPLATES;    //SudokuPanel
     // Coloring Solver
     public static final Color[] COLORING_COLORS = {
-        new Color(254, 204, 129),   // 'a' - first color of first color pair
-        new Color(252, 234, 190),   // 'A' - second color of first color pair
-        new Color(184, 184, 248),   // 'b' - first color of second color pair
-        new Color(220, 220, 252),   // 'B' - second color of second color pair
-        new Color(255, 185, 185),   // 'c' - first color of third color pair
-        new Color(255, 210, 210),   // 'C' - second color of third color pair
-        new Color(159, 247, 220),   // 'd' - first color of fourth color pair
-        new Color(206, 251, 237),   // 'D' - second color of fourth color pair
-        new Color(168, 255, 168),   // 'e' - first color of fifth color pair
+        new Color(254, 204, 129), // 'a' - first color of first color pair
+        new Color(252, 234, 190), // 'A' - second color of first color pair
+        new Color(184, 184, 248), // 'b' - first color of second color pair
+        new Color(220, 220, 252), // 'B' - second color of second color pair
+        new Color(255, 185, 185), // 'c' - first color of third color pair
+        new Color(255, 210, 210), // 'C' - second color of third color pair
+        new Color(159, 247, 220), // 'd' - first color of fourth color pair
+        new Color(206, 251, 237), // 'D' - second color of fourth color pair
+        new Color(168, 255, 168), // 'e' - first color of fifth color pair
         new Color(215, 255, 215)    // 'E' - second color of fifth color pair
 //        new Color(140, 198, 255),   // 'a' - first color of first color pair
 //        new Color(205, 171, 255),   // 'A' - second color of first color pair
@@ -194,11 +192,30 @@ public class Options {
     public static final boolean SHOW_CANDIDATES = true;    // alle Kandidaten anzeigen
     public static final boolean SHOW_WRONG_VALUES = true;  // Ungültige Zellen-/Kandidatenwerte anzeigen (Constraint-Verletzungen)
     public static final boolean SHOW_DEVIATIONS = true;    // Abweichungen von der richtigen Lösung anzeigen
+    public static final boolean SAVE_WINDOW_LAYOUT = true; // save window layout at shutdown
     public static final int DRAW_MODE = 1;
+    public static final int INITIAL_HEIGHT = 728;           // used to store window layout at shutdown
+    public static final int INITIAL_WIDTH = 540;            // used to store window layout at shutdown
+    public static final int INITIAL_VERT_DIVIDER_LOC = -1;  // used to store window layout at shutdown
+    public static final int INITIAL_HORZ_DIVIDER_LOC = 524; // used to store window layout at shutdown
+    public static final int INITIAL_DISP_MODE = 0;          // 0 .. sudoku only, 1 .. summary, 2 .. solution, 3 .. all steps
+    public static final int INITIAL_X_POS = -1;             // used to store window layout at shutdown
+    public static final int INITIAL_Y_POS = -1;             // used to store window layout at shutdown
     public boolean showCandidates = SHOW_CANDIDATES;
     public boolean showWrongValues = SHOW_WRONG_VALUES;
     public boolean showDeviations = SHOW_DEVIATIONS;
+    public boolean saveWindowLayout = SAVE_WINDOW_LAYOUT;
     public int drawMode = DRAW_MODE;
+    public int initialHeight = INITIAL_HEIGHT;
+    public int initialWidth = INITIAL_WIDTH;
+    public int initialVertDividerLoc = INITIAL_VERT_DIVIDER_LOC;
+    public int initialHorzDividerLoc = INITIAL_HORZ_DIVIDER_LOC;
+    public int initialDisplayMode = INITIAL_DISP_MODE;
+    public int initialXPos = INITIAL_X_POS;
+    public int initialYPos = INITIAL_Y_POS;
+    // Clipboard
+    public static final boolean USE_ZERO_INSTEAD_OF_DOT = false; // as the name says...
+    public boolean useZeroInsteadOfDot = USE_ZERO_INSTEAD_OF_DOT;
     // Farben und Fonts
     public static final Color GRID_COLOR = Color.BLACK;                                       // Zeichenfarbe für den Rahmen
     public static final Color INNER_GRID_COLOR = Color.LIGHT_GRAY;                            // Linien innerhalb des Rahmens
@@ -309,32 +326,32 @@ public class Options {
 //    public static final Font SMALL_FONT = new Font("Arial", Font.PLAIN, 10); // Font für Ausdruck Rating
         // allow for different fonts in different OSes
         String[] fontNames = GraphicsEnvironment.getLocalGraphicsEnvironment().getAvailableFontFamilyNames();
-        if (! checkFont(DEFAULT_CANDIDATE_FONT, fontNames)) {
+        if (!checkFont(DEFAULT_CANDIDATE_FONT, fontNames)) {
             DEFAULT_CANDIDATE_FONT = new Font(Font.SANS_SERIF, DEFAULT_CANDIDATE_FONT.getStyle(), DEFAULT_CANDIDATE_FONT.getSize());
             defaultCandidateFont = new Font(DEFAULT_CANDIDATE_FONT.getName(), DEFAULT_CANDIDATE_FONT.getStyle(), DEFAULT_CANDIDATE_FONT.getSize());
         }
-        if (! checkFont(DEFAULT_VALUE_FONT, fontNames)) {
+        if (!checkFont(DEFAULT_VALUE_FONT, fontNames)) {
             DEFAULT_VALUE_FONT = new Font(Font.SANS_SERIF, DEFAULT_VALUE_FONT.getStyle(), DEFAULT_VALUE_FONT.getSize());
             defaultValueFont = new Font(DEFAULT_VALUE_FONT.getName(), DEFAULT_VALUE_FONT.getStyle(), DEFAULT_VALUE_FONT.getSize());
         }
-        if (! checkFont(defaultCandidateFont, fontNames)) {
+        if (!checkFont(defaultCandidateFont, fontNames)) {
             defaultCandidateFont = new Font(DEFAULT_CANDIDATE_FONT.getName(), DEFAULT_CANDIDATE_FONT.getStyle(), DEFAULT_CANDIDATE_FONT.getSize());
         }
-        if (! checkFont(defaultValueFont, fontNames)) {
+        if (!checkFont(defaultValueFont, fontNames)) {
             defaultValueFont = new Font(DEFAULT_VALUE_FONT.getName(), DEFAULT_VALUE_FONT.getStyle(), DEFAULT_VALUE_FONT.getSize());
         }
-        if (! checkFont(BIG_FONT, fontNames)) {
+        if (!checkFont(BIG_FONT, fontNames)) {
             BIG_FONT = new Font(Font.SANS_SERIF, BIG_FONT.getStyle(), BIG_FONT.getSize());
             bigFont = new Font(BIG_FONT.getName(), BIG_FONT.getStyle(), BIG_FONT.getSize());
         }
-        if (! checkFont(SMALL_FONT, fontNames)) {
+        if (!checkFont(SMALL_FONT, fontNames)) {
             SMALL_FONT = new Font(Font.SANS_SERIF, SMALL_FONT.getStyle(), SMALL_FONT.getSize());
             smallFont = new Font(SMALL_FONT.getName(), SMALL_FONT.getStyle(), SMALL_FONT.getSize());
         }
-        if (! checkFont(bigFont, fontNames)) {
+        if (!checkFont(bigFont, fontNames)) {
             bigFont = new Font(BIG_FONT.getName(), BIG_FONT.getStyle(), BIG_FONT.getSize());
         }
-        if (! checkFont(smallFont, fontNames)) {
+        if (!checkFont(smallFont, fontNames)) {
             smallFont = new Font(SMALL_FONT.getName(), SMALL_FONT.getStyle(), SMALL_FONT.getSize());
         }
     }
@@ -348,22 +365,7 @@ public class Options {
 
     public static Options getInstance() {
         if (instance == null) {
-            try {
-                readOptions();
-            } catch (FileNotFoundException ex) {
-                Logger.getLogger(Options.class.getName()).log(Level.INFO, "No config file found");
-                // es gibt noch keine Options-Datei
-                instance = new Options();
-                try {
-                    // neue anlegen
-                    instance.writeOptions();
-                } catch (FileNotFoundException exi) {
-                    Logger.getLogger(Options.class.getName()).log(Level.SEVERE, "Error writing options", exi);
-                }
-            }
-            // readOptions() passt nur orgSolverSteps an,
-            // nicht aber solverSteps -> neu kopieren!
-            instance.solverSteps = instance.copyStepConfigs(instance.orgSolverSteps, false, false, false);
+            readOptions();
         }
         return instance;
     }
@@ -474,9 +476,9 @@ public class Options {
         difficultyLevels[3].setName(java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.hard"));
         difficultyLevels[4].setName(java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.unfair"));
         difficultyLevels[5].setName(java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.extreme"));
-        
+
     }
-    
+
     public void writeOptions() throws FileNotFoundException {
         writeOptions(System.getProperty("java.io.tmpdir") + File.separator + FILE_NAME);
     }
@@ -487,14 +489,29 @@ public class Options {
         out.close();
     }
 
-    public static void readOptions() throws FileNotFoundException {
+    public static void readOptions() {
         readOptions(System.getProperty("java.io.tmpdir") + File.separator + FILE_NAME);
     }
 
-    public static void readOptions(String fileName) throws FileNotFoundException {
-        XMLDecoder in = new XMLDecoder(new BufferedInputStream(new FileInputStream(fileName)));
-        instance = (Options) in.readObject();
-        in.close();
+    public static void readOptions(String fileName) {
+        try {
+            XMLDecoder in = new XMLDecoder(new BufferedInputStream(new FileInputStream(fileName)));
+            instance = (Options) in.readObject();
+            in.close();
+        } catch (FileNotFoundException ex) {
+            Logger.getLogger(Options.class.getName()).log(Level.INFO, "No config file found");
+            // es gibt noch keine Options-Datei
+            instance = new Options();
+            try {
+                // neue anlegen
+                instance.writeOptions();
+            } catch (FileNotFoundException exi) {
+                Logger.getLogger(Options.class.getName()).log(Level.SEVERE, "Error writing options", exi);
+            }
+        }
+        // readObject() passt nur orgSolverSteps an,
+        // nicht aber solverSteps -> neu kopieren!
+        instance.solverSteps = instance.copyStepConfigs(instance.orgSolverSteps, false, false, false);
     }
 
     public static void main(String[] args) {
@@ -925,5 +942,77 @@ public class Options {
 
     public void setLaf(String laf) {
         this.laf = laf;
+    }
+
+    public int getInitialHeight() {
+        return initialHeight;
+    }
+
+    public void setInitialHeight(int initialHeight) {
+        this.initialHeight = initialHeight;
+    }
+
+    public int getInitialWidth() {
+        return initialWidth;
+    }
+
+    public void setInitialWidth(int initialWidth) {
+        this.initialWidth = initialWidth;
+    }
+
+    public int getInitialVertDividerLoc() {
+        return initialVertDividerLoc;
+    }
+
+    public void setInitialVertDividerLoc(int initialVertDividerLoc) {
+        this.initialVertDividerLoc = initialVertDividerLoc;
+    }
+
+    public int getInitialHorzDividerLoc() {
+        return initialHorzDividerLoc;
+    }
+
+    public void setInitialHorzDividerLoc(int initialHorzDividerLoc) {
+        this.initialHorzDividerLoc = initialHorzDividerLoc;
+    }
+
+    public int getInitialDisplayMode() {
+        return initialDisplayMode;
+    }
+
+    public void setInitialDisplayMode(int initialDisplayMode) {
+        this.initialDisplayMode = initialDisplayMode;
+    }
+
+    public int getInitialXPos() {
+        return initialXPos;
+    }
+
+    public void setInitialXPos(int initialXPos) {
+        this.initialXPos = initialXPos;
+    }
+
+    public int getInitialYPos() {
+        return initialYPos;
+    }
+
+    public void setInitialYPos(int initialYPos) {
+        this.initialYPos = initialYPos;
+    }
+
+    public boolean isSaveWindowLayout() {
+        return saveWindowLayout;
+    }
+
+    public void setSaveWindowLayout(boolean saveWindowLayout) {
+        this.saveWindowLayout = saveWindowLayout;
+    }
+
+    public boolean isUseZeroInsteadOfDot() {
+        return useZeroInsteadOfDot;
+    }
+
+    public void setUseZeroInsteadOfDot(boolean useZeroInsteadOfDot) {
+        this.useZeroInsteadOfDot = useZeroInsteadOfDot;
     }
 }

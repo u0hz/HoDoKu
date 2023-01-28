@@ -134,6 +134,14 @@ public class SplitPanel extends javax.swing.JPanel {
         }
     }
     
+    public int getDividerLocation() {
+        return splitPane.getDividerLocation();
+    }
+    
+    public void setDividerLocation( int value) {
+        splitPane.setDividerLocation(value);
+    }
+    
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JSplitPane splitPane;
     // End of variables declaration//GEN-END:variables

@@ -85,6 +85,8 @@ public class ConfigStepPanel extends javax.swing.JPanel {
         maxTableEntryLengthTextField = new javax.swing.JTextField();
         lookAheadTextField = new javax.swing.JTextField();
         onlyOneChainCheckBox = new javax.swing.JCheckBox();
+        jPanel4 = new javax.swing.JPanel();
+        useZeroInsteadOfDotCheckBox = new javax.swing.JCheckBox();
 
         java.util.ResourceBundle bundle = java.util.ResourceBundle.getBundle("intl/ConfigStepPanel"); // NOI18N
         fishPanel.setBorder(javax.swing.BorderFactory.createTitledBorder(bundle.getString("ConfigStepPanel.fishPanel.border.title"))); // NOI18N
@@ -107,16 +109,16 @@ public class ConfigStepPanel extends javax.swing.JPanel {
             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, fishPanelLayout.createSequentialGroup()
                 .addContainerGap()
                 .addGroup(fishPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
-                    .addComponent(checkTemplatesCheckBox, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, 217, Short.MAX_VALUE)
+                    .addComponent(checkTemplatesCheckBox, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, 207, Short.MAX_VALUE)
                     .addGroup(fishPanelLayout.createSequentialGroup()
                         .addGroup(fishPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addGroup(fishPanelLayout.createSequentialGroup()
-                                .addComponent(maxFinsLabel, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                .addComponent(maxFinsLabel, javax.swing.GroupLayout.DEFAULT_SIZE, 94, Short.MAX_VALUE)
                                 .addGap(28, 28, 28))
-                            .addComponent(maxEndoFinsLabel, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                            .addComponent(maxEndoFinsLabel, javax.swing.GroupLayout.DEFAULT_SIZE, 122, Short.MAX_VALUE))
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addGroup(fishPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(maxFinsComboBox, 0, 80, Short.MAX_VALUE)
+                            .addComponent(maxFinsComboBox, 0, 81, Short.MAX_VALUE)
                             .addComponent(maxEndoFinsComboBox, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, 80, javax.swing.GroupLayout.PREFERRED_SIZE))))
                 .addContainerGap())
         );
@@ -161,8 +163,8 @@ public class ConfigStepPanel extends javax.swing.JPanel {
                             .addComponent(restrictNiceLoopSizeLabel))
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(restrictChainSizeComboBox, 0, 72, Short.MAX_VALUE)
-                            .addComponent(restrictNiceLoopSizeComboBox, 0, 72, Short.MAX_VALUE)))
+                            .addComponent(restrictChainSizeComboBox, 0, 73, Short.MAX_VALUE)
+                            .addComponent(restrictNiceLoopSizeComboBox, 0, 73, Short.MAX_VALUE)))
                     .addComponent(restrictChainSizeCheckBox, javax.swing.GroupLayout.DEFAULT_SIZE, 207, Short.MAX_VALUE))
                 .addContainerGap())
         );
@@ -189,7 +191,7 @@ public class ConfigStepPanel extends javax.swing.JPanel {
                 .addContainerGap()
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addComponent(jPanel3, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(fishPanel, javax.swing.GroupLayout.DEFAULT_SIZE, 243, Short.MAX_VALUE)))
+                    .addComponent(fishPanel, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))
         );
         jPanel1Layout.setVerticalGroup(
             jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -236,8 +238,8 @@ public class ConfigStepPanel extends javax.swing.JPanel {
                             .addComponent(lookAheadLabel))
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addGroup(tablingPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(lookAheadTextField, javax.swing.GroupLayout.DEFAULT_SIZE, 110, Short.MAX_VALUE)
-                            .addComponent(maxTableEntryLengthTextField, javax.swing.GroupLayout.DEFAULT_SIZE, 110, Short.MAX_VALUE)))
+                            .addComponent(lookAheadTextField, javax.swing.GroupLayout.DEFAULT_SIZE, 157, Short.MAX_VALUE)
+                            .addComponent(maxTableEntryLengthTextField, javax.swing.GroupLayout.DEFAULT_SIZE, 157, Short.MAX_VALUE)))
                     .addGroup(tablingPanelLayout.createSequentialGroup()
                         .addGap(10, 10, 10)
                         .addComponent(onlyOneChainCheckBox)))
@@ -258,12 +260,34 @@ public class ConfigStepPanel extends javax.swing.JPanel {
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
 
+        jPanel4.setBorder(javax.swing.BorderFactory.createTitledBorder(bundle.getString("ConfigStepPanel.jPanel4.border.title"))); // NOI18N
+
+        useZeroInsteadOfDotCheckBox.setMnemonic(java.util.ResourceBundle.getBundle("intl/ConfigStepPanel").getString("ConfigStepPanel.useZeroInsteadOfDotCheckBox.mnemonic").charAt(0));
+        useZeroInsteadOfDotCheckBox.setText(bundle.getString("ConfigStepPanel.useZeroInsteadOfDotCheckBox.text")); // NOI18N
+
+        javax.swing.GroupLayout jPanel4Layout = new javax.swing.GroupLayout(jPanel4);
+        jPanel4.setLayout(jPanel4Layout);
+        jPanel4Layout.setHorizontalGroup(
+            jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jPanel4Layout.createSequentialGroup()
+                .addContainerGap()
+                .addComponent(useZeroInsteadOfDotCheckBox)
+                .addContainerGap(108, Short.MAX_VALUE))
+        );
+        jPanel4Layout.setVerticalGroup(
+            jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jPanel4Layout.createSequentialGroup()
+                .addComponent(useZeroInsteadOfDotCheckBox)
+                .addContainerGap(54, Short.MAX_VALUE))
+        );
+
         javax.swing.GroupLayout jPanel2Layout = new javax.swing.GroupLayout(jPanel2);
         jPanel2.setLayout(jPanel2Layout);
         jPanel2Layout.setHorizontalGroup(
             jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel2Layout.createSequentialGroup()
                 .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                    .addComponent(jPanel4, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addComponent(tablingPanel, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addGroup(jPanel2Layout.createSequentialGroup()
                         .addContainerGap(132, Short.MAX_VALUE)
@@ -274,7 +298,9 @@ public class ConfigStepPanel extends javax.swing.JPanel {
             jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel2Layout.createSequentialGroup()
                 .addComponent(tablingPanel, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 274, Short.MAX_VALUE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(jPanel4, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 161, Short.MAX_VALUE)
                 .addComponent(resetButton)
                 .addContainerGap())
         );
@@ -312,6 +338,8 @@ public class ConfigStepPanel extends javax.swing.JPanel {
         Options.getInstance().maxTableEntryLength = Integer.parseInt(maxTableEntryLengthTextField.getText());
         Options.getInstance().anzTableLookAhead = Integer.parseInt(lookAheadTextField.getText());
         Options.getInstance().onlyOneChainPerStep = onlyOneChainCheckBox.isSelected();
+        
+        Options.getInstance().useZeroInsteadOfDot = useZeroInsteadOfDotCheckBox.isSelected();
     }
     
     private void initAll(boolean setDefault) {
@@ -327,6 +355,8 @@ public class ConfigStepPanel extends javax.swing.JPanel {
             maxTableEntryLengthTextField.setText(Integer.toString(Options.MAX_TABLE_ENTRY_LENGTH));
             lookAheadTextField.setText(Integer.toString(Options.ANZ_TABLE_LOOK_AHEAD));
             onlyOneChainCheckBox.setSelected(Options.ONLY_ONE_CHAIN_PER_STEP);
+            
+            useZeroInsteadOfDotCheckBox.setSelected(Options.USE_ZERO_INSTEAD_OF_DOT);
         } else {
             maxFinsComboBox.setSelectedIndex(Options.getInstance().maxFins);
             maxEndoFinsComboBox.setSelectedIndex(Options.getInstance().maxEndoFins);
@@ -339,6 +369,8 @@ public class ConfigStepPanel extends javax.swing.JPanel {
             maxTableEntryLengthTextField.setText(Integer.toString(Options.getInstance().maxTableEntryLength));
             lookAheadTextField.setText(Integer.toString(Options.getInstance().anzTableLookAhead));
             onlyOneChainCheckBox.setSelected(Options.getInstance().onlyOneChainPerStep);
+            
+            useZeroInsteadOfDotCheckBox.setSelected(Options.getInstance().useZeroInsteadOfDot);
         }
     }
     
@@ -348,6 +380,7 @@ public class ConfigStepPanel extends javax.swing.JPanel {
     private javax.swing.JPanel jPanel1;
     private javax.swing.JPanel jPanel2;
     private javax.swing.JPanel jPanel3;
+    private javax.swing.JPanel jPanel4;
     private javax.swing.JLabel lookAheadLabel;
     private javax.swing.JTextField lookAheadTextField;
     private javax.swing.JComboBox maxEndoFinsComboBox;
@@ -364,6 +397,7 @@ public class ConfigStepPanel extends javax.swing.JPanel {
     private javax.swing.JComboBox restrictNiceLoopSizeComboBox;
     private javax.swing.JLabel restrictNiceLoopSizeLabel;
     private javax.swing.JPanel tablingPanel;
+    private javax.swing.JCheckBox useZeroInsteadOfDotCheckBox;
     // End of variables declaration//GEN-END:variables
     
 }

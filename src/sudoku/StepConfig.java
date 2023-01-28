@@ -61,7 +61,8 @@ public class StepConfig implements Cloneable, Comparable<StepConfig> {
     }
     
     public static String getLevelName(DifficultyLevel level) {
-        return level.getName();
+        //return level.getName();
+        return Options.getInstance().getDifficultyLevels()[level.getOrdinal()].getName();
     }
     
     public void setType(SolutionType type) {

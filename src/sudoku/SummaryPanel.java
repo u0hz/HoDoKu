@@ -41,7 +41,7 @@ public class SummaryPanel extends javax.swing.JPanel {
         this.mainFrame = mainFrame;
         
         initComponents();
-        
+
         model = new SummaryTableModel();
         summaryTable.setModel(model);
         summaryTable.setDefaultRenderer(Object.class, new SummaryTableRenderer());
@@ -88,8 +88,8 @@ public class SummaryPanel extends javax.swing.JPanel {
 
         add(jScrollPane1, java.awt.BorderLayout.CENTER);
 
-        titleLabel.setBackground(new java.awt.Color(0, 153, 255));
-        titleLabel.setFont(new java.awt.Font("Tahoma", 1, 14));
+        titleLabel.setBackground(new java.awt.Color(51, 51, 255));
+        titleLabel.setFont(new java.awt.Font("Tahoma", 1, 12)); // NOI18N
         titleLabel.setForeground(new java.awt.Color(255, 255, 255));
         titleLabel.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
         java.util.ResourceBundle bundle = java.util.ResourceBundle.getBundle("intl/SummaryPanel"); // NOI18N
@@ -101,6 +101,11 @@ public class SummaryPanel extends javax.swing.JPanel {
     private void summaryTableMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_summaryTableMouseClicked
         mainFrame.fixFocus();
     }//GEN-LAST:event_summaryTableMouseClicked
+    
+    public void setTitleLabelColors(Color fore, Color back) {
+        titleLabel.setBackground(back);
+        titleLabel.setForeground(fore);
+    }
     
     public void initialize(SudokuSolver solver) {
         model.initialize(solver);

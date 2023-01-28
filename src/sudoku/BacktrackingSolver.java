@@ -15,6 +15,10 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with HoDoKu. If not, see <http://www.gnu.org/licenses/>.
+ * 
+ * This code is actually a Java port of code posted by Glenn Fowler
+ * in the Sudoku Player's Forum (http://www.setbb.com/sudoku).
+ * Many thanks for letting me use it!
  */
 
 package sudoku;

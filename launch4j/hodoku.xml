@@ -10,7 +10,7 @@
   <downloadUrl>http://java.com/download</downloadUrl>
   <supportUrl></supportUrl>
   <customProcName>true</customProcName>
-  <stayAlive>true</stayAlive>
+  <stayAlive>false</stayAlive>
   <manifest></manifest>
   <icon>D:\Projekte\Java\HoDoKu\src\img\hodoku01.ico</icon>
   <jre>

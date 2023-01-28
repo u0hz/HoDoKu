@@ -165,7 +165,7 @@ public class ColoringSolver extends AbstractSolver {
             if (checkColorWrap(onSet)) {
                 for (int j = 0; j < onSet.size(); j++) {
                     globalStep.addCandidateToDelete(onSet.get(j), cand);
-                    System.out.println("add: " + onSet.get(j) + "/" + cand);
+                    //System.out.println("add: " + onSet.get(j) + "/" + cand);
                 }
             }
             if (checkColorWrap(offSet)) {
@@ -178,8 +178,8 @@ public class ColoringSolver extends AbstractSolver {
                 globalStep.addValue(cand);
                 globalStep.addColorCandidates(onSet, 0);
                 globalStep.addColorCandidates(offSet, 1);
-                System.out.println("onSet: " + onSet);
-                System.out.println("offSet: " + offSet);
+                //System.out.println("onSet: " + onSet);
+                //System.out.println("offSet: " + offSet);
                 try {
                     steps.add((SolutionStep) globalStep.clone());
                 } catch (CloneNotSupportedException ex) {

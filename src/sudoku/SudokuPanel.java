@@ -318,22 +318,31 @@ public class SudokuPanel extends javax.swing.JPanel implements Printable {
                 aktCol = 8;
                 break;
             case KeyEvent.VK_9:
+            case KeyEvent.VK_NUMPAD9:
                 number++;
             case KeyEvent.VK_8:
+            case KeyEvent.VK_NUMPAD8:
                 number++;
             case KeyEvent.VK_7:
+            case KeyEvent.VK_NUMPAD7:
                 number++;
             case KeyEvent.VK_6:
+            case KeyEvent.VK_NUMPAD6:
                 number++;
             case KeyEvent.VK_5:
+            case KeyEvent.VK_NUMPAD5:
                 number++;
             case KeyEvent.VK_4:
+            case KeyEvent.VK_NUMPAD4:
                 number++;
             case KeyEvent.VK_3:
+            case KeyEvent.VK_NUMPAD3:
                 number++;
             case KeyEvent.VK_2:
+            case KeyEvent.VK_NUMPAD2:
                 number++;
             case KeyEvent.VK_1:
+            case KeyEvent.VK_NUMPAD1:
                 number++;
                 //int number = Character.digit(evt.getKeyChar(), 10);
                 if ((modifiers & KeyEvent.CTRL_DOWN_MASK) == 0) {
@@ -355,6 +364,7 @@ public class SudokuPanel extends javax.swing.JPanel implements Printable {
             case KeyEvent.VK_BACK_SPACE:
             case KeyEvent.VK_DELETE:
             case KeyEvent.VK_0:
+            case KeyEvent.VK_NUMPAD0:
                 if ((modifiers & KeyEvent.CTRL_DOWN_MASK) == 0) {
                     // Zelle löschen
                     if (cell.getValue() != 0 && !cell.isFixed()) {
@@ -410,23 +420,6 @@ public class SudokuPanel extends javax.swing.JPanel implements Printable {
                     }
                 }
                 break;
-            case KeyEvent.VK_GREATER:
-            case KeyEvent.VK_LESS:
-                boolean isUp = evt.getKeyChar() == '>';
-                if (isShowInvalidOrPossibleCells()) {
-                    if (isUp) {
-                        showHintCellValue++;
-                        if (showHintCellValue > 9) {
-                            showHintCellValue = 1;
-                        }
-                    } else {
-                        showHintCellValue--;
-                        if (showHintCellValue < 1) {
-                            showHintCellValue = 9;
-                        }
-                    }
-                }
-                break;
             case KeyEvent.VK_E:
                 number++;
             case KeyEvent.VK_D:
@@ -459,6 +452,28 @@ public class SudokuPanel extends javax.swing.JPanel implements Printable {
                 break;
             case KeyEvent.VK_R:
                 coloringMap.clear();
+                break;
+            case KeyEvent.VK_GREATER:
+            case KeyEvent.VK_LESS:
+            default:
+                // doesnt work on all keyboards :-(
+                char ch = evt.getKeyChar();
+                if (ch == '<' || ch == '>') {
+                    boolean isUp = evt.getKeyChar() == '>';
+                    if (isShowInvalidOrPossibleCells()) {
+                        if (isUp) {
+                            showHintCellValue++;
+                            if (showHintCellValue > 9) {
+                                showHintCellValue = 1;
+                            }
+                        } else {
+                            showHintCellValue--;
+                            if (showHintCellValue < 1) {
+                                showHintCellValue = 9;
+                            }
+                        }
+                    }
+                }
                 break;
         }
         if (changed) {
@@ -638,6 +653,7 @@ public class SudokuPanel extends javax.swing.JPanel implements Printable {
                     g2.setColor(Options.getInstance().getPossibleCellColor());
                 }
                 if (cell.getValue() == 0 && coloringMap.containsKey(cellIndex)) {
+                //if (coloringMap.containsKey(cellIndex)) {
                     // coloring
                     g2.setColor(Options.getInstance().getColoringColors()[coloringMap.get(cellIndex)]);
                 }

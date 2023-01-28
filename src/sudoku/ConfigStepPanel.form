@@ -40,7 +40,7 @@
                   <EmptySpace max="-2" attributes="0"/>
                   <Group type="103" groupAlignment="0" attributes="0">
                       <Component id="jPanel3" alignment="1" max="32767" attributes="2"/>
-                      <Component id="fishPanel" alignment="0" pref="243" max="32767" attributes="2"/>
+                      <Component id="fishPanel" alignment="0" max="32767" attributes="2"/>
                   </Group>
               </Group>
           </Group>
@@ -61,7 +61,7 @@
           <Properties>
             <Property name="border" type="javax.swing.border.Border" editor="org.netbeans.modules.form.editors2.BorderEditor">
               <Border info="org.netbeans.modules.form.compat2.border.TitledBorderInfo">
-                <TitledBorder title="Fische allgemein">
+                <TitledBorder title="Fische general">
                   <ResourceString PropertyName="titleX" bundle="intl/ConfigStepPanel.properties" key="ConfigStepPanel.fishPanel.border.title" replaceFormat="java.util.ResourceBundle.getBundle(&quot;{bundleNameSlashes}&quot;).getString(&quot;{key}&quot;)"/>
                 </TitledBorder>
               </Border>
@@ -74,18 +74,18 @@
                   <Group type="102" alignment="1" attributes="0">
                       <EmptySpace min="-2" max="-2" attributes="0"/>
                       <Group type="103" groupAlignment="1" attributes="0">
-                          <Component id="checkTemplatesCheckBox" alignment="0" pref="217" max="32767" attributes="0"/>
+                          <Component id="checkTemplatesCheckBox" alignment="0" pref="207" max="32767" attributes="0"/>
                           <Group type="102" alignment="1" attributes="0">
                               <Group type="103" groupAlignment="0" attributes="0">
                                   <Group type="102" alignment="0" attributes="0">
-                                      <Component id="maxFinsLabel" max="32767" attributes="0"/>
+                                      <Component id="maxFinsLabel" pref="94" max="32767" attributes="0"/>
                                       <EmptySpace min="28" pref="28" max="28" attributes="0"/>
                                   </Group>
-                                  <Component id="maxEndoFinsLabel" alignment="0" max="32767" attributes="0"/>
+                                  <Component id="maxEndoFinsLabel" alignment="0" pref="122" max="32767" attributes="0"/>
                               </Group>
                               <EmptySpace min="-2" max="-2" attributes="0"/>
                               <Group type="103" groupAlignment="0" attributes="0">
-                                  <Component id="maxFinsComboBox" pref="80" max="32767" attributes="2"/>
+                                  <Component id="maxFinsComboBox" pref="81" max="32767" attributes="2"/>
                                   <Component id="maxEndoFinsComboBox" alignment="1" min="-2" pref="80" max="-2" attributes="2"/>
                               </Group>
                           </Group>
@@ -162,7 +162,7 @@
           <Properties>
             <Property name="border" type="javax.swing.border.Border" editor="org.netbeans.modules.form.editors2.BorderEditor">
               <Border info="org.netbeans.modules.form.compat2.border.TitledBorderInfo">
-                <TitledBorder title="Chains allgemein">
+                <TitledBorder title="Chains general">
                   <ResourceString PropertyName="titleX" bundle="intl/ConfigStepPanel.properties" key="ConfigStepPanel.jPanel3.border.title" replaceFormat="java.util.ResourceBundle.getBundle(&quot;{bundleNameSlashes}&quot;).getString(&quot;{key}&quot;)"/>
                 </TitledBorder>
               </Border>
@@ -182,8 +182,8 @@
                               </Group>
                               <EmptySpace max="-2" attributes="0"/>
                               <Group type="103" groupAlignment="0" attributes="0">
-                                  <Component id="restrictChainSizeComboBox" alignment="0" pref="72" max="32767" attributes="0"/>
-                                  <Component id="restrictNiceLoopSizeComboBox" alignment="0" pref="72" max="32767" attributes="0"/>
+                                  <Component id="restrictChainSizeComboBox" alignment="0" pref="73" max="32767" attributes="0"/>
+                                  <Component id="restrictNiceLoopSizeComboBox" alignment="0" pref="73" max="32767" attributes="0"/>
                               </Group>
                           </Group>
                           <Component id="restrictChainSizeCheckBox" alignment="0" pref="207" max="32767" attributes="0"/>
@@ -265,6 +265,7 @@
           <Group type="103" groupAlignment="0" attributes="0">
               <Group type="102" alignment="1" attributes="0">
                   <Group type="103" groupAlignment="1" attributes="0">
+                      <Component id="jPanel4" alignment="1" max="32767" attributes="0"/>
                       <Component id="tablingPanel" alignment="0" max="32767" attributes="0"/>
                       <Group type="102" alignment="1" attributes="0">
                           <EmptySpace pref="132" max="32767" attributes="0"/>
@@ -279,7 +280,9 @@
           <Group type="103" groupAlignment="0" attributes="0">
               <Group type="102" alignment="1" attributes="0">
                   <Component id="tablingPanel" min="-2" max="-2" attributes="0"/>
-                  <EmptySpace pref="274" max="32767" attributes="0"/>
+                  <EmptySpace max="-2" attributes="0"/>
+                  <Component id="jPanel4" min="-2" max="-2" attributes="0"/>
+                  <EmptySpace pref="161" max="32767" attributes="0"/>
                   <Component id="resetButton" min="-2" max="-2" attributes="0"/>
                   <EmptySpace max="-2" attributes="0"/>
               </Group>
@@ -304,7 +307,7 @@
           <Properties>
             <Property name="border" type="javax.swing.border.Border" editor="org.netbeans.modules.form.editors2.BorderEditor">
               <Border info="org.netbeans.modules.form.compat2.border.TitledBorderInfo">
-                <TitledBorder title="Tabling allgemein">
+                <TitledBorder title="Tabling general">
                   <ResourceString PropertyName="titleX" bundle="intl/ConfigStepPanel.properties" key="ConfigStepPanel.tablingPanel.border.title" replaceFormat="java.util.ResourceBundle.getBundle(&quot;{bundleNameSlashes}&quot;).getString(&quot;{key}&quot;)"/>
                 </TitledBorder>
               </Border>
@@ -324,8 +327,8 @@
                               </Group>
                               <EmptySpace max="-2" attributes="0"/>
                               <Group type="103" groupAlignment="0" attributes="0">
-                                  <Component id="lookAheadTextField" pref="110" max="32767" attributes="0"/>
-                                  <Component id="maxTableEntryLengthTextField" alignment="0" pref="110" max="32767" attributes="0"/>
+                                  <Component id="lookAheadTextField" pref="157" max="32767" attributes="0"/>
+                                  <Component id="maxTableEntryLengthTextField" alignment="0" pref="157" max="32767" attributes="0"/>
                               </Group>
                           </Group>
                           <Group type="102" alignment="0" attributes="0">
@@ -402,6 +405,49 @@
                 </Property>
                 <Property name="margin" type="java.awt.Insets" editor="org.netbeans.beaninfo.editors.InsetsEditor">
                   <Insets value="[0, 0, 0, 0]"/>
+                </Property>
+              </Properties>
+            </Component>
+          </SubComponents>
+        </Container>
+        <Container class="javax.swing.JPanel" name="jPanel4">
+          <Properties>
+            <Property name="border" type="javax.swing.border.Border" editor="org.netbeans.modules.form.editors2.BorderEditor">
+              <Border info="org.netbeans.modules.form.compat2.border.TitledBorderInfo">
+                <TitledBorder title="Clipboard">
+                  <ResourceString PropertyName="titleX" bundle="intl/ConfigStepPanel.properties" key="ConfigStepPanel.jPanel4.border.title" replaceFormat="java.util.ResourceBundle.getBundle(&quot;{bundleNameSlashes}&quot;).getString(&quot;{key}&quot;)"/>
+                </TitledBorder>
+              </Border>
+            </Property>
+          </Properties>
+
+          <Layout>
+            <DimensionLayout dim="0">
+              <Group type="103" groupAlignment="0" attributes="0">
+                  <Group type="102" alignment="0" attributes="0">
+                      <EmptySpace max="-2" attributes="0"/>
+                      <Component id="useZeroInsteadOfDotCheckBox" min="-2" max="-2" attributes="0"/>
+                      <EmptySpace pref="108" max="32767" attributes="0"/>
+                  </Group>
+              </Group>
+            </DimensionLayout>
+            <DimensionLayout dim="1">
+              <Group type="103" groupAlignment="0" attributes="0">
+                  <Group type="102" alignment="0" attributes="0">
+                      <Component id="useZeroInsteadOfDotCheckBox" min="-2" max="-2" attributes="0"/>
+                      <EmptySpace pref="54" max="32767" attributes="0"/>
+                  </Group>
+              </Group>
+            </DimensionLayout>
+          </Layout>
+          <SubComponents>
+            <Component class="javax.swing.JCheckBox" name="useZeroInsteadOfDotCheckBox">
+              <Properties>
+                <Property name="mnemonic" type="int" editor="org.netbeans.modules.i18n.form.FormI18nMnemonicEditor">
+                  <ResourceString bundle="intl/ConfigStepPanel.properties" key="ConfigStepPanel.useZeroInsteadOfDotCheckBox.mnemonic" replaceFormat="java.util.ResourceBundle.getBundle(&quot;{bundleNameSlashes}&quot;).getString(&quot;{key}&quot;)"/>
+                </Property>
+                <Property name="text" type="java.lang.String" editor="org.netbeans.modules.i18n.form.FormI18nStringEditor">
+                  <ResourceString bundle="intl/ConfigStepPanel.properties" key="ConfigStepPanel.useZeroInsteadOfDotCheckBox.text" replaceFormat="java.util.ResourceBundle.getBundle(&quot;{bundleNameSlashes}&quot;).getString(&quot;{key}&quot;)"/>
                 </Property>
               </Properties>
             </Component>

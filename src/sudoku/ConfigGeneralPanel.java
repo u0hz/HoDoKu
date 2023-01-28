@@ -142,6 +142,7 @@ public class ConfigGeneralPanel extends javax.swing.JPanel {
         showCandidatesCheckBox = new javax.swing.JCheckBox();
         showWrongValuesCheckBox = new javax.swing.JCheckBox();
         showDeviationsCheckBox = new javax.swing.JCheckBox();
+        saveWindowLayoutCheckBox = new javax.swing.JCheckBox();
         jPanel3 = new javax.swing.JPanel();
         valuesLabel = new javax.swing.JLabel();
         candidatesLabel = new javax.swing.JLabel();
@@ -351,7 +352,7 @@ public class ConfigGeneralPanel extends javax.swing.JPanel {
                     .addComponent(mediumBGButton, 0, 25, Short.MAX_VALUE)
                     .addComponent(easyBGButton, javax.swing.GroupLayout.PREFERRED_SIZE, 25, Short.MAX_VALUE)
                     .addComponent(incompleteBGButton, javax.swing.GroupLayout.PREFERRED_SIZE, 25, Short.MAX_VALUE))
-                .addGap(40, 40, 40))
+                .addGap(41, 41, 41))
         );
 
         jPanel1Layout.linkSize(javax.swing.SwingConstants.HORIZONTAL, new java.awt.Component[] {easyTextField, extremeTextField, hardTextField, jTextField1, mediumTextField, unfairTextField});
@@ -426,6 +427,11 @@ public class ConfigGeneralPanel extends javax.swing.JPanel {
         showDeviationsCheckBox.setBorder(javax.swing.BorderFactory.createEmptyBorder(0, 0, 0, 0));
         showDeviationsCheckBox.setMargin(new java.awt.Insets(0, 0, 0, 0));
 
+        saveWindowLayoutCheckBox.setMnemonic(java.util.ResourceBundle.getBundle("intl/ConfigGeneralPanel").getString("ConfigGeneralPanel.saveWindowLayoutCheckBox.mnemonic").charAt(0));
+        saveWindowLayoutCheckBox.setText(bundle.getString("ConfigGeneralPanel.saveWindowLayoutCheckBox.text")); // NOI18N
+        saveWindowLayoutCheckBox.setBorder(javax.swing.BorderFactory.createEmptyBorder(0, 0, 0, 0));
+        saveWindowLayoutCheckBox.setMargin(new java.awt.Insets(0, 0, 0, 0));
+
         javax.swing.GroupLayout jPanel2Layout = new javax.swing.GroupLayout(jPanel2);
         jPanel2.setLayout(jPanel2Layout);
         jPanel2Layout.setHorizontalGroup(
@@ -433,10 +439,11 @@ public class ConfigGeneralPanel extends javax.swing.JPanel {
             .addGroup(jPanel2Layout.createSequentialGroup()
                 .addContainerGap()
                 .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(showCandidatesCheckBox)
+                    .addComponent(showDeviationsCheckBox)
                     .addComponent(showWrongValuesCheckBox)
-                    .addComponent(showDeviationsCheckBox))
-                .addContainerGap(91, Short.MAX_VALUE))
+                    .addComponent(showCandidatesCheckBox)
+                    .addComponent(saveWindowLayoutCheckBox))
+                .addContainerGap(90, Short.MAX_VALUE))
         );
         jPanel2Layout.setVerticalGroup(
             jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -446,6 +453,8 @@ public class ConfigGeneralPanel extends javax.swing.JPanel {
                 .addComponent(showWrongValuesCheckBox)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(showDeviationsCheckBox)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(saveWindowLayoutCheckBox)
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
 
@@ -543,7 +552,7 @@ public class ConfigGeneralPanel extends javax.swing.JPanel {
                             .addComponent(candidatesButton)
                             .addComponent(printLargeButton)
                             .addComponent(printSmallButton))))
-                .addContainerGap(36, Short.MAX_VALUE))
+                .addContainerGap(35, Short.MAX_VALUE))
         );
 
         jPanel3Layout.linkSize(javax.swing.SwingConstants.HORIZONTAL, new java.awt.Component[] {candidateFactorTextField, hintFactorTextField, valueFactorTextField});
@@ -614,8 +623,8 @@ public class ConfigGeneralPanel extends javax.swing.JPanel {
                     .addComponent(lookAndFeelLabel))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(localComboBox, 0, 121, Short.MAX_VALUE)
-                    .addComponent(lookAndFeelComboBox, 0, 121, Short.MAX_VALUE))
+                    .addComponent(localComboBox, 0, 120, Short.MAX_VALUE)
+                    .addComponent(lookAndFeelComboBox, 0, 120, Short.MAX_VALUE))
                 .addContainerGap())
         );
         jPanel4Layout.setVerticalGroup(
@@ -628,7 +637,7 @@ public class ConfigGeneralPanel extends javax.swing.JPanel {
                 .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(lookAndFeelLabel)
                     .addComponent(lookAndFeelComboBox, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addContainerGap(22, Short.MAX_VALUE))
+                .addContainerGap(43, Short.MAX_VALUE))
         );
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(this);
@@ -660,7 +669,7 @@ public class ConfigGeneralPanel extends javax.swing.JPanel {
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
                     .addComponent(jPanel2, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addComponent(jPanel4, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-                .addGap(57, 57, 57)
+                .addGap(36, 36, 36)
                 .addComponent(resetButton)
                 .addContainerGap())
         );
@@ -745,6 +754,7 @@ public class ConfigGeneralPanel extends javax.swing.JPanel {
         Options.getInstance().showCandidates = showCandidatesCheckBox.isSelected();
         Options.getInstance().showWrongValues = showWrongValuesCheckBox.isSelected();
         Options.getInstance().showDeviations = showDeviationsCheckBox.isSelected();
+        Options.getInstance().saveWindowLayout = saveWindowLayoutCheckBox.isSelected();
         
         Options.getInstance().defaultValueFont = fonts[0];
         Options.getInstance().defaultCandidateFont = fonts[1];
@@ -785,6 +795,7 @@ public class ConfigGeneralPanel extends javax.swing.JPanel {
             showCandidatesCheckBox.setSelected(Options.SHOW_CANDIDATES);
             showWrongValuesCheckBox.setSelected(Options.SHOW_WRONG_VALUES);
             showDeviationsCheckBox.setSelected(Options.SHOW_DEVIATIONS);
+            saveWindowLayoutCheckBox.setSelected(Options.SAVE_WINDOW_LAYOUT);
             
             fonts[0] = Options.DEFAULT_VALUE_FONT;
             fonts[1] = Options.DEFAULT_CANDIDATE_FONT;
@@ -803,6 +814,7 @@ public class ConfigGeneralPanel extends javax.swing.JPanel {
             showCandidatesCheckBox.setSelected(Options.getInstance().showCandidates);
             showWrongValuesCheckBox.setSelected(Options.getInstance().showWrongValues);
             showDeviationsCheckBox.setSelected(Options.getInstance().showDeviations);
+            saveWindowLayoutCheckBox.setSelected(Options.getInstance().saveWindowLayout);
             
             fonts[0] = Options.getInstance().defaultValueFont;
             fonts[1] = Options.getInstance().defaultCandidateFont;
@@ -1002,6 +1014,7 @@ public class ConfigGeneralPanel extends javax.swing.JPanel {
     private javax.swing.JLabel printSmallFontLabel;
     private javax.swing.JLabel printSmallLabel;
     private javax.swing.JButton resetButton;
+    private javax.swing.JCheckBox saveWindowLayoutCheckBox;
     private javax.swing.JCheckBox showCandidatesCheckBox;
     private javax.swing.JCheckBox showDeviationsCheckBox;
     private javax.swing.JCheckBox showWrongValuesCheckBox;

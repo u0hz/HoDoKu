@@ -16,7 +16,6 @@
  * You should have received a copy of the GNU General Public License
  * along with HoDoKu. If not, see <http://www.gnu.org/licenses/>.
  */
-
 package sudoku;
 
 import java.awt.Color;
@@ -32,6 +31,7 @@ import java.awt.datatransfer.FlavorEvent;
 import java.awt.datatransfer.FlavorListener;
 import java.awt.datatransfer.StringSelection;
 import java.awt.datatransfer.Transferable;
+import java.awt.event.MouseEvent;
 import java.awt.print.PageFormat;
 import java.awt.print.PrinterException;
 import java.awt.print.PrinterJob;
@@ -71,7 +71,7 @@ import javax.swing.filechooser.FileFilter;
  */
 public class MainFrame extends javax.swing.JFrame implements FlavorListener {
 
-    public static final String VERSION = "HoDoKu - v0.9.0";
+    public static final String VERSION = "HoDoKu - v1.0";
     private SudokuPanel sudokuPanel;
     private DifficultyLevel level = Options.getInstance().getDifficultyLevels()[DifficultyType.EASY.ordinal()];
     private Cursor[] numberCursors = new Cursor[10];
@@ -99,6 +99,9 @@ public class MainFrame extends javax.swing.JFrame implements FlavorListener {
     };
     private MyCaretListener caretListener = new MyCaretListener();
     private boolean outerSplitPaneInitialized = false; // used to adjust divider bar at startup!
+    private int resetHDivLocLoc = -1;            // when resetting windows, the divider location gets changed by some layout function
+    private boolean resetHDivLoc = false;   // adjust DividerLocation after change
+    private long resetHDivLocTicks = 0;     // only adjust within a second or so
     private String configFileExt = java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.config_file_ext");
     private String solutionFileExt = java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.solution_file_ext");
     private MessageFormat formatter = new MessageFormat("");
@@ -108,6 +111,38 @@ public class MainFrame extends javax.swing.JFrame implements FlavorListener {
         initComponents();
         setTitle(VERSION);
 
+        Color lafMenuBackColor = UIManager.getColor("textHighlight");
+        Color lafMenuColor = UIManager.getColor("textHighlightText");
+        Color lafMenuInactiveColor = UIManager.getColor("textInactiveText");
+        if (lafMenuBackColor == null) {
+            lafMenuBackColor = Color.BLUE;
+        }
+        if (lafMenuColor == null) {
+            lafMenuColor = Color.BLACK;
+        }
+        if (lafMenuInactiveColor == null) {
+            lafMenuInactiveColor = Color.WHITE;
+        }
+        statusLinePanel.setBackground(lafMenuBackColor);
+        statusLabelLevel.setForeground(lafMenuColor);
+        statusLabelAktColor = lafMenuInactiveColor;
+        statusLabelNormColor = lafMenuColor;
+        summaryPanel.setTitleLabelColors(lafMenuColor, lafMenuBackColor);
+        solutionPanel.setTitleLabelColors(lafMenuColor, lafMenuBackColor);
+
+//        UIDefaults def = UIManager.getDefaults();
+//        Enumeration defEnum = def.keys();
+//        SortedSet<String> defSet = new TreeSet<String>();
+//        while (defEnum.hasMoreElements()) {
+//            Object tmp = defEnum.nextElement();
+//            if (tmp instanceof String) {
+//                defSet.add((String)tmp);
+//            }
+//        }
+//        for (String key : defSet) {
+//            System.out.println(key + ": " + def.get(key));
+//        }
+
         Clipboard clip = Toolkit.getDefaultToolkit().getSystemClipboard();
         clip.addFlavorListener(this);
         adjustPasteMenuItem();
@@ -115,12 +150,42 @@ public class MainFrame extends javax.swing.JFrame implements FlavorListener {
         sudokuPanel = new SudokuPanel(this);
         outerSplitPane.setLeftComponent(splitPanel);
         splitPanel.setSplitPane(sudokuPanel, null);
-        setSize(580, 780);
-        outerSplitPane.setDividerLocation(560);
 
         tabPane.addTab(java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.summary"), summaryPanel);
         tabPane.addTab(java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.solution_path"), solutionPanel);
         tabPane.addTab(java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.all_steps"), allStepsPanel);
+        tabPane.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                tabPaneMouseClicked(evt);
+            }
+        });
+
+        if (Options.getInstance().saveWindowLayout) {
+            setWindowLayout(false);
+        } else {
+            setWindowLayout(true);
+        }
+        outerSplitPaneInitialized = false;
+        if (Options.getInstance().initialXPos != -1 && Options.getInstance().initialYPos != -1) {
+            Toolkit t = Toolkit.getDefaultToolkit();
+            Dimension screenSize = t.getScreenSize();
+            int x = Options.getInstance().initialXPos;
+            int y = Options.getInstance().initialYPos;
+            if (x + getWidth() > screenSize.width) {
+                x = screenSize.width - getWidth() - 10;
+            }
+            if (y + getHeight() > screenSize.height) {
+                y = screenSize.height - getHeight() - 10;
+            }
+            if (x < 0) {
+                x = 0;
+            }
+            if (y < 0) {
+                y = 0;
+            }
+            setLocation(x, y);
+        }
 
         // Level-Menüs und Combo-Box
         levelMenuItems[0] = levelLeichtMenuItem;
@@ -201,7 +266,7 @@ public class MainFrame extends javax.swing.JFrame implements FlavorListener {
 
         // Caret-Listener for display of Forcing Chains
         hinweisTextArea.addCaretListener(caretListener);
-        
+
         fixFocus();
     }
 
@@ -308,6 +373,8 @@ public class MainFrame extends javax.swing.JFrame implements FlavorListener {
         summaryMenuItem = new javax.swing.JRadioButtonMenuItem();
         solutionMenuItem = new javax.swing.JRadioButtonMenuItem();
         allStepsMenuItem = new javax.swing.JRadioButtonMenuItem();
+        jSeparator7 = new javax.swing.JSeparator();
+        resetViewMenuItem = new javax.swing.JMenuItem();
         helpMenu = new javax.swing.JMenu();
         keyMenuItem = new javax.swing.JMenuItem();
         jSeparator6 = new javax.swing.JSeparator();
@@ -575,6 +642,11 @@ public class MainFrame extends javax.swing.JFrame implements FlavorListener {
         });
 
         hintPanel.setBorder(javax.swing.BorderFactory.createTitledBorder(bundle.getString("MainFrame.hintPanel.border.title"))); // NOI18N
+        hintPanel.addPropertyChangeListener(new java.beans.PropertyChangeListener() {
+            public void propertyChange(java.beans.PropertyChangeEvent evt) {
+                hintPanelPropertyChange(evt);
+            }
+        });
 
         neuerHinweisButton.setMnemonic('n');
         neuerHinweisButton.setText(bundle.getString("MainFrame.neuerHinweisButton.text")); // NOI18N
@@ -779,6 +851,7 @@ public class MainFrame extends javax.swing.JFrame implements FlavorListener {
         bearbeitenMenu.add(redoMenuItem);
         bearbeitenMenu.add(jSeparator3);
 
+        copyCluesMenuItem.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_G, java.awt.event.InputEvent.CTRL_MASK));
         copyCluesMenuItem.setMnemonic(java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.copyCluesMenuItemMnemonic").charAt(0));
         copyCluesMenuItem.setText(bundle.getString("MainFrame.copyCluesMenuItem.text")); // NOI18N
         copyCluesMenuItem.addActionListener(new java.awt.event.ActionListener() {
@@ -836,6 +909,7 @@ public class MainFrame extends javax.swing.JFrame implements FlavorListener {
         bearbeitenMenu.add(pasteMenuItem);
         bearbeitenMenu.add(jSeparator17);
 
+        resetSpielMenuItem.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_R, java.awt.event.InputEvent.CTRL_MASK));
         resetSpielMenuItem.setMnemonic(java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.resetSpielMenuItemMnemonic").charAt(0));
         resetSpielMenuItem.setText(bundle.getString("MainFrame.resetSpielMenuItem.text")); // NOI18N
         resetSpielMenuItem.addActionListener(new java.awt.event.ActionListener() {
@@ -1042,6 +1116,16 @@ public class MainFrame extends javax.swing.JFrame implements FlavorListener {
             }
         });
         ansichtMenu.add(allStepsMenuItem);
+        ansichtMenu.add(jSeparator7);
+
+        resetViewMenuItem.setMnemonic(java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.resetViewMenuItemMnemonic").charAt(0));
+        resetViewMenuItem.setText(bundle.getString("MainFrame.resetViewMenuItem.text")); // NOI18N
+        resetViewMenuItem.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                resetViewMenuItemActionPerformed(evt);
+            }
+        });
+        ansichtMenu.add(resetViewMenuItem);
 
         jMenuBar1.add(ansichtMenu);
 
@@ -1093,7 +1177,8 @@ public class MainFrame extends javax.swing.JFrame implements FlavorListener {
                     if (!path.endsWith("." + configFileExt)) {
                         path += "." + configFileExt;
                     }
-                    Options.getInstance().writeOptions(path);
+                    //Options.getInstance().writeOptions(path);
+                    writeOptionsWithWindowState(path);
                 } else if (actFilter == fileFilters[1] || path.endsWith("." + solutionFileExt)) {
                     // Sudoku und Lösung
                     if (!path.endsWith("." + solutionFileExt)) {
@@ -1120,7 +1205,7 @@ public class MainFrame extends javax.swing.JFrame implements FlavorListener {
                     zOut.close();
                 } else {
                     formatter.applyPattern(java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.invalid_filename"));
-                    String msg = formatter.format(new Object[] { path });
+                    String msg = formatter.format(new Object[]{path});
                     JOptionPane.showMessageDialog(this, msg,
                             java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.error"), JOptionPane.ERROR_MESSAGE);
                 }
@@ -1183,7 +1268,7 @@ public class MainFrame extends javax.swing.JFrame implements FlavorListener {
                     fixFocus();
                 } else {
                     formatter.applyPattern(java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.invalid_filename"));
-                    String msg = formatter.format(new Object[] { path });
+                    String msg = formatter.format(new Object[]{path});
                     JOptionPane.showMessageDialog(this, msg,
                             java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.error"), JOptionPane.ERROR_MESSAGE);
                 }
@@ -1314,7 +1399,7 @@ public class MainFrame extends javax.swing.JFrame implements FlavorListener {
                 job.print();
             }
         } catch (PrinterException ex) {
-            JOptionPane.showMessageDialog(this, ex.toString(), 
+            JOptionPane.showMessageDialog(this, ex.toString(),
                     java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.error"), JOptionPane.ERROR_MESSAGE);
         }
     }//GEN-LAST:event_druckenMenuItemActionPerformed
@@ -1468,7 +1553,7 @@ public class MainFrame extends javax.swing.JFrame implements FlavorListener {
         fixFocus();
         if (step != null) {
             JOptionPane.showMessageDialog(this, java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.possible_step") +
-                    step.toString(1), 
+                    step.toString(1),
                     java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.medium_hint"), JOptionPane.INFORMATION_MESSAGE);
         } else {
             JOptionPane.showMessageDialog(this, java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.dont_know"),
@@ -1482,7 +1567,7 @@ public class MainFrame extends javax.swing.JFrame implements FlavorListener {
             return;
         }
         if (!sudokuPanel.isShowCandidates()) {
-            JOptionPane.showMessageDialog(this, java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.not_available"), 
+            JOptionPane.showMessageDialog(this, java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.not_available"),
                     java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.hint"), JOptionPane.INFORMATION_MESSAGE);
             return;
         }
@@ -1490,10 +1575,10 @@ public class MainFrame extends javax.swing.JFrame implements FlavorListener {
         sudokuPanel.abortStep();
         fixFocus();
         if (step != null) {
-            JOptionPane.showMessageDialog(this, java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.possible_step") + 
+            JOptionPane.showMessageDialog(this, java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.possible_step") +
                     step.toString(0), java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.vage_hint"), JOptionPane.INFORMATION_MESSAGE);
         } else {
-            JOptionPane.showMessageDialog(this, java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.dont_know"), 
+            JOptionPane.showMessageDialog(this, java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.dont_know"),
                     java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.error"), JOptionPane.ERROR_MESSAGE);
         }
     }//GEN-LAST:event_vageHintMenuItemActionPerformed
@@ -1533,7 +1618,7 @@ public class MainFrame extends javax.swing.JFrame implements FlavorListener {
             return;
         }
         if (!sudokuPanel.isShowCandidates()) {
-            JOptionPane.showMessageDialog(this, java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.not_available"), 
+            JOptionPane.showMessageDialog(this, java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.not_available"),
                     java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.hint"), JOptionPane.INFORMATION_MESSAGE);
             return;
         }
@@ -1544,6 +1629,7 @@ public class MainFrame extends javax.swing.JFrame implements FlavorListener {
             hinweisTextArea.setText(java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.dont_know"));
             hinweisTextArea.setCaretPosition(0);
         }
+        check();
         fixFocus();
     }//GEN-LAST:event_lösungsSchrittMenuItemActionPerformed
 
@@ -1610,6 +1696,7 @@ public class MainFrame extends javax.swing.JFrame implements FlavorListener {
             Logger.getLogger(getClass().getName()).log(Level.SEVERE, "Error pasting from clipboard", ex);
         }
         setSpielen(true);
+        check();
         fixFocus();
     }//GEN-LAST:event_pasteMenuItemActionPerformed
 
@@ -1620,16 +1707,31 @@ private void outerSplitPanePropertyChange(java.beans.PropertyChangeEvent evt) {/
         outerSplitPaneInitialized = true; // beware of recursion!
         int diff = (int) (hintPanel.getMinimumSize().getHeight() - hintPanel.getSize().getHeight());
         if (diff > 0) {
-            outerSplitPane.setDividerLocation(outerSplitPane.getDividerLocation() - diff - 1);
-        //System.out.println("Divider adjusted (" + (diff + 1) + ")!");
+            resetHDivLocLoc = outerSplitPane.getDividerLocation() - diff - 1;
+            outerSplitPane.setDividerLocation(resetHDivLocLoc);
+            //System.out.println("Divider adjusted (" + (diff + 1) + ")!");
+            //System.out.println("   absolut position: " + outerSplitPane.getDividerLocation());
         }
-    //System.out.println("outerSplitPaneinitialized = true!");
+        //System.out.println("outerSplitPaneinitialized = true!");
+    }
+//    System.out.println("gdl: " + outerSplitPane.getDividerLocation() + " (" +
+//            outerSplitPaneInitialized + "/" + outerSplitPane.getSize().getHeight() + "/" +
+//            hintPanel.getSize().getHeight());
+    if (resetHDivLoc && outerSplitPane.getDividerLocation() != resetHDivLocLoc) {
+        resetHDivLoc = false;
+        if (System.currentTimeMillis() - resetHDivLocTicks < 1000) {
+            //System.out.println("Reset adjusted!");
+            outerSplitPane.setDividerLocation(resetHDivLocLoc);
+            setSize(getWidth() + 1, getHeight());
+        } else {
+            //System.out.println("Reset: nothing done!");
+        }
     }
 }//GEN-LAST:event_outerSplitPanePropertyChange
 
 private void formWindowClosed(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_formWindowClosed
     try {
-        Options.getInstance().writeOptions();
+        writeOptionsWithWindowState(null);
     } catch (FileNotFoundException ex) {
         Logger.getLogger(MainFrame.class.getName()).log(Level.SEVERE, "Can't write options", ex);
     }
@@ -1641,15 +1743,138 @@ private void formWindowClosing(java.awt.event.WindowEvent evt) {//GEN-FIRST:even
 
 private void hinweisKonfigurierenButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_hinweisKonfigurierenButtonActionPerformed
     configMenuItemActionPerformed(null);
+    check();
+    fixFocus();
 }//GEN-LAST:event_hinweisKonfigurierenButtonActionPerformed
 
 private void aboutMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_aboutMenuItemActionPerformed
     new AboutDialog(this, true).setVisible(true);
+    check();
+    fixFocus();
 }//GEN-LAST:event_aboutMenuItemActionPerformed
 
 private void keyMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_keyMenuItemActionPerformed
     new KeyboardLayoutFrame().setVisible(true);
+    check();
+    fixFocus();
 }//GEN-LAST:event_keyMenuItemActionPerformed
+
+private void resetViewMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_resetViewMenuItemActionPerformed
+    setWindowLayout(true);
+    check();
+    fixFocus();
+    repaint();
+}//GEN-LAST:event_resetViewMenuItemActionPerformed
+
+private void hintPanelPropertyChange(java.beans.PropertyChangeEvent evt) {//GEN-FIRST:event_hintPanelPropertyChange
+    //System.out.println("hintPanelPropertyChanged!");
+    outerSplitPanePropertyChange(null);
+}//GEN-LAST:event_hintPanelPropertyChange
+    
+    private void tabPaneMouseClicked(java.awt.event.MouseEvent evt) {
+        if (evt.getButton() == MouseEvent.BUTTON1) {
+            //System.out.println("tab clicked: " + tabPane.getSelectedIndex());
+            switch (tabPane.getSelectedIndex()) {
+                case 0:
+                    summaryMenuItem.setSelected(true);
+                    break;
+                case 1:
+                    solutionMenuItem.setSelected(true);
+                    break;
+                case 2:
+                    allStepsMenuItem.setSelected(true);
+                    break;
+            }
+        }
+    }
+
+    private void writeOptionsWithWindowState(String fileName) throws FileNotFoundException {
+        // save window state
+        Options o = Options.getInstance();
+        o.initialXPos = getX();
+        o.initialYPos = getY();
+        o.initialHeight = getHeight();
+        o.initialWidth = getWidth();
+        o.initialHorzDividerLoc = outerSplitPane.getDividerLocation();
+        o.initialDisplayMode = 0; // sudoku only
+        if (summaryMenuItem.isSelected()) {
+            o.initialDisplayMode = 1;
+        }
+        if (solutionMenuItem.isSelected()) {
+            o.initialDisplayMode = 2;
+        }
+        if (allStepsMenuItem.isSelected()) {
+            o.initialDisplayMode = 3;
+        }
+        o.initialVertDividerLoc = -1;
+        if (o.initialDisplayMode != 0) {
+            splitPanel.getDividerLocation();
+        }
+        if (fileName == null) {
+            Options.getInstance().writeOptions();
+        } else {
+            Options.getInstance().writeOptions(fileName);
+        }
+    }
+    
+    private void setWindowLayout(boolean reset) {
+        Options o = Options.getInstance();
+        //System.out.println("initialHorzDividerLoc: " + o.initialHorzDividerLoc);
+
+        if (reset) {
+            o.initialDisplayMode = Options.INITIAL_DISP_MODE;
+            o.initialHeight = Options.INITIAL_HEIGHT;
+            o.initialHorzDividerLoc = Options.INITIAL_HORZ_DIVIDER_LOC;
+            o.initialVertDividerLoc = Options.INITIAL_VERT_DIVIDER_LOC;
+            o.initialWidth = Options.INITIAL_WIDTH;
+        }
+        //System.out.println("initialHorzDividerLoc: " + o.initialHorzDividerLoc);
+        
+        Toolkit t = Toolkit.getDefaultToolkit();
+        Dimension screenSize = t.getScreenSize();
+        int width = o.initialWidth;
+        int height = o.initialHeight;
+        int horzDivLoc = o.initialHorzDividerLoc;
+        if (screenSize.height - 40 < height) {
+            height = screenSize.height - 40;
+        }
+        if (horzDivLoc > height - 204) {
+            horzDivLoc = height - 204;
+        }
+        setSize(width, height);
+        switch (o.initialDisplayMode) {
+            case 0:
+                splitPanel.setRight(null);
+                sudokuOnlyMenuItem.setSelected(true);
+                break;
+            case 1:
+                setSplitPane(summaryPanel);
+                summaryMenuItem.setSelected(true);
+                break;
+            case 2:
+                setSplitPane(solutionPanel);
+                solutionMenuItem.setSelected(true);
+                break;
+            case 3:
+                allStepsPanel.setSudoku(sudokuPanel.getSudoku());
+                setSplitPane(allStepsPanel);
+                allStepsMenuItem.setSelected(true);
+                break;
+        }
+        if (o.initialVertDividerLoc != -1) {
+            splitPanel.setDividerLocation(o.initialVertDividerLoc);
+        }
+        //System.out.println("horzDivLoc: " + horzDivLoc);
+        outerSplitPane.setDividerLocation(horzDivLoc);
+        
+        // doesnt work at reset sometimes -> adjust in PropertyChangeListener
+        if (reset) {
+            outerSplitPaneInitialized = false;
+            resetHDivLocLoc = horzDivLoc;
+            resetHDivLocTicks = System.currentTimeMillis();
+            resetHDivLoc = true;
+        }
+    }
     
     private void resetResultPanels() {
         summaryPanel.initialize(null);
@@ -1870,6 +2095,7 @@ private void keyMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-F
     
     private Image getIcon() {
         URL url = getClass().getResource("/img/hodoku01.png");
+        //URL url = getClass().getResource("/img/hodoku_16.png");
         return getToolkit().getImage(url);
     }
     
@@ -2020,6 +2246,7 @@ private void keyMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-F
     private javax.swing.JSeparator jSeparator4;
     private javax.swing.JSeparator jSeparator5;
     private javax.swing.JSeparator jSeparator6;
+    private javax.swing.JSeparator jSeparator7;
     private javax.swing.JSeparator jSeparator9;
     private javax.swing.JToolBar jToolBar1;
     private javax.swing.JMenuItem keyMenuItem;
@@ -2044,6 +2271,7 @@ private void keyMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-F
     private javax.swing.JMenuItem redoMenuItem;
     private javax.swing.JButton redoToolButton;
     private javax.swing.JMenuItem resetSpielMenuItem;
+    private javax.swing.JMenuItem resetViewMenuItem;
     private javax.swing.JMenu rätselMenu;
     private javax.swing.JMenuItem saveAsMenuItem;
     private javax.swing.JMenuItem seiteEinrichtenMenuItem;

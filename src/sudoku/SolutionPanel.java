@@ -133,7 +133,6 @@ public class SolutionPanel extends javax.swing.JPanel {
 
         tabNewMenuItem.setMnemonic(java.util.ResourceBundle.getBundle("intl/SolutionPanel").getString("SolutionPanel.tabNewMenuItem.mnemonic").charAt(0));
         tabNewMenuItem.setText(bundle.getString("SolutionPanel.tabNewMenuItem.text")); // NOI18N
-        tabNewMenuItem.setToolTipText("null"); // NOI18N
         tabNewMenuItem.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 tabNewMenuItemActionPerformed(evt);
@@ -163,8 +162,8 @@ public class SolutionPanel extends javax.swing.JPanel {
 
         setLayout(new java.awt.BorderLayout());
 
-        titleLabel.setBackground(new java.awt.Color(0, 153, 255));
-        titleLabel.setFont(new java.awt.Font("Tahoma", 1, 14));
+        titleLabel.setBackground(new java.awt.Color(0, 51, 255));
+        titleLabel.setFont(new java.awt.Font("Tahoma", 1, 12)); // NOI18N
         titleLabel.setForeground(new java.awt.Color(255, 255, 255));
         titleLabel.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
         titleLabel.setText(bundle.getString("SolutionPanel.titleLabel.text")); // NOI18N
@@ -198,7 +197,7 @@ public class SolutionPanel extends javax.swing.JPanel {
                 .addComponent(weiterButton)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(alleEinfachenButton)
-                .addContainerGap(63, Short.MAX_VALUE))
+                .addContainerGap(147, Short.MAX_VALUE))
         );
 
         southPanelLayout.linkSize(javax.swing.SwingConstants.HORIZONTAL, new java.awt.Component[] {alleEinfachenButton, weiterButton});
@@ -355,7 +354,7 @@ private void tabNewNameMenuItemActionPerformed(java.awt.event.ActionEvent evt) {
     if (index == -1) {
         return;
     }
-    String init = getTitels().get(index);
+    String init = titels.get(index);
     String newTitel = JOptionPane.showInputDialog(java.util.ResourceBundle.getBundle("intl/SolutionPanel").getString("SolutionPanel.new_name"), init);
     if (newTitel != null) {
         setNewTabTitle(index, newTitel);
@@ -390,6 +389,11 @@ private void solutionTabbedPaneStateChanged(javax.swing.event.ChangeEvent evt) {
         }
     }
 }//GEN-LAST:event_solutionTabbedPaneStateChanged
+
+    public void setTitleLabelColors(Color fore, Color back) {
+        titleLabel.setBackground(back);
+        titleLabel.setForeground(fore);
+    }
     
     public void initialize(List<SolutionStep> newSteps) {
         // first reset to one Tab
@@ -559,7 +563,7 @@ private void solutionTabbedPaneStateChanged(javax.swing.event.ChangeEvent evt) {
         solutionTabbedPane.add(titel, newPane);
         solutionTabbedPane.setSelectedIndex(solutionTabbedPane.getTabCount() - 1);
         
-        getTitels().add(titel);
+        titels.add(titel);
         lists.add(tmpList);
         selectedIndices.add(-1);
         stepBackgroundColors.add(null); // will be replaced in setStepsInList()
@@ -569,10 +573,10 @@ private void solutionTabbedPaneStateChanged(javax.swing.event.ChangeEvent evt) {
             for (SolutionStep step : steps) {
                 newSteps.add(step);
             }
-            getTabSteps().add(newSteps);
+            tabSteps.add(newSteps);
             setStepsInList();
         } else {
-            getTabSteps().add(null);
+            tabSteps.add(null);
         }
         
         getActTab();
@@ -590,9 +594,11 @@ private void solutionTabbedPaneStateChanged(javax.swing.event.ChangeEvent evt) {
             return;
         }
         solutionTabbedPane.remove(index);
-        getTitels().remove(index);
-        getTabSteps().remove(index);
+        titels.remove(index);
+        tabSteps.remove(index);
         lists.remove(index);
+        stepBackgroundColors.remove(index);
+        stepForegroundColors.remove(index);
         getActTab();
     }
     
@@ -603,7 +609,7 @@ private void solutionTabbedPaneStateChanged(javax.swing.event.ChangeEvent evt) {
         }
         if (lists.size() > index) {
             actList = lists.get(index);
-            actSteps = getTabSteps().get(index);
+            actSteps = tabSteps.get(index);
             actSelectedIndex = selectedIndices.get(index);
             actStepBackgroundColors = stepBackgroundColors.get(index);
             actStepForegroundColors = stepForegroundColors.get(index);
@@ -633,14 +639,18 @@ private void solutionTabbedPaneStateChanged(javax.swing.event.ChangeEvent evt) {
             //System.out.println("setActSteps(): solutionTabbedPane.getSelectedIndex() == -1!");
             index = 0;
         }
-        getTabSteps().remove(index);
-        getTabSteps().add(index, steps);
+        tabSteps.remove(index);
+        List<SolutionStep> tmpSteps = new ArrayList<SolutionStep>(steps.size());
+        for (SolutionStep step : steps) {
+            tmpSteps.add(step);
+        }
+        tabSteps.add(index, tmpSteps);
         actSteps = steps;
     }
 
     private void setNewTabTitle(int index, String newTitel) {
-        getTitels().remove(index);
-        getTitels().add(index, newTitel);
+        titels.remove(index);
+        titels.add(index, newTitel);
         solutionTabbedPane.setTitleAt(index, newTitel);
     }
 

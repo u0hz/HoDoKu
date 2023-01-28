@@ -49,7 +49,7 @@
                   <Component id="jPanel2" alignment="1" max="32767" attributes="1"/>
                   <Component id="jPanel4" alignment="1" max="32767" attributes="1"/>
               </Group>
-              <EmptySpace min="-2" pref="57" max="-2" attributes="0"/>
+              <EmptySpace min="-2" pref="36" max="-2" attributes="0"/>
               <Component id="resetButton" min="-2" max="-2" attributes="0"/>
               <EmptySpace max="-2" attributes="0"/>
           </Group>
@@ -124,7 +124,7 @@
                       <Component id="easyBGButton" linkSize="4" alignment="0" pref="25" max="32767" attributes="1"/>
                       <Component id="incompleteBGButton" pref="25" max="32767" attributes="0"/>
                   </Group>
-                  <EmptySpace min="-2" pref="40" max="-2" attributes="0"/>
+                  <EmptySpace min="-2" pref="41" max="-2" attributes="0"/>
               </Group>
           </Group>
         </DimensionLayout>
@@ -486,11 +486,12 @@
               <Group type="102" attributes="0">
                   <EmptySpace max="-2" attributes="0"/>
                   <Group type="103" groupAlignment="0" attributes="0">
-                      <Component id="showCandidatesCheckBox" alignment="0" min="-2" max="-2" attributes="0"/>
-                      <Component id="showWrongValuesCheckBox" alignment="0" min="-2" max="-2" attributes="0"/>
                       <Component id="showDeviationsCheckBox" alignment="0" min="-2" max="-2" attributes="0"/>
+                      <Component id="showWrongValuesCheckBox" alignment="0" min="-2" max="-2" attributes="0"/>
+                      <Component id="showCandidatesCheckBox" alignment="0" min="-2" max="-2" attributes="0"/>
+                      <Component id="saveWindowLayoutCheckBox" alignment="0" min="-2" max="-2" attributes="0"/>
                   </Group>
-                  <EmptySpace pref="91" max="32767" attributes="0"/>
+                  <EmptySpace pref="90" max="32767" attributes="0"/>
               </Group>
           </Group>
         </DimensionLayout>
@@ -502,6 +503,8 @@
                   <Component id="showWrongValuesCheckBox" min="-2" max="-2" attributes="0"/>
                   <EmptySpace max="-2" attributes="0"/>
                   <Component id="showDeviationsCheckBox" min="-2" max="-2" attributes="0"/>
+                  <EmptySpace max="-2" attributes="0"/>
+                  <Component id="saveWindowLayoutCheckBox" min="-2" max="-2" attributes="0"/>
                   <EmptySpace max="32767" attributes="0"/>
               </Group>
           </Group>
@@ -551,6 +554,24 @@
             </Property>
             <Property name="text" type="java.lang.String" editor="org.netbeans.modules.i18n.form.FormI18nStringEditor">
               <ResourceString bundle="intl/ConfigGeneralPanel.properties" key="ConfigGeneralPanel.showDeviationsCheckBox.text" replaceFormat="java.util.ResourceBundle.getBundle(&quot;{bundleNameSlashes}&quot;).getString(&quot;{key}&quot;)"/>
+            </Property>
+            <Property name="border" type="javax.swing.border.Border" editor="org.netbeans.modules.form.editors2.BorderEditor">
+              <Border info="org.netbeans.modules.form.compat2.border.EmptyBorderInfo">
+                <EmptyBorder bottom="0" left="0" right="0" top="0"/>
+              </Border>
+            </Property>
+            <Property name="margin" type="java.awt.Insets" editor="org.netbeans.beaninfo.editors.InsetsEditor">
+              <Insets value="[0, 0, 0, 0]"/>
+            </Property>
+          </Properties>
+        </Component>
+        <Component class="javax.swing.JCheckBox" name="saveWindowLayoutCheckBox">
+          <Properties>
+            <Property name="mnemonic" type="int" editor="org.netbeans.modules.i18n.form.FormI18nMnemonicEditor">
+              <ResourceString bundle="intl/ConfigGeneralPanel.properties" key="ConfigGeneralPanel.saveWindowLayoutCheckBox.mnemonic" replaceFormat="java.util.ResourceBundle.getBundle(&quot;{bundleNameSlashes}&quot;).getString(&quot;{key}&quot;)"/>
+            </Property>
+            <Property name="text" type="java.lang.String" editor="org.netbeans.modules.i18n.form.FormI18nStringEditor">
+              <ResourceString bundle="intl/ConfigGeneralPanel.properties" key="ConfigGeneralPanel.saveWindowLayoutCheckBox.text" replaceFormat="java.util.ResourceBundle.getBundle(&quot;{bundleNameSlashes}&quot;).getString(&quot;{key}&quot;)"/>
             </Property>
             <Property name="border" type="javax.swing.border.Border" editor="org.netbeans.modules.form.editors2.BorderEditor">
               <Border info="org.netbeans.modules.form.compat2.border.EmptyBorderInfo">
@@ -618,7 +639,7 @@
                           </Group>
                       </Group>
                   </Group>
-                  <EmptySpace pref="36" max="32767" attributes="0"/>
+                  <EmptySpace pref="35" max="32767" attributes="0"/>
               </Group>
           </Group>
         </DimensionLayout>
@@ -831,8 +852,8 @@
                   </Group>
                   <EmptySpace max="-2" attributes="0"/>
                   <Group type="103" groupAlignment="0" attributes="0">
-                      <Component id="localComboBox" alignment="0" pref="121" max="32767" attributes="0"/>
-                      <Component id="lookAndFeelComboBox" alignment="0" pref="121" max="32767" attributes="0"/>
+                      <Component id="localComboBox" alignment="0" pref="120" max="32767" attributes="0"/>
+                      <Component id="lookAndFeelComboBox" alignment="0" pref="120" max="32767" attributes="0"/>
                   </Group>
                   <EmptySpace max="-2" attributes="0"/>
               </Group>
@@ -850,7 +871,7 @@
                       <Component id="lookAndFeelLabel" alignment="3" min="-2" max="-2" attributes="0"/>
                       <Component id="lookAndFeelComboBox" alignment="3" min="-2" max="-2" attributes="0"/>
                   </Group>
-                  <EmptySpace pref="22" max="32767" attributes="0"/>
+                  <EmptySpace pref="43" max="32767" attributes="0"/>
               </Group>
           </Group>
         </DimensionLayout>

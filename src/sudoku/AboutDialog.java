@@ -107,9 +107,9 @@ public class AboutDialog extends javax.swing.JDialog {
                 .addComponent(copyleftLabel)
                 .addGap(18, 18, 18)
                 .addComponent(logoLabel)
-                .addGap(18, 18, 18)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 56, Short.MAX_VALUE)
                 .addComponent(closeButton)
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                .addContainerGap())
         );
 
         pack();

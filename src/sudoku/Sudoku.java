@@ -22,6 +22,8 @@ package sudoku;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.SortedSet;
+import java.util.TreeSet;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -588,14 +590,23 @@ public class Sudoku implements Cloneable {
     }
 
     public String getSudoku(ClipboardMode mode, SolutionStep step) {
+        String dot = Options.getInstance().useZeroInsteadOfDot ? "0" : ".";
         StringBuffer out = new StringBuffer();
         if (mode == ClipboardMode.LIBRARY) {
             if (step == null) {
                 out.append(":0000:x:");
             } else {
                 out.append(":" + step.getType().getLibraryType() + ":");
-                for (int i = 0; i < step.getValues().size(); i++) {
-                    out.append(step.getValues().get(i));
+//                for (int i = 0; i < step.getValues().size(); i++) {
+//                    out.append(step.getValues().get(i));
+//                }
+                // dont append values, append the candidates, that can be deleted
+                SortedSet<Integer> candToDeleteSet = new TreeSet<Integer>();
+                for (Candidate cand : step.getCandidatesToDelete()) {
+                    candToDeleteSet.add(cand.value);
+                }
+                for (int cand : candToDeleteSet) {
+                    out.append(cand);
                 }
                 out.append(":");
             }
@@ -604,7 +615,8 @@ public class Sudoku implements Cloneable {
                 mode == ClipboardMode.LIBRARY) {
             for (SudokuCell cell : cells) {
                 if (cell.getValue() == 0 || (mode == ClipboardMode.CLUES_ONLY && !cell.isFixed())) {
-                    out.append(".");
+                    //out.append(".");
+                    out.append(dot);
                 } else {
                     if (mode == ClipboardMode.LIBRARY && !cell.isFixed()) {
                         out.append("+");
