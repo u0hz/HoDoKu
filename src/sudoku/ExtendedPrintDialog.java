@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-11  Bernhard Hobiger
+ * Copyright (C) 2008-12  Bernhard Hobiger
  *
  * This file is part of HoDoKu.
  *
@@ -66,6 +66,7 @@ public class ExtendedPrintDialog extends javax.swing.JDialog {
         ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.learningMenuItem.text"),
         ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.practisingMenuItem.text")
     };
+    private static final long serialVersionUID = 1L;
     /** The textfields with the number of puzzles for all sections */
     private JTextField[] numberTextFields;
     /** The levels of the puzzles for all sections */
@@ -82,7 +83,11 @@ public class ExtendedPrintDialog extends javax.swing.JDialog {
     private int totalNumberOfPuzzles = 0;
 
 
-    /** Creates new form ExtendedPrintDialog */
+    /** Creates new form ExtendedPrintDialog
+     * @param parent
+     * @param modal  
+     */
+    @SuppressWarnings("unchecked")
     public ExtendedPrintDialog(java.awt.Frame parent, boolean modal) {
         super(parent, modal);
         initComponents();
@@ -91,6 +96,7 @@ public class ExtendedPrintDialog extends javax.swing.JDialog {
 
         KeyStroke escapeKeyStroke = KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0, false);
         Action escapeAction = new AbstractAction() {
+            private static final long serialVersionUID = 1L;
 
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -729,6 +735,7 @@ public class ExtendedPrintDialog extends javax.swing.JDialog {
     }
 
     class MyCellRenderer extends JLabel implements ListCellRenderer {
+        private static final long serialVersionUID = 1L;
 
         // This is the only method defined by ListCellRenderer.
         // We just reconfigure the JLabel each time we're called.

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-11  Bernhard Hobiger
+ * Copyright (C) 2008-12  Bernhard Hobiger
  *
  * This file is part of HoDoKu.
  *
@@ -60,8 +60,8 @@ public class SudokuSinglesQueue implements Cloneable {
         SudokuSinglesQueue newSudokuSinglesQueue = null;
         try {
             newSudokuSinglesQueue = (SudokuSinglesQueue) super.clone();
-            newSudokuSinglesQueue.indices = (int[]) indices.clone();
-            newSudokuSinglesQueue.values = (int[]) values.clone();
+            newSudokuSinglesQueue.indices = indices.clone();
+            newSudokuSinglesQueue.values = values.clone();
         } catch (CloneNotSupportedException ex) {
             Logger.getLogger(getClass().getName()).log(Level.SEVERE, "Error while cloning", ex);
         }
@@ -182,7 +182,8 @@ public class SudokuSinglesQueue implements Cloneable {
      * cell within constraint <code>constraint</code> for candidate
      * <code>value</code>. If it does, that entry is removed.
      *
-     * @param index
+     * @param constraint
+     * @param value  
      */
     public void deleteHiddenSingle(int constraint, int value) {
         for (int i = getIndex; i < putIndex; i++) {
@@ -206,5 +207,22 @@ public class SudokuSinglesQueue implements Cloneable {
     public void clear() {
 //        System.out.println("  Queue cleared!");
         getIndex = putIndex = 0;
+    }
+
+    /**
+     * Return a formatted String containing the contents of the queue.
+     * For debugging only.
+     * 
+     * @return 
+     */
+    @Override
+    public String toString() {
+        StringBuilder tmp = new StringBuilder();
+        tmp.append("Singles Queue START\r\n");
+        for (int i = getIndex; i < putIndex; i++) {
+            tmp.append("   ").append(indices[i]).append("/").append(values[i]).append("\r\n");
+        }
+        tmp.append("Singles Queue END\r\n");
+        return tmp.toString();
     }
 }

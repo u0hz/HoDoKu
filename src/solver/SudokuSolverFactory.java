@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-11  Bernhard Hobiger
+ * Copyright (C) 2008-12  Bernhard Hobiger
  *
  * This file is part of HoDoKu.
  *
@@ -99,7 +99,9 @@ public class SudokuSolverFactory {
      */
     private SudokuSolverFactory() { /* class cannot be instantiated! */ }
 
-    /** Get the {@link #defaultSolver}. */
+    /** Get the {@link #defaultSolver}.
+     * @return 
+     */
     public static SudokuSolver getDefaultSolverInstance() {
         return defaultSolver;
     }

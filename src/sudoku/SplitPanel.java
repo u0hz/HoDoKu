@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-11  Bernhard Hobiger
+ * Copyright (C) 2008-12  Bernhard Hobiger
  *
  * This file is part of HoDoKu.
  *
@@ -28,6 +28,7 @@ import javax.swing.JPanel;
  * @author  hobiwan
  */
 public class SplitPanel extends javax.swing.JPanel {
+    private static final long serialVersionUID = 1L;
     private SudokuPanel sudokuPanel;
     private Component rightComponent;
     
@@ -76,10 +77,12 @@ public class SplitPanel extends javax.swing.JPanel {
     
     /**
      * Wird aufgerufen, wenn von der "Nur-Sudoku" auf die "Split-Pane"-Ansicht
-     * umgeschaltet wird. Es wird versucht, das Sudoku in der Größe zu erhalten
-     * (preferredSize wird auf aktuelle Größe gesetzt, die Breite kann dabei
+     * umgeschaltet wird. Es wird versucht, das Sudoku in der GrÃ¶ÃŸe zu erhalten
+     * (preferredSize wird auf aktuelle GrÃ¶ÃŸe gesetzt, die Breite kann dabei
      * verringert werden, wenn Platz ist).<br />
-     * Die aufrufende Funktion ruft anschließend pack() auf.
+     * Die aufrufende Funktion ruft anschlieÃŸend pack() auf.
+     * @param sudokuPanel
+     * @param rightPanel  
      */
     public void setSplitPane(SudokuPanel sudokuPanel, JPanel rightPanel) {
         Dimension preferredSize;
@@ -116,10 +119,10 @@ public class SplitPanel extends javax.swing.JPanel {
     }
     
     /**
-     * Es wird versucht, das Sudoku so gut wie möglich einzupassen, wobei die Breite
-     * des Sudokus nicht über 80% der Gesamtbreite liegen darf.
+     * Es wird versucht, das Sudoku so gut wie mÃ¶glich einzupassen, wobei die Breite
+     * des Sudokus nicht Ã¼ber 80% der Gesamtbreite liegen darf.
      *
-     *2 Fälle:
+     *2 FÃ¤lle:
      *   width > height: width wird auf height gesetzt
      *   height > width: width wird auf min(height, maxWidth) gesetzt
      */

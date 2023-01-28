@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-11  Bernhard Hobiger
+ * Copyright (C) 2008-12  Bernhard Hobiger
  *
  * This file is part of HoDoKu.
  *
@@ -19,11 +19,11 @@
 
 package solver;
 
-import sudoku.Chain;
 import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import sudoku.Chain;
 import sudoku.Options;
 import sudoku.SudokuSet;
 
@@ -199,7 +199,7 @@ public class TableEntry {
     }
     
     /**
-     * Einträge werden nur hinzugefügt, wenn sie nicht schon existieren
+     * EintrÃ¤ge werden nur hinzugefÃ¼gt, wenn sie nicht schon existieren
      */
     /**
      * Adds entries to the table.
@@ -369,11 +369,21 @@ public class TableEntry {
             long index4, long index5) {
         // lets try without sorting
         long tmp = 0;
-        if (index1 > 4096) index1 = 0;
-        if (index2 > 1023) index2 = 0;
-        if (index3 > 1023) index3 = 0;
-        if (index4 > 1023) index4 = 0;
-        if (index5 > 1023) index5 = 0;
+        if (index1 > 4096) {
+            index1 = 0;
+        }
+        if (index2 > 1023) {
+            index2 = 0;
+        }
+        if (index3 > 1023) {
+            index3 = 0;
+        }
+        if (index4 > 1023) {
+            index4 = 0;
+        }
+        if (index5 > 1023) {
+            index5 = 0;
+        }
         if (index2 > index1) {
             tmp = index2;
             index2 = index1;
@@ -496,7 +506,7 @@ public class TableEntry {
     }
     
     /**
-     * Prüft, ob der Eintrag aus einer anderen Tabelle stammt. Wenn ja,
+     * PrÃ¼ft, ob der Eintrag aus einer anderen Tabelle stammt. Wenn ja,
      * ist getRetIndex( index, 0) der Index der Tabelle und ON_TABLE bestimmt,
      * ob es aus onTables oder aus offTables kommt
      */
@@ -569,6 +579,8 @@ public class TableEntry {
     
     /**
      * Retrieves the node type of the entry <code>entries[index]</code>.
+     * @param index
+     * @return  
      */
     public int getNodeType(int index) {
         return Chain.getSNodeType(entries[index]);

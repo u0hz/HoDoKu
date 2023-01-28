@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-11  Bernhard Hobiger
+ * Copyright (C) 2008-12  Bernhard Hobiger
  *
  * This file is part of HoDoKu.
  *
@@ -39,12 +39,12 @@ public final class SudokuSetShort implements Cloneable, Serializable {
         0x0100
     };
     private static final short MAX_MASK = 0x01ff;
-    // für jede der 256 möglichen Kombinationen von Bits das entsprechende Array
+    // fÃ¼r jede der 256 mÃ¶glichen Kombinationen von Bits das entsprechende Array
     private static final int[][] possibleValues = new int[0x200][];
-    // und zu jeder Zahl die Länge des Arrays
+    // und zu jeder Zahl die LÃ¤nge des Arrays
     private static int[] anzValues = new int[0x200];
     private short mask = 0; //  0 - 9
-    protected boolean initialized = true;
+    boolean initialized = true;
     private int[] values = null;
     private int anz = 0;
 
@@ -194,7 +194,9 @@ public final class SudokuSetShort implements Cloneable, Serializable {
     }
 
     /**
-     * gibt ((this & set) == this) zurück
+     * gibt ((this & set) == this) zurï¿½ck
+     * @param set
+     * @return  
      */
     public boolean andEquals(SudokuSetShort set) {
         short m = (short) (mask & set.mask);
@@ -202,7 +204,9 @@ public final class SudokuSetShort implements Cloneable, Serializable {
     }
 
     /**
-     * gibt ((this & ~set) == this) zurück
+     * gibt ((this & ~set) == this) zurï¿½ck
+     * @param set
+     * @return  
      */
     public boolean andNotEquals(SudokuSetShort set) {
         short m = (short) (mask & ~set.mask);
@@ -210,7 +214,9 @@ public final class SudokuSetShort implements Cloneable, Serializable {
     }
 
     /**
-     * gibt ((this & set) == 0) zurück
+     * gibt ((this & set) == 0) zurï¿½ck
+     * @param set
+     * @return  
      */
     public boolean andEmpty(SudokuSetShort set) {
         short m = (short) (mask & set.mask);
@@ -222,7 +228,7 @@ public final class SudokuSetShort implements Cloneable, Serializable {
         initialized = false;
     }
 
-    protected String pM(long mask) {
+    String pM(long mask) {
         return Long.toHexString(mask);
     }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-11  Bernhard Hobiger
+ * Copyright (C) 2008-12  Bernhard Hobiger
  *
  * This file is part of HoDoKu.
  *
@@ -47,7 +47,7 @@ public enum SolutionCategory {
     private String categoryName;
     
     SolutionCategory() {
-        // für XMLEncoder
+        // fÃ¼r XMLEncoder
     }
     
     SolutionCategory(String catName) {

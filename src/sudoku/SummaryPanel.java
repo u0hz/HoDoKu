@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-11  Bernhard Hobiger
+ * Copyright (C) 2008-12  Bernhard Hobiger
  *
  * This file is part of HoDoKu.
  *
@@ -21,6 +21,8 @@ package sudoku;
 
 import java.awt.Color;
 import java.awt.Component;
+import java.awt.Font;
+import java.awt.FontMetrics;
 import javax.swing.JLabel;
 import javax.swing.JTable;
 import javax.swing.SwingConstants;
@@ -34,10 +36,13 @@ import solver.SudokuSolver;
  * @author  hobiwan
  */
 public class SummaryPanel extends javax.swing.JPanel {
+    private static final long serialVersionUID = 1L;
     private MainFrame mainFrame;
     private SummaryTableModel model;
     
-    /** Creates new form SummaryPanel */
+    /** Creates new form SummaryPanel
+     * @param mainFrame 
+     */
     public SummaryPanel(MainFrame mainFrame) {
         this.mainFrame = mainFrame;
         
@@ -55,6 +60,15 @@ public class SummaryPanel extends javax.swing.JPanel {
                 column.setPreferredWidth(200); //sport column is bigger
             }
         }
+        FontMetrics metrics = getFontMetrics(getFont());
+        int rowHeight = (int)(metrics.getHeight() * 1.1);
+        summaryTable.setRowHeight(rowHeight);
+        int fontSize = 12;
+        if (getFont().getSize() > 12) {
+            fontSize = getFont().getSize();
+        }
+        Font font = titleLabel.getFont();
+        titleLabel.setFont(new Font(font.getName(), Font.BOLD, fontSize));
     }
     
     /** This method is called from within the constructor to
@@ -90,7 +104,6 @@ public class SummaryPanel extends javax.swing.JPanel {
         add(jScrollPane1, java.awt.BorderLayout.CENTER);
 
         titleLabel.setBackground(new java.awt.Color(51, 51, 255));
-        titleLabel.setFont(new java.awt.Font("Tahoma", 1, 12)); // NOI18N
         titleLabel.setForeground(new java.awt.Color(255, 255, 255));
         titleLabel.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
         java.util.ResourceBundle bundle = java.util.ResourceBundle.getBundle("intl/SummaryPanel"); // NOI18N
@@ -113,6 +126,7 @@ public class SummaryPanel extends javax.swing.JPanel {
     }
     
     class SummaryTableModel extends AbstractTableModel {
+        private static final long serialVersionUID = 1L;
         String[] columnNames = { java.util.ResourceBundle.getBundle("intl/SummaryPanel").getString("SummaryPanel.count"), java.util.ResourceBundle.getBundle("intl/SummaryPanel").getString("SummaryPanel.technique"), java.util.ResourceBundle.getBundle("intl/SummaryPanel").getString("SummaryPanel.score") };
         Object[][] content = { { "", "", "", null } };
         
@@ -166,9 +180,10 @@ public class SummaryPanel extends javax.swing.JPanel {
     }
     
     class SummaryTableRenderer extends JLabel implements TableCellRenderer {
+        private static final long serialVersionUID = 1L;
         private Color backColor;
         
-        public SummaryTableRenderer() {
+        SummaryTableRenderer() {
             setOpaque(true);
             backColor = getBackground();
         }
@@ -192,6 +207,17 @@ public class SummaryPanel extends javax.swing.JPanel {
             setText(text);
             return this;
         }
+        
+//        @Override
+//        public int getHeight() {
+//            int height = super.getHeight();
+//            if (newHeight == -1) {
+//                FontMetrics metrics = getGraphics().getFontMetrics();
+//                newHeight = metrics.getHeight();
+//            }
+//            System.out.println("h: " + height + "/" + newHeight);
+//            return newHeight;
+//        }
         
     }
     

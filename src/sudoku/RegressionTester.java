@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-11  Bernhard Hobiger, MaNik-e Team
+ * Copyright (C) 2008-12  Bernhard Hobiger, MaNik-e Team
  *
  * This file is part of HoDoKu.
  *
@@ -150,13 +150,13 @@ public class RegressionTester {
      */
     public void test(String testCase) {
         anzTestCases++;
-        //System.out.println("testCase: " + testCase);
+//        System.out.println("testCase: " + testCase);
         String[] parts = testCase.split(":");
         // check for variants and fail cases (step must not be found!)
         int variant = 0;
         boolean failCase = false;
         if (parts[1].contains("-")) {
-            int vIndex = parts[1].indexOf("-");
+            int vIndex = parts[1].indexOf('-');
             if (parts[1].charAt(vIndex + 1) == 'x') {
                 failCase = true;
             } else {
@@ -547,7 +547,9 @@ public class RegressionTester {
                      (type == SolutionType.ALS_XY_WING && variant == 2)) {
                     Options.getInstance().setAllowAlsOverlap(true);
                 }
-                steps = stepFinder.getAllAlses(sudoku);
+                steps = stepFinder.getAllAlses(sudoku, type == SolutionType.ALS_XZ,
+                        type == SolutionType.ALS_XY_WING,
+                        type == SolutionType.ALS_XY_CHAIN);
                 checkResults(testCase, steps, sudoku, start, failCase);
                 Options.getInstance().setOnlyOneAlsPerStep(oldOption);
                 Options.getInstance().setAllowAlsOverlap(oldOption2);
@@ -655,8 +657,8 @@ public class RegressionTester {
                 if (!result.equals(testCase)) {
                     if (exactMatch == true) {
                         // test for everything but <comment>
-                        int index1 = testCase.lastIndexOf(":");
-                        int index2 = result.lastIndexOf(":");
+                        int index1 = testCase.lastIndexOf(':');
+                        int index2 = result.lastIndexOf(':');
                         if (testCase.substring(0, index1).equals(result.substring(0, index2))) {
                             // does not constitue a fail case!
                             continue;

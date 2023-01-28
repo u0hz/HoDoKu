@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-11  Bernhard Hobiger
+ * Copyright (C) 2008-12  Bernhard Hobiger
  *
  * This file is part of HoDoKu.
  *
@@ -26,7 +26,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import sudoku.ClipboardMode;
 import sudoku.DifficultyLevel;
 import sudoku.DifficultyType;
 import sudoku.FindAllStepsProgressDialog;
@@ -109,7 +108,7 @@ public class SudokuSolver {
     /**
      * Tries to solve the sudoku using only singles.<br>
      * The internal variables are not changed
-     * @param sudoku
+     * @param newSudoku 
      * @return
      */
     public boolean solveSinglesOnly(Sudoku2 newSudoku) {
@@ -129,7 +128,8 @@ public class SudokuSolver {
     /**
      * Tries to solve the sudoku using only singles.<br>
      * The internal variables are not changed
-     * @param sudoku
+     * @param newSudoku 
+     * @param stepConfigs 
      * @return
      */
     public boolean solveWithSteps(Sudoku2 newSudoku, StepConfig[] stepConfigs) {
@@ -190,7 +190,7 @@ public class SudokuSolver {
      * @param rejectTooLowScore
      * @param dlg
      * @param singlesOnly
-     * @param stepConfig
+     * @param stepConfigs 
      * @param gameMode
      * @return
      */
@@ -203,7 +203,7 @@ public class SudokuSolver {
 //        System.out.println("        Solver started (" + maxLevel.getName() + "/" + 
 //                rejectTooLowScore + "/" + singlesOnly + "/" + gameMode.name() + ")!");
 
-        // Eine Lösung wird nur gesucht, wenn zumindest 10 Kandidaten gesetzt sind
+        // Eine LÃ¶sung wird nur gesucht, wenn zumindest 10 Kandidaten gesetzt sind
         int anzCells = sudoku.getUnsolvedCellsAnz();
         if ((81 - anzCells) < 10) {
 //            System.out.println("        less than 10 cells set!");
@@ -250,12 +250,12 @@ public class SudokuSolver {
                 }
             }
         } while (step != null);
-        // wenn der Score größer als der MaxScore der aktuellen Stufe, dann wird das
-        // Puzzle höhergestuft.
+        // wenn der Score grÃ¶ÃŸer als der MaxScore der aktuellen Stufe, dann wird das
+        // Puzzle hÃ¶hergestuft.
         while (score > level.getMaxScore()) {
             level = Options.getInstance().getDifficultyLevel(level.getOrdinal() + 1);
         }
-        // Puzzle zu schwer -> ungültig
+        // Puzzle zu schwer -> ungÃ¼ltig
         if (level.getOrdinal() > maxLevel.getOrdinal() && acceptAnyway == false) {
 //            System.out.println("        rejected: to difficult");
             return false;
@@ -285,7 +285,7 @@ public class SudokuSolver {
      * Calculates the progress scores of all steps in <code>steps</code>
      * (see {@link #getProgressScoreSingles(sudoku.Sudoku2, sudoku.SolutionStep) }).
      * @param tmpSudoku
-     * @param steps
+     * @param stepsTocheck 
      * @param dlg
      */
     public void getProgressScore(Sudoku2 tmpSudoku, List<SolutionStep> stepsTocheck, FindAllStepsProgressDialog dlg) {
@@ -301,7 +301,7 @@ public class SudokuSolver {
         boolean oldCheckTemplates = Options.getInstance().isCheckTemplates();
         Options.getInstance().setCheckTemplates(false);
         long nanos = System.nanoTime();
-        Sudoku2 workingSudoku = (Sudoku2) tmpSudoku.clone();
+        Sudoku2 workingSudoku = tmpSudoku.clone();
         for (int i = 0; i < stepsTocheck.size(); i++) {
             SolutionStep step = stepsTocheck.get(i);
             workingSudoku.set(tmpSudoku);
@@ -332,7 +332,7 @@ public class SudokuSolver {
      * defined as the number of singles the step unlocks in the sudoku, if
      * {@link Options#solverStepsProgress} is used.
      * @param tmpSudoku
-     * @param step
+     * @param orgStep  
      */
     public void getProgressScore(Sudoku2 tmpSudoku, SolutionStep orgStep) {
         Sudoku2 save = this.sudoku;
@@ -450,7 +450,7 @@ public class SudokuSolver {
                 }
             } else {
                 if (solverSteps[i].isEnabled() == false) {
-                    // diesen Schritt nicht ausführen
+                    // diesen Schritt nicht ausfÃ¼hren
                     continue;
                 }
             }
@@ -602,9 +602,10 @@ public class SudokuSolver {
      * @param state
      * @param copy
      */
+    @SuppressWarnings("unchecked")
     public void getState(GuiState state, boolean copy) {
         if (copy) {
-            state.setAnzSteps((int[]) anzSteps.clone());
+            state.setAnzSteps(anzSteps.clone());
             state.setSteps((List<SolutionStep>) ((ArrayList)steps).clone());
         } else {
             state.setAnzSteps(anzSteps);
@@ -614,7 +615,11 @@ public class SudokuSolver {
 
     /**
      * Loads back a saved state. Whether the objects had been copied
-     * before is irrelevant here.
+     * before is irrelevant here.<br><br>
+     * 
+     * Dont forget to set the score or loading saved sudokus
+     * will not display correctly in the summary panel (relies on it!).
+     * 
      * @param state
      */
     public void setState(GuiState state) {
@@ -627,6 +632,7 @@ public class SudokuSolver {
         }
         anzSteps = state.getAnzSteps();
         steps = state.getSteps();
+        score = state.getSudoku().getScore();
     }
 
     private void resetProgressStepCounters() {

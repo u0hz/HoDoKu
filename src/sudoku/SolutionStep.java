@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-11  Bernhard Hobiger
+ * Copyright (C) 2008-12  Bernhard Hobiger
  *
  * This file is part of HoDoKu.
  *
@@ -18,8 +18,6 @@
  */
 package sudoku;
 
-import solver.RestrictedCommon;
-import solver.Als;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -32,6 +30,8 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import solver.Als;
+import solver.RestrictedCommon;
 
 /**
  *
@@ -51,9 +51,9 @@ public class SolutionStep implements Comparable<SolutionStep>, Cloneable {
     private SolutionType subType; // for kraken fish: holds the underlying fish type
     private int entity;
     private int entityNumber;
-    private int entity2;        // für LOCKED_CANDIDATES_X
-    private int entity2Number;  // für LOCKED_CANDIDATES_X
-    private boolean isSiamese;  // für Siamese Fish
+    private int entity2;        // fÃ¼r LOCKED_CANDIDATES_X
+    private int entity2Number;  // fÃ¼r LOCKED_CANDIDATES_X
+    private boolean isSiamese;  // fÃ¼r Siamese Fish
     private int progressScoreSingles = -1; // number of singles that this step unlocks in the sudoku
     private int progressScoreSinglesOnly = -1; // direct unlocked singles
     private int progressScore = -1;  // the resulting score (only no single steps)
@@ -61,11 +61,11 @@ public class SolutionStep implements Comparable<SolutionStep>, Cloneable {
     private List<Integer> indices = new ArrayList<Integer>();
     private List<Candidate> candidatesToDelete = new ArrayList<Candidate>();
     private List<Candidate> cannibalistic = new ArrayList<Candidate>();
-    private List<Candidate> fins = new ArrayList<Candidate>();     // für Finned Fische
-    private List<Candidate> endoFins = new ArrayList<Candidate>(); // für Finned Fische
-    private List<Entity> baseEntities = new ArrayList<Entity>();   // für Fisch
-    private List<Entity> coverEntities = new ArrayList<Entity>();  // für Fisch
-    private List<Chain> chains = new ArrayList<Chain>();           // Für alle Arten Chains und Loops
+    private List<Candidate> fins = new ArrayList<Candidate>();     // fÃ¼r Finned Fische
+    private List<Candidate> endoFins = new ArrayList<Candidate>(); // fÃ¼r Finned Fische
+    private List<Entity> baseEntities = new ArrayList<Entity>();   // fÃ¼r Fisch
+    private List<Entity> coverEntities = new ArrayList<Entity>();  // fÃ¼r Fisch
+    private List<Chain> chains = new ArrayList<Chain>();           // FÃ¼r alle Arten Chains und Loops
     private List<AlsInSolutionStep> alses = new ArrayList<AlsInSolutionStep>();
     private SortedMap<Integer, Integer> colorCandidates = new TreeMap<Integer, Integer>(); // coloring moves
     private List<RestrictedCommon> restrictedCommons = new ArrayList<RestrictedCommon>(); // ALS Chains
@@ -75,12 +75,15 @@ public class SolutionStep implements Comparable<SolutionStep>, Cloneable {
     public SolutionStep() {
     }
 
-    /** Creates a new instance of SolutionStep */
+    /** Creates a new instance of SolutionStep
+     * @param type 
+     */
     public SolutionStep(SolutionType type) {
         setType(type);
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public Object clone() {
         SolutionStep newStep = null;
         try {
@@ -106,8 +109,8 @@ public class SolutionStep implements Comparable<SolutionStep>, Cloneable {
             newStep.alses = (List<AlsInSolutionStep>) ((ArrayList) alses).clone();
             newStep.colorCandidates = (SortedMap<Integer, Integer>) ((TreeMap) getColorCandidates()).clone();
             newStep.restrictedCommons = (List<RestrictedCommon>) ((ArrayList) restrictedCommons).clone();
-            newStep.potentialCannibalisticEliminations = (SudokuSet) potentialCannibalisticEliminations.clone();
-            newStep.potentialEliminations = (SudokuSet) potentialEliminations.clone();
+            newStep.potentialCannibalisticEliminations = potentialCannibalisticEliminations.clone();
+            newStep.potentialEliminations = potentialEliminations.clone();
         } catch (CloneNotSupportedException ex) {
             Logger.getLogger(getClass().getName()).log(Level.SEVERE, "Error while cloning", ex);
         }
@@ -142,13 +145,19 @@ public class SolutionStep implements Comparable<SolutionStep>, Cloneable {
     }
 
     public StringBuffer getForcingChainString(Chain chain) {
-        return getForcingChainString(chain.getChain(), chain.getStart(), chain.getEnd(), false);
+//        return getForcingChainString(chain.getChain(), chain.getStart(), chain.getEnd(), false);
+        return getForcingChainString(chain.getChain(), chain.getStart(), chain.getEnd(), true);
     }
 
     /**
      * Chain wird als Forcing Chain ausgegeben. Wenn weakLinks nicht gesetzt ist,
-     * werden die weak links übersprungen. Der erste und der letzte Link werden
+     * werden die weak links Ã¼bersprungen. Der erste und der letzte Link werden
      * immer ausgegeben (egal ob strong oder weak und auch innerhalb von Klammern)
+     * @param chain
+     * @param start
+     * @param end
+     * @param weakLinks
+     * @return  
      */
     public StringBuffer getForcingChainString(int[] chain, int start, int end, boolean weakLinks) {
         StringBuffer tmp = new StringBuffer();
@@ -163,10 +172,10 @@ public class SolutionStep implements Comparable<SolutionStep>, Cloneable {
             }
             if (!weakLinks && !Chain.isSStrong(chain[i]) &&
                     (chain[i] > 0 || chain[i] < 0 && chain[i + 1] < 0 && chain[i + 1] != Integer.MIN_VALUE)) {
-                // weak link überspringen, wenn er nicht am Ende eines inMins ist
+                // weak link Ã¼berspringen, wenn er nicht am Ende eines inMins ist
                 // es gibt immer ein Element chain[i + 1], weil die Schleife nur bis zum
                 // vorletzten Element geht
-                // group nodes, als etc. nicht überspringen (sonst kennt man sich gar nicht mehr aus
+                // group nodes, als etc. nicht Ã¼berspringen (sonst kennt man sich gar nicht mehr aus
                 if (Chain.getSNodeType(chain[i]) == Chain.NORMAL_NODE) {
                     continue;
                 }
@@ -492,13 +501,13 @@ public class SolutionStep implements Comparable<SolutionStep>, Cloneable {
                 int l1 = Sudoku2.getLine(i1);
                 int c1 = Sudoku2.getCol(i1);
                 if (l1 == line && anzLines == 1) {
-                    // Spalte hinzufügen
+                    // Spalte hinzufÃ¼gen
                     int pIndex = tmp.lastIndexOf("]");
                     tmp.insert(pIndex, c1 + 1);
                     it.remove();
                     anzCols++;
                 } else if (c1 == col && anzCols == 1) {
-                    // Zeile hinzufügen
+                    // Zeile hinzufÃ¼gen
                     int pIndex = tmp.lastIndexOf("c");
                     tmp.insert(pIndex, l1 + 1);
                     it.remove();
@@ -679,7 +688,9 @@ public class SolutionStep implements Comparable<SolutionStep>, Cloneable {
     /**
      * art == 0: Kurzform
      * art == 1: Mittellang
-     * art == 2: ausführlich
+     * art == 2: ausfÃ¼hrlich
+     * @param art
+     * @return  
      */
     public String toString(int art) {
         String str = null;
@@ -1095,8 +1106,10 @@ public class SolutionStep implements Comparable<SolutionStep>, Cloneable {
                     getAls(tmp, 1);
                     tmp.append(", X=");
                     getAlsXorZ(tmp, true);
-                    tmp.append(", Z=");
-                    getAlsXorZ(tmp, false);
+                    if (! fins.isEmpty()) {
+                        tmp.append(", Z=");
+                        getAlsXorZ(tmp, false);
+                    }
                     getCandidatesToDelete(tmp);
                     str = tmp.toString();
                 }
@@ -1216,7 +1229,7 @@ public class SolutionStep implements Comparable<SolutionStep>, Cloneable {
             case TEMPLATE_DEL:
                 str = getStepName();
                 if (art >= 1) {
-                    // nichts zusätzlich ausgeben
+                    // nichts zusÃ¤tzlich ausgeben
                 }
                 if (art >= 2) {
                     tmp = new StringBuffer(str + ": ");
@@ -1337,7 +1350,7 @@ public class SolutionStep implements Comparable<SolutionStep>, Cloneable {
     }
 
     private void getAlsXorZ(StringBuffer tmp, boolean x) {
-        // gemeinsame Kandidaten für AlsInSolutionStep-XZ stehen in fins,
+        // gemeinsame Kandidaten fÃ¼r AlsInSolutionStep-XZ stehen in fins,
         // restricted commons in endoFins
         List<Candidate> list = x ? endoFins : fins;
         TreeSet<Integer> cands = new TreeSet<Integer>();
@@ -1421,7 +1434,7 @@ public class SolutionStep implements Comparable<SolutionStep>, Cloneable {
             indexes.add(cand.getIndex());
             candidates.add(cand.getValue());
         }
-        // Alle indexe ausschließen, die in indices enthalten sind
+        // Alle indexe ausschlieÃŸen, die in indices enthalten sind
         for (int index : indices) {
             indexes.remove(index);
         }
@@ -1551,6 +1564,7 @@ public class SolutionStep implements Comparable<SolutionStep>, Cloneable {
 
     private void getCandidatesToDelete(StringBuffer tmp) {
         tmp.append(" => ");
+        @SuppressWarnings("unchecked")
         ArrayList<Candidate> tmpList = (ArrayList<Candidate>) ((ArrayList<Candidate>) candidatesToDelete).clone();
         boolean first = true;
         ArrayList<Integer> candList = new ArrayList<Integer>();
@@ -1689,7 +1703,7 @@ public class SolutionStep implements Comparable<SolutionStep>, Cloneable {
 //        int i = 0, j = 0;
 //        for (int m = 0; m < chains.size(); m++) {
 //            Chain akt = chains.get(m);
-//            // chains können nur gleich sein, wenn sie gleich lang sind
+//            // chains kÃ¶nnen nur gleich sein, wenn sie gleich lang sind
 //            if (akt.end - akt.start != end - start) {
 //                continue;
 //            }
@@ -1709,11 +1723,11 @@ public class SolutionStep implements Comparable<SolutionStep>, Cloneable {
 //            for (i = akt.start, j =
 //                            end;
 //                    j >= start; i++, j--) {
-//                // die Zellen und Kandidaten müssen gleich sein
+//                // die Zellen und Kandidaten mÃ¼ssen gleich sein
 //                if (!Chain.equalsIndexCandidate(akt.chain[i], chain[j])) {
 //                    break;
 //                }
-//                // um strong oder weak kümmere ich mich einmal nicht...
+//                // um strong oder weak kÃ¼mmere ich mich einmal nicht...
 //            }
 //            if (j == start - 1) {
 //                return true;
@@ -1797,12 +1811,15 @@ public class SolutionStep implements Comparable<SolutionStep>, Cloneable {
     }
 
     /**
-     * Prüft, ob Index index in einem AlsInSolutionStep enthalten ist. Wenn ja, wird der
-     * index in alses zurückgegeben, sonst -1;
+     * PrÃ¼ft, ob Index index in einem AlsInSolutionStep enthalten ist. Wenn ja, wird der
+     * index in alses zurÃ¼ckgegeben, sonst -1;
      * 
      * Doesnt work: if a step has more than one chain, a cell can be part of more than one
      * ALS; index has to be checked against a chain (only when a certain chain is requested,
      * which means if chainIndex != -1)!
+     * @param index
+     * @param chainIndex
+     * @return  
      */
     public int getAlsIndex(int index, int chainIndex) {
         if (chainIndex == -1) {
@@ -1828,6 +1845,8 @@ public class SolutionStep implements Comparable<SolutionStep>, Cloneable {
 
     /**
      * Adds a new colored candidate
+     * @param index
+     * @param color  
      */
     public void addColorCandidate(int index, int color) {
         getColorCandidates().put(index, color);
@@ -1840,18 +1859,20 @@ public class SolutionStep implements Comparable<SolutionStep>, Cloneable {
     }
 
     /**
-     * Zwei Steps sind gleich, wenn sie die gleichen zu löschenden Kandidaten
+     * Zwei Steps sind gleich, wenn sie die gleichen zu lÃ¶schenden Kandidaten
      * bewirken und wenn alle betroffenen Kandidaten (inkl. Fins) gleich sind.
      *
-     * Es wurde absichtlich nicht equals() überschrieben, weil es ein ganz anderer
+     * Es wurde absichtlich nicht equals() Ã¼berschrieben, weil es ein ganz anderer
      * Gleichheitsbegriff ist.
+     * @param s
+     * @return  
      */
     public boolean isEqual(SolutionStep s) {
         if (!isEquivalent(s)) {
             return false;
         }
 
-        // ok: gleiche zu löschende Kandidaten -> weiter schauen
+        // ok: gleiche zu lÃ¶schende Kandidaten -> weiter schauen
         if (!isEqualInteger(values, s.values)) {
             return false;
         }
@@ -1866,7 +1887,7 @@ public class SolutionStep implements Comparable<SolutionStep>, Cloneable {
     }
 
     /**
-     * Zwei Steps sind äquivalent, wenn sie die gleichen zu löschenden
+     * Zwei Steps sind Ã¤quivalent, wenn sie die gleichen zu lÃ¶schenden
      * Kandidaten bewirken (oder die gleichen Kandidaten setzen).
      * 
      * 20081013: Problems with AllStepsPanel, so new try:
@@ -1874,6 +1895,8 @@ public class SolutionStep implements Comparable<SolutionStep>, Cloneable {
      *    Exception: both steps are fish
      * 20120112: All steps handled specially in compareTo() are
      *    to be treated as equivalent!
+     * @param s
+     * @return  
      */
     public boolean isEquivalent(SolutionStep s) {
         // Special steps first:
@@ -1898,8 +1921,10 @@ public class SolutionStep implements Comparable<SolutionStep>, Cloneable {
     }
 
     /**
-     * Der aktuelle Step ist eun Substep des übergebenen Steps, wenn alle
-     * zu löschenden Kandidaten auch im übergebenen Step enthalten sind.
+     * Der aktuelle Step ist eun Substep des Ã¼bergebenen Steps, wenn alle
+     * zu lÃ¶schenden Kandidaten auch im Ã¼bergebenen Step enthalten sind.
+     * @param s
+     * @return  
      */
     public boolean isSubStep(SolutionStep s) {
         if (s.candidatesToDelete.size() < candidatesToDelete.size()) {
@@ -1942,9 +1967,9 @@ public class SolutionStep implements Comparable<SolutionStep>, Cloneable {
     /**
      * Sortierreihenfolge:
      *
-     *   - Die Steps mit den meisten zu löschenden Kandidaten zuerst
+     *   - Die Steps mit den meisten zu lÃ¶schenden Kandidaten zuerst
      *   - Dann nach betroffenen Kandidaten
-     *   - dann nach Äquvalenz (wenn nicht äquivalent, nach Summe der Indexe der zu löschenden Kandidaten
+     *   - dann nach Ã„quvalenz (wenn nicht Ã¤quivalent, nach Summe der Indexe der zu lÃ¶schenden Kandidaten
      *   - dann nach betroffenen Kandidaten und Fins
      *   - innerhalb der gleichen Steps nach type
      */
@@ -1959,21 +1984,21 @@ public class SolutionStep implements Comparable<SolutionStep>, Cloneable {
             return 1;
         }
 
-        // zuerst nach Anzahl zu löschende Kandidaten (absteigend!)
+        // zuerst nach Anzahl zu lÃ¶schende Kandidaten (absteigend!)
         int result = o.candidatesToDelete.size() - candidatesToDelete.size();
         if (result != 0) {
             return result;
         }
 
-        // nach Äquivalenz (gleiche zu löschende Kandidaten)
+        // nach Ã„quivalenz (gleiche zu lÃ¶schende Kandidaten)
         if (!isEquivalent(o)) {
-            // change 20110512: short chains first!
-            int chainDiff = compareChainLengths(o);
-            if (chainDiff != 0) {
-                return chainDiff;
-            }
+//            // change 20110512: short chains first!
+//            int chainDiff = compareChainLengths(o);
+//            if (chainDiff != 0) {
+//                return chainDiff;
+//            }
             
-            // nicht äquivalent: nach Indexsumme der zu löschenden Kandidaten
+            // nicht Ã¤quivalent: nach Indexsumme der zu lÃ¶schenden Kandidaten
             sum1 = getIndexSumme(candidatesToDelete);
             sum2 = getIndexSumme(o.candidatesToDelete);
             // BUG 20110512: Sort order is intransitiv - doesnt work with Java7 anymore
@@ -2029,7 +2054,7 @@ public class SolutionStep implements Comparable<SolutionStep>, Cloneable {
         }
 
         // GENERAL STEPS
-        // Neu: Chains - nach Länge der Chains (gesamt)
+        // Neu: Chains - nach LÃ¤nge der Chains (gesamt)
         int chainDiff = compareChainLengths(o);
         if (chainDiff != 0) {
             return chainDiff;
@@ -2037,7 +2062,7 @@ public class SolutionStep implements Comparable<SolutionStep>, Cloneable {
 
         // jetzt nach betroffenen Kandidaten
         // wenn alle betroffenen Kandidaten gleich sind, sind die Steps gleich, sonst
-        // zählt die Summe
+        // zÃ¤hlt die Summe
         if (!isEqualInteger(values, o.values)) {
             sum1 = getSumme(values);
             sum2 = getSumme(o.values);
@@ -2059,24 +2084,28 @@ public class SolutionStep implements Comparable<SolutionStep>, Cloneable {
             return sum2 - sum1;
         }
 
-        // Kandidaten sind gleich: nach Fins (je weniger desto besser)
-        if (!isEqualCandidate(fins, o.fins)) {
-            // zuerst nach Anzahl fins
-            if (fins.size() != o.fins.size()) {
-                return fins.size() - o.fins.size();
-            }
-            // gleich Anzahl Fins -> nach Indexsumme
-            sum1 = getIndexSumme(fins);
-            sum2 = getIndexSumme(o.fins);
-//            return sum1 == sum2 ? 1 : sum2 - sum1;
-            return sum2 - sum1;
-        }
+//        // Kandidaten sind gleich: nach Fins (je weniger desto besser)
+//        if (!isEqualCandidate(fins, o.fins)) {
+//            // zuerst nach Anzahl fins
+//            if (fins.size() != o.fins.size()) {
+//                return fins.size() - o.fins.size();
+//            }
+//            // gleich Anzahl Fins -> nach Indexsumme
+//            sum1 = getIndexSumme(fins);
+//            sum2 = getIndexSumme(o.fins);
+////            return sum1 == sum2 ? 1 : sum2 - sum1;
+//            return sum2 - sum1;
+//        }
 
         // zuletzt nach Typ
         //return type.ordinal() - o.type.ordinal();
         return type.compare(o.getType());
     }
 
+    public boolean isEqualValues(SolutionStep s) {
+        return isEqualInteger(values, s.getValues());
+    }
+    
     private boolean isEqualInteger(List<Integer> l1, List<Integer> l2) {
         if (l1.size() != l2.size()) {
             return false;
@@ -2125,10 +2154,21 @@ public class SolutionStep implements Comparable<SolutionStep>, Cloneable {
         return true;
     }
 
+    /**
+     * The sum of the indices of a collection of candidates
+     * is used as a sorting criteria. For this to work, the
+     * indices have to be weighted or else two combinations of
+     * different indices could lead to the same sum.<br><br>
+     * 
+     * @param list
+     * @return 
+     */
     public int getIndexSumme(List<Candidate> list) {
         int sum = 0;
+        int offset = 1;
         for (int i = 0; i < list.size(); i++) {
-            sum += list.get(i).getIndex();
+            sum += list.get(i).getIndex() * offset + list.get(i).getValue();
+            offset += 80;
         }
         return sum;
     }
@@ -2263,7 +2303,7 @@ public class SolutionStep implements Comparable<SolutionStep>, Cloneable {
     }
 
     /**
-     * @param progressScoreSingles the progressScoreSingles to set
+     * @param progressScoreSinglesOnly 
      */
     public void setProgressScoreSinglesOnly(int progressScoreSinglesOnly) {
         this.progressScoreSinglesOnly = progressScoreSinglesOnly;

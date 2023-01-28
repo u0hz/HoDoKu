@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-11  Bernhard Hobiger
+ * Copyright (C) 2008-12  Bernhard Hobiger
  *
  * This file is part of HoDoKu.
  *
@@ -32,6 +32,7 @@ import javax.swing.UIManager;
  * @author  hobiwan
  */
 public class ConfigColorPanel extends javax.swing.JPanel {
+    private static final long serialVersionUID = 1L;
 
     private JButton[] buttons = null;
     private Color[] colors = null;

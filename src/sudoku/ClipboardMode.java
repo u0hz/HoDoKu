@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-11  Bernhard Hobiger
+ * Copyright (C) 2008-12  Bernhard Hobiger
  *
  * This file is part of HoDoKu.
  *
@@ -28,5 +28,7 @@ public enum ClipboardMode {
     VALUES_ONLY,
     PM_GRID,
     PM_GRID_WITH_STEP,
-    LIBRARY
+    LIBRARY,
+    CLUES_ONLY_FORMATTED,
+    VALUES_ONLY_FORMATTED
 }

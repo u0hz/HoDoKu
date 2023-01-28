@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-11  Bernhard Hobiger
+ * Copyright (C) 2008-12  Bernhard Hobiger
  *
  * This file is part of HoDoKu.
  *
@@ -43,6 +43,7 @@ import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreePath;
 import javax.swing.tree.TreeSelectionModel;
 
+
 /**
  *
  * @author  hobiwan
@@ -68,6 +69,7 @@ implements ListDragAndDropChange {
         new SSTSConfig(SolutionType.XY_WING, 2500),
         new SSTSConfig(SolutionType.HIDDEN_QUADRUPLE, 2600)
     };
+    private static final long serialVersionUID = 1L;
 
     private StepConfig[] steps;
     private DefaultListModel model;
@@ -80,6 +82,7 @@ implements ListDragAndDropChange {
     private boolean listView = false; // absichtlich verkehrt, damit stepList gesetzt wird
 
     /** Creates new form ConfigSolverPanel */
+    @SuppressWarnings({"ResultOfObjectAllocationIgnored", "unchecked"})
     public ConfigProgressPanel() {
         initComponents();
         
@@ -449,7 +452,7 @@ implements ListDragAndDropChange {
      */
     private void checkSteps() {
         if (invalidTypes.size() > 0) {
-            StringBuffer buffer = new StringBuffer();
+            StringBuilder buffer = new StringBuilder();
             for (int i = 0; i < invalidTypes.size(); i++) {
                 if (i != 0) {
                     buffer.append(", ");
@@ -470,6 +473,7 @@ implements ListDragAndDropChange {
             stepTree.repaint();
         }
     }
+    @SuppressWarnings("unchecked")
     private void moveOneStep(int index, boolean up) {
         //System.out.println("move one step: " + index + "/" + up);
         int toIndex = up ? index + 1 : index - 1;
@@ -560,7 +564,7 @@ implements ListDragAndDropChange {
     }
     
     private void initAll(boolean setDefault) {
-        // Zuerst die Daten zurücksetzen
+        // Zuerst die Daten zurÃ¼cksetzen
         if (setDefault) {
             // CAUTION: Reset to default resets only enabledProgress and indexProgress
             steps = Options.getInstance().copyStepConfigs(Options.getInstance().solverStepsProgress, true, false, false, true);
@@ -587,6 +591,7 @@ implements ListDragAndDropChange {
     /**
      * Rebuilds the list and the tree
      */
+    @SuppressWarnings("unchecked")
     private void resetView() {
         // Liste neu laden
         model.removeAllElements();
@@ -612,10 +617,11 @@ implements ListDragAndDropChange {
                 // only steps with difficulty EASY - UNFAIR are allowed
                 continue;
             }
-            Enumeration en = root.children();
+            @SuppressWarnings("unchecked")
+            Enumeration<CheckNode> en = (Enumeration<CheckNode>)root.children();
             CheckNode act = null;
             while (en.hasMoreElements()) {
-                act = (CheckNode)en.nextElement();
+                act = en.nextElement();
                 if (act.getCategory() == steps[i].getCategory()) {
                     break;
                 }
@@ -673,6 +679,7 @@ implements ListDragAndDropChange {
     }
     
     class CheckBoxRenderer extends JCheckBox implements ListCellRenderer {
+        private static final long serialVersionUID = 1L;
         private boolean isTargetCell;
         private int index;
         
@@ -747,14 +754,13 @@ implements ListDragAndDropChange {
     private javax.swing.JButton upButton;
     // End of variables declaration//GEN-END:variables
     
-}
-
-class SSTSConfig {
+static class SSTSConfig {
     SolutionType type;
     int progressIndex;
 
-    public SSTSConfig(SolutionType type, int progressIndex) {
+    SSTSConfig(SolutionType type, int progressIndex) {
         this.type = type;
         this.progressIndex = progressIndex;
     }
+}
 }

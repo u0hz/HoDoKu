@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-11  Bernhard Hobiger
+ * Copyright (C) 2008-12  Bernhard Hobiger
  *
  * This file is part of HoDoKu.
  *
@@ -38,12 +38,14 @@ import javax.swing.tree.TreeSelectionModel;
  * @author  hobiwan
  */
 public class ConfigTrainigPanel extends javax.swing.JPanel {
+    private static final long serialVersionUID = 1L;
     private StepConfig[] steps;
     private DefaultListModel model;
     
     private boolean listView = true; // absichtlich verkehrt, damit stepTree initialisiert wird
     
     /** Creates new form ConfigSolverPanel */
+    @SuppressWarnings("unchecked")
     public ConfigTrainigPanel() {
         initComponents();
         
@@ -224,8 +226,8 @@ public class ConfigTrainigPanel extends javax.swing.JPanel {
     }//GEN-LAST:event_stepListMouseClicked
     
     public void okPressed() {
-        // Alle Werte übernehmen
-        // Alle Werte übernehmen
+        // Alle Werte Ã¼bernehmen
+        // Alle Werte Ã¼bernehmen
         // Caution: steps[] is shared by ConfigSolverPanel and ConfigFindAllStepsPanel
         // okPressed() in ConfigSolverPanel has to be called first, here only the values
         // for enabledTraining are set
@@ -256,8 +258,9 @@ public class ConfigTrainigPanel extends javax.swing.JPanel {
         }
     }
     
+    @SuppressWarnings("unchecked")
     private void initAll(boolean setDefault) {
-        // Zuerst die Daten zurücksetzen
+        // Zuerst die Daten zurÃ¼cksetzen
         if (setDefault) {
             // CAUTION: Reset to default resets only enabledProgress and indexProgress
             steps = Options.getInstance().copyStepConfigs(Options.getInstance().solverSteps, true, false, false, false);
@@ -302,10 +305,11 @@ public class ConfigTrainigPanel extends javax.swing.JPanel {
                 // find a suitable puzzle)
                 continue;
             }
-            Enumeration en = root.children();
+            @SuppressWarnings("unchecked")
+            Enumeration<CheckNode> en = (Enumeration<CheckNode>)root.children();
             CheckNode act = null;
             while (en.hasMoreElements()) {
-                act = (CheckNode)en.nextElement();
+                act = en.nextElement();
                 if (act.getCategory() == steps[i].getCategory()) {
                     break;
                 }
@@ -360,8 +364,9 @@ public class ConfigTrainigPanel extends javax.swing.JPanel {
     }
     
     class CheckBoxRenderer extends JCheckBox implements ListCellRenderer {
+        private static final long serialVersionUID = 1L;
         
-        public CheckBoxRenderer() {
+        CheckBoxRenderer() {
         }
         
         @Override

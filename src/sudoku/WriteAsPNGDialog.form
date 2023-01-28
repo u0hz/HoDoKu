@@ -1,4 +1,4 @@
-<?xml version="1.1" encoding="UTF-8" ?>
+<?xml version="1.0" encoding="UTF-8" ?>
 
 <Form version="1.5" maxVersion="1.6" type="org.netbeans.modules.form.forminfo.JDialogFormInfo">
   <NonVisualComponents>
@@ -33,17 +33,10 @@
           <Group type="102" attributes="0">
               <EmptySpace max="-2" attributes="0"/>
               <Group type="103" groupAlignment="0" attributes="0">
-                  <Group type="102" alignment="0" attributes="0">
-                      <Component id="größePanel" max="32767" attributes="0"/>
+                  <Group type="102" attributes="0">
+                      <Component id="sizePanel" max="32767" attributes="0"/>
                       <EmptySpace min="-2" max="-2" attributes="0"/>
                       <Component id="einheitPanel" max="32767" attributes="0"/>
-                  </Group>
-                  <Group type="102" alignment="0" attributes="1">
-                      <Component id="dateiNameLabel" min="-2" max="-2" attributes="0"/>
-                      <EmptySpace max="-2" attributes="0"/>
-                      <Component id="dateiNameTextField" pref="323" max="32767" attributes="0"/>
-                      <EmptySpace max="-2" attributes="0"/>
-                      <Component id="durchsuchenButton" min="-2" max="-2" attributes="0"/>
                   </Group>
                   <Group type="102" alignment="1" attributes="0">
                       <Component id="bildSpeichernButton" linkSize="1" min="-2" max="-2" attributes="0"/>
@@ -57,22 +50,16 @@
     </DimensionLayout>
     <DimensionLayout dim="1">
       <Group type="103" groupAlignment="0" attributes="0">
-          <Group type="102" alignment="0" max="-2" attributes="0">
+          <Group type="102" alignment="0" attributes="0">
               <EmptySpace min="-2" max="-2" attributes="0"/>
               <Group type="103" groupAlignment="1" max="-2" attributes="0">
-                  <Component id="größePanel" alignment="0" max="32767" attributes="1"/>
+                  <Component id="sizePanel" alignment="0" max="32767" attributes="1"/>
                   <Component id="einheitPanel" alignment="0" max="32767" attributes="1"/>
               </Group>
-              <EmptySpace min="-2" pref="14" max="-2" attributes="0"/>
+              <EmptySpace type="separate" max="-2" attributes="0"/>
               <Group type="103" groupAlignment="3" attributes="0">
-                  <Component id="dateiNameLabel" alignment="3" min="-2" max="-2" attributes="0"/>
-                  <Component id="durchsuchenButton" alignment="3" min="-2" max="-2" attributes="0"/>
-                  <Component id="dateiNameTextField" alignment="3" min="-2" max="-2" attributes="0"/>
-              </Group>
-              <EmptySpace min="-2" pref="14" max="-2" attributes="0"/>
-              <Group type="103" groupAlignment="3" attributes="0">
-                  <Component id="bildSpeichernButton" alignment="3" min="-2" max="-2" attributes="0"/>
                   <Component id="abbrechenButton" alignment="3" min="-2" max="-2" attributes="0"/>
+                  <Component id="bildSpeichernButton" alignment="3" min="-2" max="-2" attributes="0"/>
               </Group>
               <EmptySpace min="-2" max="-2" attributes="0"/>
           </Group>
@@ -80,12 +67,12 @@
     </DimensionLayout>
   </Layout>
   <SubComponents>
-    <Container class="javax.swing.JPanel" name="gr&#xf6;&#xdf;ePanel">
+    <Container class="javax.swing.JPanel" name="sizePanel">
       <Properties>
         <Property name="border" type="javax.swing.border.Border" editor="org.netbeans.modules.form.editors2.BorderEditor">
           <Border info="org.netbeans.modules.form.compat2.border.TitledBorderInfo">
             <TitledBorder title="Size">
-              <ResourceString PropertyName="titleX" bundle="intl/WriteAsPNGDialog.properties" key="WriteAsPNGDialog.gr&#xf6;&#xdf;ePanel.border.title" replaceFormat="java.util.ResourceBundle.getBundle(&quot;{bundleNameSlashes}&quot;).getString(&quot;{key}&quot;)"/>
+              <ResourceString PropertyName="titleX" bundle="intl/WriteAsPNGDialog.properties" key="WriteAsPNGDialog.sizePanel.border.title" replaceFormat="java.util.ResourceBundle.getBundle(&quot;{bundleNameSlashes}&quot;).getString(&quot;{key}&quot;)"/>
             </TitledBorder>
           </Border>
         </Property>
@@ -97,13 +84,13 @@
               <Group type="102" attributes="0">
                   <EmptySpace max="-2" attributes="0"/>
                   <Group type="103" groupAlignment="0" attributes="0">
-                      <Component id="größeLabel" alignment="0" min="-2" max="-2" attributes="0"/>
-                      <Component id="auflösungLabel" alignment="0" min="-2" max="-2" attributes="0"/>
+                      <Component id="sizeLabel" alignment="0" min="-2" max="-2" attributes="0"/>
+                      <Component id="resolutionLabel" alignment="0" min="-2" max="-2" attributes="0"/>
                   </Group>
                   <EmptySpace max="-2" attributes="0"/>
                   <Group type="103" groupAlignment="0" attributes="0">
-                      <Component id="auflösungTextField" alignment="0" pref="174" max="32767" attributes="0"/>
-                      <Component id="größeTextField" alignment="0" pref="174" max="32767" attributes="0"/>
+                      <Component id="resolutionTextField" alignment="0" pref="174" max="32767" attributes="0"/>
+                      <Component id="sizeTextField" alignment="0" pref="174" max="32767" attributes="0"/>
                   </Group>
                   <EmptySpace max="-2" attributes="0"/>
               </Group>
@@ -111,16 +98,16 @@
         </DimensionLayout>
         <DimensionLayout dim="1">
           <Group type="103" groupAlignment="0" attributes="0">
-              <Group type="102" alignment="0" max="-2" attributes="0">
+              <Group type="102" alignment="0" attributes="0">
                   <EmptySpace min="-2" max="-2" attributes="0"/>
                   <Group type="103" groupAlignment="3" max="-2" attributes="0">
-                      <Component id="größeLabel" alignment="3" min="-2" max="-2" attributes="0"/>
-                      <Component id="größeTextField" alignment="3" min="-2" max="-2" attributes="0"/>
+                      <Component id="sizeLabel" alignment="3" min="-2" max="-2" attributes="0"/>
+                      <Component id="sizeTextField" alignment="3" min="-2" max="-2" attributes="0"/>
                   </Group>
                   <EmptySpace min="-2" max="-2" attributes="0"/>
                   <Group type="103" groupAlignment="3" max="-2" attributes="0">
-                      <Component id="auflösungLabel" alignment="3" min="-2" max="-2" attributes="0"/>
-                      <Component id="auflösungTextField" alignment="3" min="-2" max="-2" attributes="0"/>
+                      <Component id="resolutionLabel" alignment="3" min="-2" max="-2" attributes="0"/>
+                      <Component id="resolutionTextField" alignment="3" min="-2" max="-2" attributes="0"/>
                   </Group>
                   <EmptySpace min="-2" max="-2" attributes="0"/>
               </Group>
@@ -128,35 +115,35 @@
         </DimensionLayout>
       </Layout>
       <SubComponents>
-        <Component class="javax.swing.JLabel" name="gr&#xf6;&#xdf;eLabel">
+        <Component class="javax.swing.JLabel" name="sizeLabel">
           <Properties>
             <Property name="displayedMnemonic" type="int" editor="org.netbeans.modules.i18n.form.FormI18nMnemonicEditor">
-              <ResourceString bundle="intl/WriteAsPNGDialog.properties" key="WriteAsPNGDialog.gr&#xf6;&#xdf;eLabel.mnemonic" replaceFormat="java.util.ResourceBundle.getBundle(&quot;{bundleNameSlashes}&quot;).getString(&quot;{key}&quot;)"/>
+              <ResourceString bundle="intl/WriteAsPNGDialog.properties" key="WriteAsPNGDialog.sizeLabel.mnemonic" replaceFormat="java.util.ResourceBundle.getBundle(&quot;{bundleNameSlashes}&quot;).getString(&quot;{key}&quot;)"/>
             </Property>
             <Property name="labelFor" type="java.awt.Component" editor="org.netbeans.modules.form.ComponentChooserEditor">
-              <ComponentRef name="gr&#xf6;&#xdf;eTextField"/>
+              <ComponentRef name="sizeTextField"/>
             </Property>
             <Property name="text" type="java.lang.String" editor="org.netbeans.modules.i18n.form.FormI18nStringEditor">
-              <ResourceString bundle="intl/WriteAsPNGDialog.properties" key="WriteAsPNGDialog.gr&#xf6;&#xdf;eLabel.text" replaceFormat="java.util.ResourceBundle.getBundle(&quot;{bundleNameSlashes}&quot;).getString(&quot;{key}&quot;)"/>
+              <ResourceString bundle="intl/WriteAsPNGDialog.properties" key="WriteAsPNGDialog.sizeLabel.text" replaceFormat="java.util.ResourceBundle.getBundle(&quot;{bundleNameSlashes}&quot;).getString(&quot;{key}&quot;)"/>
             </Property>
           </Properties>
         </Component>
-        <Component class="javax.swing.JLabel" name="aufl&#xf6;sungLabel">
+        <Component class="javax.swing.JLabel" name="resolutionLabel">
           <Properties>
             <Property name="displayedMnemonic" type="int" editor="org.netbeans.modules.i18n.form.FormI18nMnemonicEditor">
-              <ResourceString bundle="intl/WriteAsPNGDialog.properties" key="WriteAsPNGDialog.aufl&#xf6;sungLabel.mnemonic" replaceFormat="java.util.ResourceBundle.getBundle(&quot;{bundleNameSlashes}&quot;).getString(&quot;{key}&quot;)"/>
+              <ResourceString bundle="intl/WriteAsPNGDialog.properties" key="WriteAsPNGDialog.resolutionLabel.mnemonic" replaceFormat="java.util.ResourceBundle.getBundle(&quot;{bundleNameSlashes}&quot;).getString(&quot;{key}&quot;)"/>
             </Property>
             <Property name="labelFor" type="java.awt.Component" editor="org.netbeans.modules.form.ComponentChooserEditor">
-              <ComponentRef name="aufl&#xf6;sungTextField"/>
+              <ComponentRef name="resolutionTextField"/>
             </Property>
             <Property name="text" type="java.lang.String" editor="org.netbeans.modules.i18n.form.FormI18nStringEditor">
-              <ResourceString bundle="intl/WriteAsPNGDialog.properties" key="WriteAsPNGDialog.aufl&#xf6;sungLabel.text" replaceFormat="java.util.ResourceBundle.getBundle(&quot;{bundleNameSlashes}&quot;).getString(&quot;{key}&quot;)"/>
+              <ResourceString bundle="intl/WriteAsPNGDialog.properties" key="WriteAsPNGDialog.resolutionLabel.text" replaceFormat="java.util.ResourceBundle.getBundle(&quot;{bundleNameSlashes}&quot;).getString(&quot;{key}&quot;)"/>
             </Property>
           </Properties>
         </Component>
-        <Component class="javax.swing.JTextField" name="gr&#xf6;&#xdf;eTextField">
+        <Component class="javax.swing.JTextField" name="sizeTextField">
         </Component>
-        <Component class="javax.swing.JTextField" name="aufl&#xf6;sungTextField">
+        <Component class="javax.swing.JTextField" name="resolutionTextField">
         </Component>
       </SubComponents>
     </Container>
@@ -268,30 +255,6 @@
         </Component>
       </SubComponents>
     </Container>
-    <Component class="javax.swing.JLabel" name="dateiNameLabel">
-      <Properties>
-        <Property name="displayedMnemonic" type="int" editor="org.netbeans.modules.i18n.form.FormI18nMnemonicEditor">
-          <ResourceString bundle="intl/WriteAsPNGDialog.properties" key="WriteAsPNGDialog.dateiNameLabel.mnemonic" replaceFormat="java.util.ResourceBundle.getBundle(&quot;{bundleNameSlashes}&quot;).getString(&quot;{key}&quot;)"/>
-        </Property>
-        <Property name="labelFor" type="java.awt.Component" editor="org.netbeans.modules.form.ComponentChooserEditor">
-          <ComponentRef name="dateiNameTextField"/>
-        </Property>
-        <Property name="text" type="java.lang.String" editor="org.netbeans.modules.i18n.form.FormI18nStringEditor">
-          <ResourceString bundle="intl/WriteAsPNGDialog.properties" key="WriteAsPNGDialog.dateiNameLabel.text" replaceFormat="java.util.ResourceBundle.getBundle(&quot;{bundleNameSlashes}&quot;).getString(&quot;{key}&quot;)"/>
-        </Property>
-      </Properties>
-    </Component>
-    <Component class="javax.swing.JTextField" name="dateiNameTextField">
-    </Component>
-    <Component class="javax.swing.JButton" name="durchsuchenButton">
-      <Properties>
-        <Property name="mnemonic" type="int" value="46"/>
-        <Property name="text" type="java.lang.String" value="..." noResource="true"/>
-      </Properties>
-      <Events>
-        <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="durchsuchenButtonActionPerformed"/>
-      </Events>
-    </Component>
     <Component class="javax.swing.JButton" name="bildSpeichernButton">
       <Properties>
         <Property name="mnemonic" type="int" editor="org.netbeans.modules.i18n.form.FormI18nMnemonicEditor">

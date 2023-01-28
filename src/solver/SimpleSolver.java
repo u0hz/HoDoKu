@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-11  Bernhard Hobiger
+ * Copyright (C) 2008-12  Bernhard Hobiger
  *
  * This file is part of HoDoKu.
  *
@@ -62,7 +62,9 @@ public class SimpleSolver extends AbstractSolver {
     /** Bitmaps for indices per candidate in one unit. */
     private short[] ipcMask = new short[10];
 
-    /** Creates a new instance of SimpleSolver */
+    /** Creates a new instance of SimpleSolver
+     * @param finder 
+     */
     protected SimpleSolver(SudokuStepFinder finder) {
         super(finder);
         steps = new ArrayList<SolutionStep>();
@@ -86,7 +88,7 @@ public class SimpleSolver extends AbstractSolver {
             case NAKED_QUADRUPLE: result = findNakedXle(4, false); break;
             case LOCKED_CANDIDATES:
             case LOCKED_CANDIDATES_1:
-            case LOCKED_CANDIDATES_2: result = findLockedCandidates(); break;
+            case LOCKED_CANDIDATES_2: result = findLockedCandidates(type); break;
         }
         return result;
     }
@@ -262,10 +264,18 @@ public class SimpleSolver extends AbstractSolver {
         if (cachedSteps.size() > 0 && cachedStepsNumber == finder.getStepNumber()) {
             // steps were cached and are still valid -> try them
             SolutionType type = SolutionType.NAKED_PAIR;
-            if (anz == 2 && lockedOnly) type = SolutionType.LOCKED_PAIR;
-            if (anz == 3 && ! lockedOnly) type = SolutionType.NAKED_TRIPLE;
-            if (anz == 3 && lockedOnly) type = SolutionType.LOCKED_TRIPLE;
-            if (anz == 4) type = SolutionType.NAKED_QUADRUPLE;
+            if (anz == 2 && lockedOnly) {
+                type = SolutionType.LOCKED_PAIR;
+            }
+            if (anz == 3 && ! lockedOnly) {
+                type = SolutionType.NAKED_TRIPLE;
+            }
+            if (anz == 3 && lockedOnly) {
+                type = SolutionType.LOCKED_TRIPLE;
+            }
+            if (anz == 4) {
+                type = SolutionType.NAKED_QUADRUPLE;
+            }
             for (SolutionStep step : cachedSteps) {
                 if (step.getType() == type) {
                     return step;
@@ -278,9 +288,13 @@ public class SimpleSolver extends AbstractSolver {
         cachedStepsNumber = finder.getStepNumber();
         // try blocks first, guarantees to find all Locked Subsets in one method call
         SolutionStep step = findNakedXleInEntity(Sudoku2.BLOCKS, anz, lockedOnly, ! lockedOnly, true);
-        if (step != null || lockedOnly) return step;
+        if (step != null || lockedOnly) {
+            return step;
+        }
         step = findNakedXleInEntity(Sudoku2.LINES, anz, lockedOnly, ! lockedOnly, true);
-        if (step != null) return step;
+        if (step != null) {
+            return step;
+        }
         step = findNakedXleInEntity(Sudoku2.COLS, anz, lockedOnly, ! lockedOnly, true);
         return step;
     }
@@ -508,9 +522,13 @@ public class SimpleSolver extends AbstractSolver {
     private SolutionStep findHiddenXle(int anz) {
         SudokuUtil.clearStepList(steps);
         SolutionStep step = findHiddenXleInEntity(2 * Sudoku2.UNITS, Sudoku2.BLOCKS, anz, true);
-        if (step != null) return step;
+        if (step != null) {
+            return step;
+        }
         step = findHiddenXleInEntity(0, Sudoku2.LINES, anz, true);
-        if (step != null) return step;
+        if (step != null) {
+            return step;
+        }
         step = findHiddenXleInEntity(Sudoku2.UNITS, Sudoku2.COLS, anz, true);
         return step;
     }
@@ -625,21 +643,30 @@ public class SimpleSolver extends AbstractSolver {
 
     /**
      * Get the next LC step. Type 1 is found first.
+
+     * @param type
      * @return
      */
-    private SolutionStep findLockedCandidates() {
+    private SolutionStep findLockedCandidates(SolutionType type) {
         SudokuUtil.clearStepList(steps);
-        SolutionStep step = findLockedCandidatesInEntityN(18, Sudoku2.BLOCKS, true);
-        if (step != null) return step;
-        step = findLockedCandidatesInEntityN(0, Sudoku2.LINES, true);
-        if (step != null) return step;
-        step = findLockedCandidatesInEntityN(9, Sudoku2.COLS, true);
-//        SolutionStep step = findLockedCandidatesInEntity(Sudoku2.BLOCK, Sudoku2.BLOCKS);
-//        if (step != null) return step;
-//        step = findLockedCandidatesInEntity(Sudoku2.LINE, Sudoku2.LINES);
-//        if (step != null) return step;
-//        step = findLockedCandidatesInEntity(Sudoku2.COL, Sudoku2.COLS);
-        return step;
+        SolutionStep step = null;
+        if (type == SolutionType.LOCKED_CANDIDATES || type == SolutionType.LOCKED_CANDIDATES_1) {
+            step = findLockedCandidatesInEntityN(18, Sudoku2.BLOCKS, true);
+            if (step != null) {
+                return step;
+            }
+        }
+        if (type == SolutionType.LOCKED_CANDIDATES || type == SolutionType.LOCKED_CANDIDATES_2) {
+            step = findLockedCandidatesInEntityN(0, Sudoku2.LINES, true);
+            if (step != null) {
+                return step;
+            }
+            step = findLockedCandidatesInEntityN(9, Sudoku2.COLS, true);
+            if (step != null) {
+                return step;
+            }
+        }
+        return null;
     }
 
     /**
@@ -654,9 +681,6 @@ public class SimpleSolver extends AbstractSolver {
         findLockedCandidatesInEntityN(18, Sudoku2.BLOCKS, false);
         findLockedCandidatesInEntityN(0, Sudoku2.LINES, false);
         findLockedCandidatesInEntityN(9, Sudoku2.COLS, false);
-//        findLockedCandidatesInEntity(Sudoku2.BLOCK, Sudoku2.BLOCKS);
-//        findLockedCandidatesInEntity(Sudoku2.LINE, Sudoku2.LINES);
-//        findLockedCandidatesInEntity(Sudoku2.COL, Sudoku2.COLS);
         Collections.sort(steps);
         steps = oldList;
         return newList;

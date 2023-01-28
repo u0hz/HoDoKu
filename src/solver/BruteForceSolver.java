@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-11  Bernhard Hobiger
+ * Copyright (C) 2008-12  Bernhard Hobiger
  *
  * This file is part of HoDoKu.
  *
@@ -20,7 +20,6 @@
 package solver;
 
 import generator.SudokuGeneratorFactory;
-import java.util.Arrays;
 import sudoku.SolutionStep;
 import sudoku.SolutionType;
 import sudoku.Sudoku2;
@@ -32,7 +31,9 @@ import sudoku.SudokuSet;
  */
 public class BruteForceSolver extends AbstractSolver {
     
-    /** Creates a new instance of BruteForceSolver */
+    /** Creates a new instance of BruteForceSolver
+     * @param finder 
+     */
     public BruteForceSolver(SudokuStepFinder finder) {
         super(finder);
     }
@@ -67,7 +68,7 @@ public class BruteForceSolver extends AbstractSolver {
     }
     
     /**
-     * Das Sudoku2 wird mit Dancing-Links gelöst. Anschließend wird aus den nicht gesetzten Zellen
+     * Das Sudoku2 wird mit Dancing-Links gelÃ¶st. AnschlieÃŸend wird aus den nicht gesetzten Zellen
      * die mittlere ausgesucht und gesetzt.<br>
      * If the sudoku is invalid, no result is returned.
      */
@@ -83,7 +84,7 @@ public class BruteForceSolver extends AbstractSolver {
             }
         }
         
-        // alle Positionen ermitteln, die im ungelösten Sudoku2 noch nicht gesetzt sind
+        // alle Positionen ermitteln, die im ungelÃ¶sten Sudoku2 noch nicht gesetzt sind
         SudokuSet unsolved = new SudokuSet();
         for (int i = 0; i < Sudoku2.LENGTH; i++) {
             if (sudoku.getValue(i) == 0) {

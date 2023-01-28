@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-11  Bernhard Hobiger
+ * Copyright (C) 2008-12  Bernhard Hobiger
  *
  * This file is part of HoDoKu.
  *
@@ -119,7 +119,9 @@ public class SingleDigitPatternSolver extends AbstractSolver {
     /** A set to check for eliminations */
     private SudokuSet firstUnit = new SudokuSet();
 
-    /** Creates a new instance of SimpleSolver */
+    /** Creates a new instance of SimpleSolver
+     * @param finder 
+     */
     protected SingleDigitPatternSolver(SudokuStepFinder finder) {
         super(finder);
     }

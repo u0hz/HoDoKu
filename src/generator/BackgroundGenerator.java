@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-11  Bernhard Hobiger
+ * Copyright (C) 2008-12  Bernhard Hobiger
  *
  * This file is part of HoDoKu.
  *
@@ -93,6 +93,7 @@ public class BackgroundGenerator {
         Sudoku2 sudoku = null;
         SudokuGenerator creator = null; 
         SudokuSolver solver = null;
+        setAnz(0);
         if (dlg == null) {
             // get any instance
             solver = SudokuSolverFactory.getInstance();

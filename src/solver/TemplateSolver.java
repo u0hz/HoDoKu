@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-11  Bernhard Hobiger
+ * Copyright (C) 2008-12  Bernhard Hobiger
  *
  * This file is part of HoDoKu.
  *
@@ -36,24 +36,26 @@ import sudoku.SudokuSet;
  *    (~(positions | allowedPositions) & template) != 0
  * Verboten sind alle Templates, die eine 1 an einer Position eines Templates haben, das aus
  *    allen verundeten Templates eines anderen Kandidaten gebildet wurde
- * Verboten sind alle Templates, die keine einzige überlappungsfreie Kombination mit wenigstens
+ * Verboten sind alle Templates, die keine einzige Ã¼berlappungsfreie Kombination mit wenigstens
  *    einem Template einer anderen Ziffer haben
  *
  * Wenn die Templates bekannt sind:
- *    alle Templates OR: Alle Kandidaten, die nicht enthalten sind, können gelöscht werden
- *    alle Templates AND: Alle Positionen, die übrig bleiben, können gesetzt werden
- *    alle gültigen Kombinationen aus Templates zweier Ziffern bilden (OR), alle Ergebnisse
- *           AND: An allen verbliebenen Positionen können alle Kandidaten, die nicht zu einer dieser
- *           Ziffern gehören, eliminiert werden.
+ *    alle Templates OR: Alle Kandidaten, die nicht enthalten sind, kÃ¶nnen gelÃ¶scht werden
+ *    alle Templates AND: Alle Positionen, die Ã¼brig bleiben, kÃ¶nnen gesetzt werden
+ *    alle gÃ¼ltigen Kombinationen aus Templates zweier Ziffern bilden (OR), alle Ergebnisse
+ *           AND: An allen verbliebenen Positionen kÃ¶nnen alle Kandidaten, die nicht zu einer dieser
+ *           Ziffern gehÃ¶ren, eliminiert werden.
  *
  * @author hobiwan
  */
 public class TemplateSolver extends AbstractSolver {
     
-    private List<SolutionStep> steps; // gefundene Lösungsschritte
+    private List<SolutionStep> steps; // gefundene LÃ¶sungsschritte
     private SolutionStep globalStep = new SolutionStep(SolutionType.HIDDEN_SINGLE);
     
-    /** Creates a new instance of TemplateSolver */
+    /** Creates a new instance of TemplateSolver
+     * @param finder 
+     */
     public TemplateSolver(SudokuStepFinder finder) {
         super(finder);
     }
@@ -120,13 +122,13 @@ public class TemplateSolver extends AbstractSolver {
             steps = new ArrayList<SolutionStep>();
         }
         
-        // können Zellen gesetzt werden?
+        // kÃ¶nnen Zellen gesetzt werden?
         SudokuSet setSet = new SudokuSet();
         for (int i = 1; i <= 9; i++) {
             setSet.set(finder.getSetValueTemplates(true)[i]);
             setSet.andNot(finder.getPositions()[i]);
             if (! setSet.isEmpty()) {
-                // Zellen können gesetzt werden
+                // Zellen kÃ¶nnen gesetzt werden
                 globalStep.reset();
                 globalStep.setType(SolutionType.TEMPLATE_SET);
                 globalStep.addValue(i);
@@ -143,13 +145,13 @@ public class TemplateSolver extends AbstractSolver {
             steps = new ArrayList<SolutionStep>();
         }
         
-        // können Kandidaten gelöscht werden?
+        // kÃ¶nnen Kandidaten gelÃ¶scht werden?
         SudokuSet setSet = new SudokuSet();
         for (int i = 1; i <= 9; i++) {
             setSet.set(finder.getDelCandTemplates(true)[i]);
             setSet.and(finder.getCandidates()[i]);
             if (! setSet.isEmpty()) {
-                // Kandidaten können gelöscht werden
+                // Kandidaten kÃ¶nnen gelÃ¶scht werden
                 globalStep.reset();
                 globalStep.setType(SolutionType.TEMPLATE_DEL);
                 globalStep.addValue(i);

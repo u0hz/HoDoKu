@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-11  Bernhard Hobiger
+ * Copyright (C) 2008-12  Bernhard Hobiger
  *
  * This file is part of HoDoKu.
  *
@@ -20,30 +20,31 @@
 package sudoku;
 
 /**
- * Hilfsklasse für die Fischsuche:
+ * Hilfsklasse fÃ¼r die Fischsuche:
  *
- * Ein SudokuSet ist ein Integer-Array der Größe 81, das Werte zwischen 0 und 81
- * aufnehmen kann. Die Werte innerhalb des Arrays werden sortiert eingefügt.
+ * Ein SudokuSet ist ein Integer-Array der GrÃ¶ÃŸe 81, das Werte zwischen 0 und 81
+ * aufnehmen kann. Die Werte innerhalb des Arrays werden sortiert eingefÃ¼gt.
  *
- * Aus Performancegründen werden die Werte in einer Bitmask dupliziert. Operationen
- * wie merge() oder contains() können damit wesentlich schneller ausgeführt werden.
- * In der Bitmap wird der Wert "0" als "0x00000001" abgebildet. Der größte darstellbare
- * Wert pro int ist "0x80000000" und steht für "31", 3 int ergeben daher die Werte 0 - 95.
+ * Aus PerformancegrÃ¼nden werden die Werte in einer Bitmask dupliziert. Operationen
+ * wie merge() oder contains() kÃ¶nnen damit wesentlich schneller ausgefÃ¼hrt werden.
+ * In der Bitmap wird der Wert "0" als "0x00000001" abgebildet. Der grÃ¶ÃŸte darstellbare
+ * Wert pro int ist "0x80000000" und steht fÃ¼r "31", 3 int ergeben daher die Werte 0 - 95.
  * int mask1:  0 - 31
  * int mask2: 32 - 63
  * int mask3: 64 - 95
  *
- * Mehrere Instanzen von SudokuSet können miteinander verglichen werden. Speziell ist es
- * möglich zu prüfen, ob Werte eines SudokuSet in einem anderen enthalten sind. Außerdem
- * können effizient Vereinigungen von SudokuSets gebildet werden (entspricht mischen).
+ * Mehrere Instanzen von SudokuSet kÃ¶nnen miteinander verglichen werden. Speziell ist es
+ * mÃ¶glich zu prÃ¼fen, ob Werte eines SudokuSet in einem anderen enthalten sind. AuÃŸerdem
+ * kÃ¶nnen effizient Vereinigungen von SudokuSets gebildet werden (entspricht mischen).
  *
  * @author hobiwan
  */
 public class SudokuSet extends SudokuSetBase implements Cloneable {
-    // für jede der 256 möglichen Kombinationen von Bits das entsprechende Array
+    // fÃ¼r jede der 256 mÃ¶glichen Kombinationen von Bits das entsprechende Array
     private static int[][] possibleValues = new int[256][8];
-    // und zu jeder Zahl die Länge des Arrays
+    // und zu jeder Zahl die LÃ¤nge des Arrays
     public static int[] anzValues = new int[256];
+    private static final long serialVersionUID = 1L;
     
     private int[] values = null;
     private int anz = 0;
@@ -119,8 +120,11 @@ public class SudokuSet extends SudokuSetBase implements Cloneable {
     }
     
     /**
-     * prüft, ob alle Elemente in values im Set s1 vorkommen.
+     * prï¿½ft, ob alle Elemente in values im Set s1 vorkommen.
      * Alle nicht enthaltenen Kandidaten werden in das SudokuSet fins geschrieben
+     * @param s1
+     * @param fins
+     * @return  
      */
     public boolean isCovered(SudokuSet s1, SudokuSet fins) {
         long m1 = ~s1.mask1 & mask1;

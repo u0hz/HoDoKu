@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-11  Bernhard Hobiger
+ * Copyright (C) 2008-12  Bernhard Hobiger
  *
  * This file is part of HoDoKu.
  *
@@ -18,9 +18,11 @@
  */
 package sudoku;
 
+
 import generator.BackgroundGeneratorThread;
 import java.awt.Color;
 import java.awt.Dimension;
+import java.awt.Font;
 import java.awt.FontMetrics;
 import java.awt.Graphics2D;
 import java.awt.Image;
@@ -42,10 +44,16 @@ import java.awt.print.PrinterException;
 import java.awt.print.PrinterJob;
 import java.beans.XMLDecoder;
 import java.beans.XMLEncoder;
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.PrintWriter;
 import java.net.URL;
 import java.text.MessageFormat;
 import java.util.ArrayList;
@@ -60,6 +68,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
 import javax.imageio.ImageIO;
+import javax.swing.Icon;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JFileChooser;
@@ -85,16 +94,41 @@ import solver.SudokuSolverFactory;
  */
 public class MainFrame extends javax.swing.JFrame implements FlavorListener {
 
-    public static final String VERSION = "HoDoKu - v2.1.3";
-    public static final String BUILD = "Build 51";
+    private static final long serialVersionUID = 1L;
+    public static final String VERSION = "HoDoKu - v2.2.0";
+//    public static final String BUILD = "Build 16";
+    public static final String BUILD;
+    public static final String REV = "$LastChangedRevision: 116 $";
+    /** The size of the toggle button icons */
+    private static final int TOGGLE_BUTTON_ICON_SIZE = 32;
     private SudokuPanel sudokuPanel;
     //private DifficultyLevel level = Options.getInstance().getDifficultyLevels()[DifficultyType.EASY.ordinal()];
     private JToggleButton[] toggleButtons = new JToggleButton[10];
+    /** Icons for the filter toggle buttons in the toolbar (original version) */
+    private Icon[] toggleButtonIconsOrg = new Icon[10];
+    /** Icons for the filter toggle buttons in the toolbar (original version) */
+    private Icon[] emptyToggleButtonIconsOrg = new Icon[10];
+    /** Images for the filter toggle button icons (ColorKu version) */
+    private ColorKuImage[] toggleButtonImagesColorKu = new ColorKuImage[10];
+    /** Icons for the filter toggle buttons in the toolbar (ColorKu version) */
+    private Icon[] toggleButtonIconsColorKu = new Icon[10];
+    /** Icons for the filter toggle buttons in the toolbar (currently displayed) */
+    private Icon[] toggleButtonIcons = new Icon[10];
+    /** Icons for the filter toggle buttons in the toolbar (no candidates left) */
+    private Icon[] emptyToggleButtonIcons = new Icon[10];
+    /** One empty icon for disabled filter buttons - digits */
+    private Icon emptyToggleButtonIconOrg = new ImageIcon(getClass().getResource("/img/f_0c.png"));
+    /** One empty icon for disabled filter buttons */
+    private Icon emptyToggleButtonIconOrgColorKu = new ImageIcon(new ColorKuImage(TOGGLE_BUTTON_ICON_SIZE, Color.WHITE));
+//    /** One empty icon for disabled filter buttons */
+//    private Icon emptyToggleButtonIcon = emptyToggleButtonIconOrg;
     private JRadioButtonMenuItem[] levelMenuItems = new JRadioButtonMenuItem[5];
     private JRadioButtonMenuItem[] modeMenuItems;
     private boolean oldShowDeviations = true;
     /** only set, when the givens are changed */
     private boolean oldShowDeviationsValid = false;
+    /** true if new givens are being entered */
+    private boolean eingabeModus = false;
     private SplitPanel splitPanel = new SplitPanel();
     private SummaryPanel summaryPanel = new SummaryPanel(this);
     private SolutionPanel solutionPanel = new SolutionPanel(this);
@@ -103,13 +137,23 @@ public class MainFrame extends javax.swing.JFrame implements FlavorListener {
     private JTabbedPane tabPane = new JTabbedPane();    // Ausdruck
     private PageFormat pageFormat = null;
     private PrinterJob job = null;
-    //private File bildFile = new File("C:\\0_temp\\test.png");
-    private File bildFile = new File(java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.PNG_path"));
     private double bildSize = 400;
-    private int bildAuflösung = 96;
+    private int bildAufloesung = 96;
     private int bildEinheit = 2;    // File/IO
-    private MyFileFilter[] puzzleFileFilters = new MyFileFilter[]{
-        new MyFileFilter(1)
+    private MyFileFilter[] puzzleFileSaveFilters = new MyFileFilter[]{
+        new MyFileFilter(1),
+        new MyFileFilter(2),
+        new MyFileFilter(3),
+        new MyFileFilter(4),
+        new MyFileFilter(5),
+        new MyFileFilter(6),
+        new MyFileFilter(7),
+        new MyFileFilter(9)
+    };
+    private MyFileFilter[] puzzleFileLoadFilters = new MyFileFilter[]{
+        new MyFileFilter(1),
+        new MyFileFilter(8),
+        new MyFileFilter(9)
     };
     private MyFileFilter[] configFileFilters = new MyFileFilter[]{
         new MyFileFilter(0)
@@ -121,6 +165,8 @@ public class MainFrame extends javax.swing.JFrame implements FlavorListener {
     private long resetHDivLocTicks = 0;     // only adjust within a second or so
     private String configFileExt = java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.config_file_ext");
     private String solutionFileExt = java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.solution_file_ext");
+    private String textFileExt = java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.text_file_ext");
+    private String ssFileExt = java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.ss_file_ext");
     private MessageFormat formatter = new MessageFormat("");
     private List<GuiState> savePoints = new ArrayList<GuiState>(); // container for savepoints
     //private GameMode mode = GameMode.PLAYING;
@@ -147,9 +193,27 @@ public class MainFrame extends javax.swing.JFrame implements FlavorListener {
      * querying for DataFlavors, it is started an we try again when it expires.
      */
     private Timer clipTimer = new Timer(100, null);
-
-    /** Creates new form MainFrame */
-    @SuppressWarnings("LeakingThisInConstructor")
+    /** The file name of the last loded sudoku file */
+    private String sudokuFileName = null;
+    /** The file type of the last loaded sudoku file: 1 .. hsol, 8 .. txt or 9 .. ss */
+    private int sudokuFileType = -1;
+    
+    /** Incorporates the last subversion revision of this file into
+     *  the version string.<br><br>
+     * 
+     * CAUTION: MainFrame.java must be changed and committed to change
+     * the build number.
+     */
+    static {
+        String[] dummy = REV.split(" ");
+        BUILD = "Build " + dummy[1];
+    }
+  
+    
+    /** Creates new form MainFrame
+     * @param launchFile 
+     */
+    @SuppressWarnings({"LeakingThisInConstructor", "unchecked"})
     public MainFrame(String launchFile) {
         // if a configuration file is given at the command line, load it before anything
         // else is done (helps restoring the screen layout)
@@ -157,28 +221,57 @@ public class MainFrame extends javax.swing.JFrame implements FlavorListener {
             Options.readOptions(launchFile);
             BackgroundGeneratorThread.getInstance().resetAll();
         }
+        Options.getInstance().checkAllFonts();
 
         initComponents();
-        setTitle(VERSION);
+        setTitleWithFile();
         outerSplitPane.getActionMap().getParent().remove("startResize");
         outerSplitPane.getActionMap().getParent().remove("toggleFocus");
+
+        // change hintTextArea font to a proportional font
+        String fontName = "Arial";
+        if (!Options.getInstance().checkFont(fontName)) {
+            fontName = Font.SANS_SERIF;
+        }
+        Font font = hinweisTextArea.getFont();
+//        System.out.println("fontSize: " + font.getSize() + "/" + getFont().getSize() + "/" + bearbeitenMenu.getFont().getSize());
+//        font = new Font(fontName, font.getStyle(), font.getSize());
+        font = new Font(fontName, font.getStyle(), bearbeitenMenu.getFont().getSize());
+        hinweisTextArea.setFont(font);
+
+        // status line fonts are a bit larger than default in Windows LAF
+        // allow adjustments
+        font = statusLinePanel.getFont();
+        fontName = "Tahoma";
+        if (!Options.getInstance().checkFont(fontName)) {
+            fontName = font.getName();
+        }
+        int fontSize = 12;
+        if (font.getSize() > fontSize) {
+            fontSize = font.getSize();
+        }
+        font = new Font(fontName, getFont().getStyle(), fontSize);
+        statusLabelCellCandidate.setFont(font);
+        statusLabelLevel.setFont(font);
+        statusLabelModus.setFont(font);
+        progressLabel.setFont(font);
 
         // get the current difficulty level (is overriden when levels are added
         //to the combo box)
         int actLevel = Options.getInstance().getActLevel();
-        
+
         Color lafMenuBackColor = UIManager.getColor("textHighlight");
         Color lafMenuColor = UIManager.getColor("textHighlightText");
-        Color lafMenuInactiveColor = UIManager.getColor("textInactiveText");
+//        Color lafMenuInactiveColor = UIManager.getColor("textInactiveText");
         if (lafMenuBackColor == null) {
             lafMenuBackColor = Color.BLUE;
         }
         if (lafMenuColor == null) {
             lafMenuColor = Color.BLACK;
         }
-        if (lafMenuInactiveColor == null) {
-            lafMenuInactiveColor = Color.WHITE;
-        }
+//        if (lafMenuInactiveColor == null) {
+//            lafMenuInactiveColor = Color.WHITE;
+//        }
         statusLinePanel.setBackground(lafMenuBackColor);
         statusLabelLevel.setForeground(lafMenuColor);
         summaryPanel.setTitleLabelColors(lafMenuColor, lafMenuBackColor);
@@ -261,7 +354,7 @@ public class MainFrame extends javax.swing.JFrame implements FlavorListener {
         showHintPanelMenuItem.setSelected(Options.getInstance().isShowHintPanel());
         showToolBarMenuItem.setSelected(Options.getInstance().isShowToolBar());
 
-        // Level-Menüs und Combo-Box
+        // Level-MenÃƒÂ¼s und Combo-Box
         levelMenuItems[0] = levelLeichtMenuItem;
         levelMenuItems[1] = levelMittelMenuItem;
         levelMenuItems[2] = levelKniffligMenuItem;
@@ -309,19 +402,19 @@ public class MainFrame extends javax.swing.JFrame implements FlavorListener {
             levelComboBox.setMinimumSize(newLevelSize);
             levelComboBox.setPreferredSize(newLevelSize);
             levelComboBox.setSize(newLevelSize);
-            System.out.println("Size changed to: " + newLevelSize);
+            //System.out.println("Size changed to: " + newLevelSize);
             //jToolBar1.doLayout();
             //repaint();
         }
-        
+
         // set back the saved difficulty level
         Options.getInstance().setActLevel(actLevel);
-        
-        // Menüzustand prüfen, übernimmt Werte von SudokuPanel; muss am Anfang stehen,
-        // weil die Werte später in der Methode verwendet werden
+
+        // MenÃƒÂ¼zustand prÃƒÂ¼fen, ÃƒÂ¼bernimmt Werte von SudokuPanel; muss am Anfang stehen,
+        // weil die Werte spÃƒÂ¤ter in der Methode verwendet werden
         check();
 
-        // Die ToggleButtons in ein Array stecken, ist später einfacher
+        // Die ToggleButtons in ein Array stecken, ist spÃƒÂ¤ter einfacher
         toggleButtons[0] = f1ToggleButton;
         toggleButtons[1] = f2ToggleButton;
         toggleButtons[2] = f3ToggleButton;
@@ -332,7 +425,21 @@ public class MainFrame extends javax.swing.JFrame implements FlavorListener {
         toggleButtons[7] = f8ToggleButton;
         toggleButtons[8] = f9ToggleButton;
         toggleButtons[9] = fxyToggleButton;
+        for (int i = 0, lim = toggleButtons.length; i < lim; i++) {
+            toggleButtonIconsOrg[i] = toggleButtons[i].getIcon();
+            toggleButtonIcons[i] = toggleButtons[i].getIcon();
+            if (i < 9) {
+                emptyToggleButtonIconsOrg[i] = new ImageIcon(getClass().getResource("/img/f_" + (i + 1) + "c_inactive.png"));
+            } else {
+                emptyToggleButtonIcons[i] = toggleButtons[i].getIcon();
+            }
+        }
         setToggleButton(null, false);
+        prepareToggleButtonIcons(Options.getInstance().isShowColorKu());
+
+        // initialize colorKuMeniItem
+        showColorKuMenuItem.setSelected(Options.getInstance().isShowColorKu());
+        Options.getInstance().setShowColorKuAct(Options.getInstance().isShowColorKu());
 
         // Caret-Listener for display of Forcing Chains
         hinweisTextArea.addCaretListener(caretListener);
@@ -340,20 +447,23 @@ public class MainFrame extends javax.swing.JFrame implements FlavorListener {
         // Images for progressLabel
         createProgressLabelImages();
         progressLabel.setIcon(progressImages[0]);
-        
+
         // set the mode
         setMode(Options.getInstance().getGameMode(), false);
-        
+
         // show hint buttons in toolbar
         setShowHintButtonsInToolbar();
 
         // if a puzzle file is given at the command line, load it
         if (launchFile != null && launchFile.endsWith("." + solutionFileExt)) {
-            loadFromFile(launchFile);
+            loadFromFile(launchFile, 1);
+        }
+        if (launchFile != null && launchFile.endsWith("." + textFileExt)) {
+            loadFromFile(launchFile, 8);
         }
 
         fixFocus();
-        
+
         // Start background creation
         BackgroundGeneratorThread.getInstance().startCreation();
 
@@ -423,7 +533,7 @@ public class MainFrame extends javax.swing.JFrame implements FlavorListener {
         outerSplitPane = new javax.swing.JSplitPane();
         hintPanel = new javax.swing.JPanel();
         neuerHinweisButton = new javax.swing.JButton();
-        hinweisAusführenButton = new javax.swing.JButton();
+        hinweisAusfuehrenButton = new javax.swing.JButton();
         solveUpToButton = new javax.swing.JButton();
         hinweisAbbrechenButton = new javax.swing.JButton();
         jScrollPane1 = new javax.swing.JScrollPane();
@@ -431,36 +541,38 @@ public class MainFrame extends javax.swing.JFrame implements FlavorListener {
         jMenuBar1 = new javax.swing.JMenuBar();
         dateiMenu = new javax.swing.JMenu();
         neuMenuItem = new javax.swing.JMenuItem();
-        jSeparator14 = new javax.swing.JSeparator();
+        jSeparator39 = new javax.swing.JPopupMenu.Separator();
         loadPuzzleMenuItem = new javax.swing.JMenuItem();
+        savePuzzleMenuItem = new javax.swing.JMenuItem();
         savePuzzleAsMenuItem = new javax.swing.JMenuItem();
         loadConfigMenuItem = new javax.swing.JMenuItem();
         saveConfigAsMenuItem = new javax.swing.JMenuItem();
-        jSeparator4 = new javax.swing.JSeparator();
+        jSeparator38 = new javax.swing.JPopupMenu.Separator();
         seiteEinrichtenMenuItem = new javax.swing.JMenuItem();
         druckenMenuItem = new javax.swing.JMenuItem();
         extendedPrintMenuItem = new javax.swing.JMenuItem();
         speichernAlsBildMenuItem = new javax.swing.JMenuItem();
-        jSeparator15 = new javax.swing.JSeparator();
+        jSeparator37 = new javax.swing.JPopupMenu.Separator();
         spielEingebenMenuItem = new javax.swing.JMenuItem();
         spielEditierenMenuItem = new javax.swing.JMenuItem();
         spielSpielenMenuItem = new javax.swing.JMenuItem();
-        jSeparator16 = new javax.swing.JSeparator();
+        jSeparator36 = new javax.swing.JPopupMenu.Separator();
         beendenMenuItem = new javax.swing.JMenuItem();
         bearbeitenMenu = new javax.swing.JMenu();
         undoMenuItem = new javax.swing.JMenuItem();
         redoMenuItem = new javax.swing.JMenuItem();
-        jSeparator3 = new javax.swing.JSeparator();
+        jSeparator35 = new javax.swing.JPopupMenu.Separator();
         copyCluesMenuItem = new javax.swing.JMenuItem();
         copyFilledMenuItem = new javax.swing.JMenuItem();
         copyPmGridMenuItem = new javax.swing.JMenuItem();
         copyPmGridWithStepMenuItem = new javax.swing.JMenuItem();
         copyLibraryMenuItem = new javax.swing.JMenuItem();
+        copySSMenuItem = new javax.swing.JMenuItem();
         pasteMenuItem = new javax.swing.JMenuItem();
-        jSeparator17 = new javax.swing.JSeparator();
+        jSeparator34 = new javax.swing.JPopupMenu.Separator();
         restartSpielMenuItem = new javax.swing.JMenuItem();
         resetSpielMenuItem = new javax.swing.JMenuItem();
-        jSeparator2 = new javax.swing.JSeparator();
+        jSeparator33 = new javax.swing.JPopupMenu.Separator();
         configMenuItem = new javax.swing.JMenuItem();
         modeMenu = new javax.swing.JMenu();
         playingMenuItem = new javax.swing.JRadioButtonMenuItem();
@@ -470,37 +582,38 @@ public class MainFrame extends javax.swing.JFrame implements FlavorListener {
         showCandidatesMenuItem = new javax.swing.JCheckBoxMenuItem();
         showWrongValuesMenuItem = new javax.swing.JCheckBoxMenuItem();
         showDeviationsMenuItem = new javax.swing.JCheckBoxMenuItem();
-        jSeparator10 = new javax.swing.JSeparator();
+        showColorKuMenuItem = new javax.swing.JCheckBoxMenuItem();
+        jSeparator32 = new javax.swing.JPopupMenu.Separator();
         colorCellsMenuItem = new javax.swing.JRadioButtonMenuItem();
         colorCandidatesMenuItem = new javax.swing.JRadioButtonMenuItem();
-        jSeparator19 = new javax.swing.JSeparator();
+        jSeparator31 = new javax.swing.JPopupMenu.Separator();
         levelMenu = new javax.swing.JMenu();
         levelLeichtMenuItem = new javax.swing.JRadioButtonMenuItem();
         levelMittelMenuItem = new javax.swing.JRadioButtonMenuItem();
         levelKniffligMenuItem = new javax.swing.JRadioButtonMenuItem();
         levelSchwerMenuItem = new javax.swing.JRadioButtonMenuItem();
         levelExtremMenuItem = new javax.swing.JRadioButtonMenuItem();
-        rätselMenu = new javax.swing.JMenu();
+        raetselMenu = new javax.swing.JMenu();
         vageHintMenuItem = new javax.swing.JMenuItem();
         mediumHintMenuItem = new javax.swing.JMenuItem();
-        lösungsSchrittMenuItem = new javax.swing.JMenuItem();
-        jSeparator21 = new javax.swing.JSeparator();
+        loesungsSchrittMenuItem = new javax.swing.JMenuItem();
+        jSeparator30 = new javax.swing.JPopupMenu.Separator();
         backdoorSearchMenuItem = new javax.swing.JMenuItem();
         historyMenuItem = new javax.swing.JMenuItem();
         createSavePointMenuItem = new javax.swing.JMenuItem();
         restoreSavePointMenuItem = new javax.swing.JMenuItem();
-        jSeparator5 = new javax.swing.JSeparator();
+        jSeparator29 = new javax.swing.JPopupMenu.Separator();
         setGivensMenuItem = new javax.swing.JMenuItem();
-        jSeparator22 = new javax.swing.JSeparator();
+        jSeparator28 = new javax.swing.JPopupMenu.Separator();
         alleHiddenSinglesSetzenMenuItem = new javax.swing.JMenuItem();
         ansichtMenu = new javax.swing.JMenu();
         sudokuOnlyMenuItem = new javax.swing.JRadioButtonMenuItem();
-        jSeparator18 = new javax.swing.JSeparator();
+        jSeparator20 = new javax.swing.JPopupMenu.Separator();
         summaryMenuItem = new javax.swing.JRadioButtonMenuItem();
         solutionMenuItem = new javax.swing.JRadioButtonMenuItem();
         allStepsMenuItem = new javax.swing.JRadioButtonMenuItem();
         cellZoomMenuItem = new javax.swing.JRadioButtonMenuItem();
-        jSeparator7 = new javax.swing.JSeparator();
+        jSeparator6 = new javax.swing.JPopupMenu.Separator();
         showHintPanelMenuItem = new javax.swing.JCheckBoxMenuItem();
         showToolBarMenuItem = new javax.swing.JCheckBoxMenuItem();
         showHintButtonsCheckBoxMenuItem = new javax.swing.JCheckBoxMenuItem();
@@ -509,11 +622,14 @@ public class MainFrame extends javax.swing.JFrame implements FlavorListener {
         resetViewMenuItem = new javax.swing.JMenuItem();
         helpMenu = new javax.swing.JMenu();
         keyMenuItem = new javax.swing.JMenuItem();
-        jSeparator6 = new javax.swing.JSeparator();
+        jSeparator26 = new javax.swing.JPopupMenu.Separator();
         userManualMenuItem = new javax.swing.JMenuItem();
         solvingGuideMenuItem = new javax.swing.JMenuItem();
         projectHomePageMenuItem = new javax.swing.JMenuItem();
-        jSeparator20 = new javax.swing.JSeparator();
+        jSeparator27 = new javax.swing.JPopupMenu.Separator();
+        reportErrorMenuItem = new javax.swing.JMenuItem();
+        askQuestionMenuItem = new javax.swing.JMenuItem();
+        jSeparator25 = new javax.swing.JPopupMenu.Separator();
         aboutMenuItem = new javax.swing.JMenuItem();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
@@ -692,7 +808,6 @@ public class MainFrame extends javax.swing.JFrame implements FlavorListener {
 
         statusLinePanel.add(jPanel1);
 
-        statusLabelCellCandidate.setFont(new java.awt.Font("Tahoma", 0, 12));
         statusLabelCellCandidate.setText(bundle.getString("MainFrame.statusLabelCellCandidate.text.cell")); // NOI18N
         statusLabelCellCandidate.setToolTipText(bundle.getString("MainFrame.statusLabelCellCandidate.toolTipText")); // NOI18N
         statusLabelCellCandidate.addMouseListener(new java.awt.event.MouseAdapter() {
@@ -706,7 +821,6 @@ public class MainFrame extends javax.swing.JFrame implements FlavorListener {
         jSeparator1.setPreferredSize(new java.awt.Dimension(2, 17));
         statusLinePanel.add(jSeparator1);
 
-        statusLabelLevel.setFont(new java.awt.Font("Tahoma", 0, 12));
         statusLabelLevel.setText(bundle.getString("MainFrame.statusLabelLevel.text")); // NOI18N
         statusLabelLevel.setToolTipText(bundle.getString("MainFrame.statusLabelLevel.toolTipText")); // NOI18N
         statusLinePanel.add(statusLabelLevel);
@@ -715,7 +829,6 @@ public class MainFrame extends javax.swing.JFrame implements FlavorListener {
         jSeparator8.setPreferredSize(new java.awt.Dimension(2, 17));
         statusLinePanel.add(jSeparator8);
 
-        progressLabel.setFont(new java.awt.Font("Tahoma", 0, 12));
         progressLabel.setIcon(new javax.swing.ImageIcon(getClass().getResource("/img/invalid20.png"))); // NOI18N
         progressLabel.setText("null");
         progressLabel.setToolTipText(bundle.getString("MainFrame.progressLabel.toolTipText")); // NOI18N
@@ -725,7 +838,6 @@ public class MainFrame extends javax.swing.JFrame implements FlavorListener {
         jSeparator24.setPreferredSize(new java.awt.Dimension(2, 17));
         statusLinePanel.add(jSeparator24);
 
-        statusLabelModus.setFont(new java.awt.Font("Tahoma", 0, 12));
         statusLabelModus.setText(bundle.getString("MainFrame.statusLabelModus.textPlay")); // NOI18N
         statusLabelModus.setToolTipText(bundle.getString("MainFrame.statusLabelModus.toolTipText")); // NOI18N
         statusLinePanel.add(statusLabelModus);
@@ -920,13 +1032,13 @@ public class MainFrame extends javax.swing.JFrame implements FlavorListener {
             }
         });
 
-        hinweisAusführenButton.setMnemonic('f');
-        hinweisAusführenButton.setText(bundle.getString("MainFrame.hinweisAusführenButton.text")); // NOI18N
-        hinweisAusführenButton.setToolTipText(bundle.getString("MainFrame.hinweisAusführenButton.toolTipText")); // NOI18N
-        hinweisAusführenButton.setEnabled(false);
-        hinweisAusführenButton.addActionListener(new java.awt.event.ActionListener() {
+        hinweisAusfuehrenButton.setMnemonic('f');
+        hinweisAusfuehrenButton.setText(bundle.getString("MainFrame.hinweisAusfuehrenButton.text")); // NOI18N
+        hinweisAusfuehrenButton.setToolTipText(bundle.getString("MainFrame.hinweisAusfuehrenButton.toolTipText")); // NOI18N
+        hinweisAusfuehrenButton.setEnabled(false);
+        hinweisAusfuehrenButton.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                hinweisAusführenButtonActionPerformed(evt);
+                hinweisAusfuehrenButtonActionPerformed(evt);
             }
         });
 
@@ -951,7 +1063,6 @@ public class MainFrame extends javax.swing.JFrame implements FlavorListener {
 
         hinweisTextArea.setColumns(20);
         hinweisTextArea.setEditable(false);
-        hinweisTextArea.setFont(new java.awt.Font("Arial", 0, 10));
         hinweisTextArea.setLineWrap(true);
         hinweisTextArea.setRows(5);
         hinweisTextArea.setWrapStyleWord(true);
@@ -969,17 +1080,17 @@ public class MainFrame extends javax.swing.JFrame implements FlavorListener {
                     .addComponent(solveUpToButton))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(hintPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
-                    .addComponent(hinweisAusführenButton)
+                    .addComponent(hinweisAusfuehrenButton)
                     .addComponent(hinweisAbbrechenButton)))
         );
 
-        hintPanelLayout.linkSize(javax.swing.SwingConstants.HORIZONTAL, new java.awt.Component[] {hinweisAbbrechenButton, hinweisAusführenButton, neuerHinweisButton, solveUpToButton});
+        hintPanelLayout.linkSize(javax.swing.SwingConstants.HORIZONTAL, new java.awt.Component[] {hinweisAbbrechenButton, hinweisAusfuehrenButton, neuerHinweisButton, solveUpToButton});
 
         hintPanelLayout.setVerticalGroup(
             hintPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(hintPanelLayout.createSequentialGroup()
                 .addGroup(hintPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(hinweisAusführenButton, javax.swing.GroupLayout.PREFERRED_SIZE, 23, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(hinweisAusfuehrenButton, javax.swing.GroupLayout.PREFERRED_SIZE, 23, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(neuerHinweisButton))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(hintPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
@@ -988,7 +1099,7 @@ public class MainFrame extends javax.swing.JFrame implements FlavorListener {
             .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 77, Short.MAX_VALUE)
         );
 
-        hintPanelLayout.linkSize(javax.swing.SwingConstants.VERTICAL, new java.awt.Component[] {hinweisAbbrechenButton, hinweisAusführenButton, neuerHinweisButton, solveUpToButton});
+        hintPanelLayout.linkSize(javax.swing.SwingConstants.VERTICAL, new java.awt.Component[] {hinweisAbbrechenButton, hinweisAusfuehrenButton, neuerHinweisButton, solveUpToButton});
 
         outerSplitPane.setRightComponent(hintPanel);
 
@@ -1006,7 +1117,7 @@ public class MainFrame extends javax.swing.JFrame implements FlavorListener {
             }
         });
         dateiMenu.add(neuMenuItem);
-        dateiMenu.add(jSeparator14);
+        dateiMenu.add(jSeparator39);
 
         loadPuzzleMenuItem.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_O, java.awt.event.InputEvent.CTRL_MASK));
         loadPuzzleMenuItem.setMnemonic(java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.loadMenuItemMnemonic").charAt(0));
@@ -1018,7 +1129,18 @@ public class MainFrame extends javax.swing.JFrame implements FlavorListener {
         });
         dateiMenu.add(loadPuzzleMenuItem);
 
-        savePuzzleAsMenuItem.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_S, java.awt.event.InputEvent.CTRL_MASK));
+        savePuzzleMenuItem.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_S, java.awt.event.InputEvent.CTRL_MASK));
+        savePuzzleMenuItem.setMnemonic(java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.savePuzzleMenuItem.mnemonic").charAt(0));
+        savePuzzleMenuItem.setText(bundle.getString("MainFrame.savePuzzleMenuItem.text")); // NOI18N
+        savePuzzleMenuItem.setEnabled(false);
+        savePuzzleMenuItem.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                savePuzzleMenuItemActionPerformed(evt);
+            }
+        });
+        dateiMenu.add(savePuzzleMenuItem);
+
+        savePuzzleAsMenuItem.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_S, java.awt.event.InputEvent.SHIFT_MASK));
         savePuzzleAsMenuItem.setMnemonic(java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.saveAsMenuItemMnemonic").charAt(0));
         savePuzzleAsMenuItem.setText(bundle.getString("MainFrame.savePuzzleAsMenuItem.text")); // NOI18N
         savePuzzleAsMenuItem.addActionListener(new java.awt.event.ActionListener() {
@@ -1045,7 +1167,7 @@ public class MainFrame extends javax.swing.JFrame implements FlavorListener {
             }
         });
         dateiMenu.add(saveConfigAsMenuItem);
-        dateiMenu.add(jSeparator4);
+        dateiMenu.add(jSeparator38);
 
         seiteEinrichtenMenuItem.setMnemonic(java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.seiteEinrichtenMenuItemMnemonic").charAt(0));
         seiteEinrichtenMenuItem.setText(bundle.getString("MainFrame.seiteEinrichtenMenuItem.text")); // NOI18N
@@ -1083,7 +1205,7 @@ public class MainFrame extends javax.swing.JFrame implements FlavorListener {
             }
         });
         dateiMenu.add(speichernAlsBildMenuItem);
-        dateiMenu.add(jSeparator15);
+        dateiMenu.add(jSeparator37);
 
         spielEingebenMenuItem.setMnemonic(java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.spielEingebenMenuItemMnemonic").charAt(0));
         spielEingebenMenuItem.setText(bundle.getString("MainFrame.spielEingebenMenuItem.text")); // NOI18N
@@ -1112,7 +1234,7 @@ public class MainFrame extends javax.swing.JFrame implements FlavorListener {
             }
         });
         dateiMenu.add(spielSpielenMenuItem);
-        dateiMenu.add(jSeparator16);
+        dateiMenu.add(jSeparator36);
 
         beendenMenuItem.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_X, java.awt.event.InputEvent.ALT_MASK));
         beendenMenuItem.setMnemonic(java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.beendenMenuItemMnemonic").charAt(0));
@@ -1150,7 +1272,7 @@ public class MainFrame extends javax.swing.JFrame implements FlavorListener {
             }
         });
         bearbeitenMenu.add(redoMenuItem);
-        bearbeitenMenu.add(jSeparator3);
+        bearbeitenMenu.add(jSeparator35);
 
         copyCluesMenuItem.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_G, java.awt.event.InputEvent.CTRL_MASK));
         copyCluesMenuItem.setMnemonic(java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.copyCluesMenuItemMnemonic").charAt(0));
@@ -1199,6 +1321,15 @@ public class MainFrame extends javax.swing.JFrame implements FlavorListener {
         });
         bearbeitenMenu.add(copyLibraryMenuItem);
 
+        copySSMenuItem.setMnemonic(java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.copySSMenuItem.mnemonic").charAt(0));
+        copySSMenuItem.setText(bundle.getString("MainFrame.copySSMenuItem.text")); // NOI18N
+        copySSMenuItem.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                copySSMenuItemActionPerformed(evt);
+            }
+        });
+        bearbeitenMenu.add(copySSMenuItem);
+
         pasteMenuItem.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_V, java.awt.event.InputEvent.CTRL_MASK));
         pasteMenuItem.setMnemonic(java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.pasteMenuItemMnemonic").charAt(0));
         pasteMenuItem.setText(bundle.getString("MainFrame.pasteMenuItem.text")); // NOI18N
@@ -1208,7 +1339,7 @@ public class MainFrame extends javax.swing.JFrame implements FlavorListener {
             }
         });
         bearbeitenMenu.add(pasteMenuItem);
-        bearbeitenMenu.add(jSeparator17);
+        bearbeitenMenu.add(jSeparator34);
 
         restartSpielMenuItem.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_R, java.awt.event.InputEvent.CTRL_MASK));
         restartSpielMenuItem.setMnemonic(java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.restartSpielMenuItemMnemonic").charAt(0));
@@ -1228,7 +1359,7 @@ public class MainFrame extends javax.swing.JFrame implements FlavorListener {
             }
         });
         bearbeitenMenu.add(resetSpielMenuItem);
-        bearbeitenMenu.add(jSeparator2);
+        bearbeitenMenu.add(jSeparator33);
 
         configMenuItem.setAccelerator(KeyStroke.getKeyStroke(java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.configMenuItemAccelerator")));
         configMenuItem.setMnemonic(java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.configMenuItemMnemonic").charAt(0));
@@ -1308,7 +1439,17 @@ public class MainFrame extends javax.swing.JFrame implements FlavorListener {
             }
         });
         optionenMenu.add(showDeviationsMenuItem);
-        optionenMenu.add(jSeparator10);
+
+        showColorKuMenuItem.setMnemonic(java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.showColorKuMenuItem.mnemonic").charAt(0));
+        showColorKuMenuItem.setSelected(true);
+        showColorKuMenuItem.setText(bundle.getString("MainFrame.showColorKuMenuItem.text")); // NOI18N
+        showColorKuMenuItem.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                showColorKuMenuItemActionPerformed(evt);
+            }
+        });
+        optionenMenu.add(showColorKuMenuItem);
+        optionenMenu.add(jSeparator32);
 
         colorButtonGroup.add(colorCellsMenuItem);
         colorCellsMenuItem.setMnemonic(java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.colorCellsMenuItem.mnemonic").charAt(0));
@@ -1330,7 +1471,7 @@ public class MainFrame extends javax.swing.JFrame implements FlavorListener {
             }
         });
         optionenMenu.add(colorCandidatesMenuItem);
-        optionenMenu.add(jSeparator19);
+        optionenMenu.add(jSeparator31);
 
         levelMenu.setMnemonic(java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.levelMenuMnemonic").charAt(0));
         levelMenu.setText(bundle.getString("MainFrame.levelMenu.text")); // NOI18N
@@ -1385,8 +1526,8 @@ public class MainFrame extends javax.swing.JFrame implements FlavorListener {
 
         jMenuBar1.add(optionenMenu);
 
-        rätselMenu.setMnemonic(java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.rätselMenuMnemonic").charAt(0));
-        rätselMenu.setText(bundle.getString("MainFrame.rätselMenu.text")); // NOI18N
+        raetselMenu.setMnemonic(java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.raetselMenuMnemonic").charAt(0));
+        raetselMenu.setText(bundle.getString("MainFrame.raetselMenu.text")); // NOI18N
 
         vageHintMenuItem.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_F12, java.awt.event.InputEvent.ALT_MASK));
         vageHintMenuItem.setMnemonic(java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.vageHintMenuItemMnemonic").charAt(0));
@@ -1396,7 +1537,7 @@ public class MainFrame extends javax.swing.JFrame implements FlavorListener {
                 vageHintMenuItemActionPerformed(evt);
             }
         });
-        rätselMenu.add(vageHintMenuItem);
+        raetselMenu.add(vageHintMenuItem);
 
         mediumHintMenuItem.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_F12, java.awt.event.InputEvent.CTRL_MASK));
         mediumHintMenuItem.setMnemonic(java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.mediumHintMenuItemMnemonic").charAt(0));
@@ -1406,18 +1547,18 @@ public class MainFrame extends javax.swing.JFrame implements FlavorListener {
                 mediumHintMenuItemActionPerformed(evt);
             }
         });
-        rätselMenu.add(mediumHintMenuItem);
+        raetselMenu.add(mediumHintMenuItem);
 
-        lösungsSchrittMenuItem.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_F12, 0));
-        lösungsSchrittMenuItem.setMnemonic(java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.lösungsSchrittMenuItemMnemonic").charAt(0));
-        lösungsSchrittMenuItem.setText(bundle.getString("MainFrame.lösungsSchrittMenuItem.text")); // NOI18N
-        lösungsSchrittMenuItem.addActionListener(new java.awt.event.ActionListener() {
+        loesungsSchrittMenuItem.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_F12, 0));
+        loesungsSchrittMenuItem.setMnemonic(java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.loesungsSchrittMenuItemMnemonic").charAt(0));
+        loesungsSchrittMenuItem.setText(bundle.getString("MainFrame.loesungsSchrittMenuItem.text")); // NOI18N
+        loesungsSchrittMenuItem.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                lösungsSchrittMenuItemActionPerformed(evt);
+                loesungsSchrittMenuItemActionPerformed(evt);
             }
         });
-        rätselMenu.add(lösungsSchrittMenuItem);
-        rätselMenu.add(jSeparator21);
+        raetselMenu.add(loesungsSchrittMenuItem);
+        raetselMenu.add(jSeparator30);
 
         backdoorSearchMenuItem.setMnemonic(java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.backdoorSearchMenuItem.mnemonic").charAt(0));
         backdoorSearchMenuItem.setText(bundle.getString("MainFrame.backdoorSearchMenuItem.text")); // NOI18N
@@ -1426,7 +1567,7 @@ public class MainFrame extends javax.swing.JFrame implements FlavorListener {
                 backdoorSearchMenuItemActionPerformed(evt);
             }
         });
-        rätselMenu.add(backdoorSearchMenuItem);
+        raetselMenu.add(backdoorSearchMenuItem);
 
         historyMenuItem.setMnemonic(java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.historyMenuItem.mnemonic").charAt(0));
         historyMenuItem.setText(bundle.getString("MainFrame.historyMenuItem.text")); // NOI18N
@@ -1435,7 +1576,7 @@ public class MainFrame extends javax.swing.JFrame implements FlavorListener {
                 historyMenuItemActionPerformed(evt);
             }
         });
-        rätselMenu.add(historyMenuItem);
+        raetselMenu.add(historyMenuItem);
 
         createSavePointMenuItem.setMnemonic(java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.setSavePointMenuItem.mnemonic").charAt(0));
         createSavePointMenuItem.setText(bundle.getString("MainFrame.createSavePointMenuItem.text")); // NOI18N
@@ -1444,7 +1585,7 @@ public class MainFrame extends javax.swing.JFrame implements FlavorListener {
                 createSavePointMenuItemActionPerformed(evt);
             }
         });
-        rätselMenu.add(createSavePointMenuItem);
+        raetselMenu.add(createSavePointMenuItem);
 
         restoreSavePointMenuItem.setMnemonic(java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.restoreSavePointMenuItem.mnemonic").charAt(0));
         restoreSavePointMenuItem.setText(bundle.getString("MainFrame.restoreSavePointMenuItem.text")); // NOI18N
@@ -1453,8 +1594,8 @@ public class MainFrame extends javax.swing.JFrame implements FlavorListener {
                 restoreSavePointMenuItemActionPerformed(evt);
             }
         });
-        rätselMenu.add(restoreSavePointMenuItem);
-        rätselMenu.add(jSeparator5);
+        raetselMenu.add(restoreSavePointMenuItem);
+        raetselMenu.add(jSeparator29);
 
         setGivensMenuItem.setMnemonic(java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.setGivensMenuItem.mnemonic").charAt(0));
         setGivensMenuItem.setText(bundle.getString("MainFrame.setGivensMenuItem.text")); // NOI18N
@@ -1463,8 +1604,8 @@ public class MainFrame extends javax.swing.JFrame implements FlavorListener {
                 setGivensMenuItemActionPerformed(evt);
             }
         });
-        rätselMenu.add(setGivensMenuItem);
-        rätselMenu.add(jSeparator22);
+        raetselMenu.add(setGivensMenuItem);
+        raetselMenu.add(jSeparator28);
 
         alleHiddenSinglesSetzenMenuItem.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_F11, 0));
         alleHiddenSinglesSetzenMenuItem.setMnemonic(java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.alleHiddenSinglesSetzenMenuItemMnemonic").charAt(0));
@@ -1474,9 +1615,9 @@ public class MainFrame extends javax.swing.JFrame implements FlavorListener {
                 alleHiddenSinglesSetzenMenuItemActionPerformed(evt);
             }
         });
-        rätselMenu.add(alleHiddenSinglesSetzenMenuItem);
+        raetselMenu.add(alleHiddenSinglesSetzenMenuItem);
 
-        jMenuBar1.add(rätselMenu);
+        jMenuBar1.add(raetselMenu);
 
         ansichtMenu.setMnemonic(java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.ansichtMenuMnemonic").charAt(0));
         ansichtMenu.setText(bundle.getString("MainFrame.ansichtMenu.text")); // NOI18N
@@ -1492,7 +1633,7 @@ public class MainFrame extends javax.swing.JFrame implements FlavorListener {
             }
         });
         ansichtMenu.add(sudokuOnlyMenuItem);
-        ansichtMenu.add(jSeparator18);
+        ansichtMenu.add(jSeparator20);
 
         summaryMenuItem.setAccelerator(KeyStroke.getKeyStroke("shift control " + java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.summaryMenuItemMnemonic").toUpperCase().charAt(0)));
         viewButtonGroup.add(summaryMenuItem);
@@ -1537,7 +1678,7 @@ public class MainFrame extends javax.swing.JFrame implements FlavorListener {
             }
         });
         ansichtMenu.add(cellZoomMenuItem);
-        ansichtMenu.add(jSeparator7);
+        ansichtMenu.add(jSeparator6);
 
         showHintPanelMenuItem.setMnemonic(java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.showHintPanelMenuItem.mnemonic").charAt(0));
         showHintPanelMenuItem.setSelected(true);
@@ -1601,7 +1742,7 @@ public class MainFrame extends javax.swing.JFrame implements FlavorListener {
             }
         });
         helpMenu.add(keyMenuItem);
-        helpMenu.add(jSeparator6);
+        helpMenu.add(jSeparator26);
 
         userManualMenuItem.setMnemonic(java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.userManualMenuItem.mnemonic").charAt(0));
         userManualMenuItem.setText(bundle.getString("MainFrame.userManualMenuItem.text")); // NOI18N
@@ -1629,7 +1770,26 @@ public class MainFrame extends javax.swing.JFrame implements FlavorListener {
             }
         });
         helpMenu.add(projectHomePageMenuItem);
-        helpMenu.add(jSeparator20);
+        helpMenu.add(jSeparator27);
+
+        reportErrorMenuItem.setMnemonic(java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.reportErrorMenuItem.mnemonic").charAt(0));
+        reportErrorMenuItem.setText(bundle.getString("MainFrame.reportErrorMenuItem.text")); // NOI18N
+        reportErrorMenuItem.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                reportErrorMenuItemActionPerformed(evt);
+            }
+        });
+        helpMenu.add(reportErrorMenuItem);
+
+        askQuestionMenuItem.setMnemonic(java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.askQuestionMenuItem.mnemonic").charAt(0));
+        askQuestionMenuItem.setText(bundle.getString("MainFrame.askQuestionMenuItem.text")); // NOI18N
+        askQuestionMenuItem.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                askQuestionMenuItemActionPerformed(evt);
+            }
+        });
+        helpMenu.add(askQuestionMenuItem);
+        helpMenu.add(jSeparator25);
 
         aboutMenuItem.setMnemonic(java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.aboutMenuItem.").charAt(0));
         aboutMenuItem.setText(bundle.getString("MainFrame.aboutMenuItem.text")); // NOI18N
@@ -1662,6 +1822,7 @@ public class MainFrame extends javax.swing.JFrame implements FlavorListener {
             statusPanelColorResult.setBackground(Options.getInstance().getColoringColors()[sudokuPanel.getActiveColor()]);
         }
         sudokuPanel.setColorIconsInPopupMenu();
+        check();
         fixFocus();
         sudokuPanel.repaint();
         repaint();
@@ -1702,26 +1863,37 @@ public class MainFrame extends javax.swing.JFrame implements FlavorListener {
     }//GEN-LAST:event_summaryMenuItemActionPerformed
 
     private void speichernAlsBildMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_speichernAlsBildMenuItemActionPerformed
-        WriteAsPNGDialog dlg = new WriteAsPNGDialog(this, true, bildFile, bildSize, bildAuflösung, bildEinheit);
+        WriteAsPNGDialog dlg = new WriteAsPNGDialog(this, true, bildSize, bildAufloesung, bildEinheit);
         dlg.setVisible(true);
         if (dlg.isOk()) {
-            bildFile = dlg.getBildFile();
-            bildAuflösung = dlg.getAuflösung();
+            File bildFile = dlg.getBildFile();
+            bildAufloesung = dlg.getAufloesung();
             bildSize = dlg.getBildSize();
             bildEinheit = dlg.getEinheit();
             int size = 0;
             switch (bildEinheit) {
                 case 0:
-                    size = (int) (bildSize / 25.4 * bildAuflösung);
+                    size = (int) (bildSize / 25.4 * bildAufloesung);
                     break;
                 case 1:
-                    size = (int) (bildSize * bildAuflösung);
+                    size = (int) (bildSize * bildAufloesung);
                     break;
                 case 2:
                     size = (int) bildSize;
                     break;
             }
-            sudokuPanel.saveSudokuAsPNG(bildFile, size, bildAuflösung);
+            if (bildFile.exists()) {
+                // Override warning!
+                MessageFormat msgf = new MessageFormat("");
+                Object[] args = new Object[]{bildFile.getName()};
+                msgf.applyPattern(java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.file_exists"));
+                String warning = msgf.format(args);
+                String title = java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.hint");
+                if (JOptionPane.showConfirmDialog(null, warning, title, JOptionPane.YES_NO_OPTION) != JOptionPane.YES_OPTION) {
+                    return;
+                }
+            }
+            sudokuPanel.saveSudokuAsPNG(bildFile, size, bildAufloesung);
         }
     }//GEN-LAST:event_speichernAlsBildMenuItemActionPerformed
 
@@ -1774,7 +1946,7 @@ public class MainFrame extends javax.swing.JFrame implements FlavorListener {
     }//GEN-LAST:event_beendenMenuItemActionPerformed
 
     private void copyLibraryMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_copyLibraryMenuItemActionPerformed
-        copyToClipboard(ClipboardMode.LIBRARY);
+        copyToClipboard(ClipboardMode.LIBRARY, false);
     }//GEN-LAST:event_copyLibraryMenuItemActionPerformed
 
     private void copyPmGridWithStepMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_copyPmGridWithStepMenuItemActionPerformed
@@ -1784,15 +1956,15 @@ public class MainFrame extends javax.swing.JFrame implements FlavorListener {
                     java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.error"), JOptionPane.ERROR_MESSAGE);
             return;
         }
-        copyToClipboard(ClipboardMode.PM_GRID_WITH_STEP);
+        copyToClipboard(ClipboardMode.PM_GRID_WITH_STEP, false);
     }//GEN-LAST:event_copyPmGridWithStepMenuItemActionPerformed
 
     private void copyPmGridMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_copyPmGridMenuItemActionPerformed
-        copyToClipboard(ClipboardMode.PM_GRID);
+        copyToClipboard(ClipboardMode.PM_GRID, false);
     }//GEN-LAST:event_copyPmGridMenuItemActionPerformed
 
     private void copyFilledMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_copyFilledMenuItemActionPerformed
-        copyToClipboard(ClipboardMode.VALUES_ONLY);
+        copyToClipboard(ClipboardMode.VALUES_ONLY, false);
     }//GEN-LAST:event_copyFilledMenuItemActionPerformed
 
     private void showDeviationsMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_showDeviationsMenuItemActionPerformed
@@ -1802,7 +1974,7 @@ public class MainFrame extends javax.swing.JFrame implements FlavorListener {
     }//GEN-LAST:event_showDeviationsMenuItemActionPerformed
 
     private void neuesSpielToolButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_neuesSpielToolButtonActionPerformed
-        // neues Spiel in der gewünschten Schwierigkeitsstufe erzeugen
+        // neues Spiel in der gewÃ¼nschten Schwierigkeitsstufe erzeugen
         int actLevel = Options.getInstance().getActLevel();
         DifficultyLevel actDiffLevel = Options.getInstance().getDifficultyLevel(actLevel);
         if (Options.getInstance().getGameMode() == GameMode.LEARNING) {
@@ -1821,7 +1993,7 @@ public class MainFrame extends javax.swing.JFrame implements FlavorListener {
             tmpSudoku.setSudoku(preGenSudoku, true);
             Sudoku2 solvedSudoku = tmpSudoku.clone();
             SudokuSolver solver = SudokuSolverFactory.getDefaultSolverInstance();
-            solver.solve(actDiffLevel, solvedSudoku, true, null, false, 
+            solver.solve(actDiffLevel, solvedSudoku, true, null, false,
                     Options.getInstance().solverSteps, Options.getInstance().getGameMode());
             tmpSudoku.setLevel(solvedSudoku.getLevel());
             tmpSudoku.setScore(solvedSudoku.getScore());
@@ -1848,6 +2020,8 @@ public class MainFrame extends javax.swing.JFrame implements FlavorListener {
                 }
             }
             clearSavePoints();
+            sudokuFileName = null;
+            setTitleWithFile();
             check();
         }
         setSpielen(true);
@@ -1899,68 +2073,11 @@ public class MainFrame extends javax.swing.JFrame implements FlavorListener {
     }//GEN-LAST:event_redGreenToggleButtonActionPerformed
 
     private void mediumHintMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_mediumHintMenuItemActionPerformed
-        if (sudokuPanel.getSudoku().isSolved()) {
-            JOptionPane.showMessageDialog(this, java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.already_solved"));
-            return;
-        }
-        if (sudokuPanel.getSudoku().getStatus() == SudokuStatus.EMPTY
-                || sudokuPanel.getSudoku().getStatus() == SudokuStatus.INVALID) {
-            JOptionPane.showMessageDialog(this, java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.invalid_puzzle"));
-            return;
-        }
-        if (!sudokuPanel.isShowCandidates()) {
-            JOptionPane.showMessageDialog(this, java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.not_available"),
-                    java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.hint"), JOptionPane.INFORMATION_MESSAGE);
-            return;
-        }
-        if (sudokuPanel.getSudoku().checkSudoku() == false) {
-            JOptionPane.showMessageDialog(this, java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.invalid_values_or_candidates"),
-                    java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.hint"), JOptionPane.INFORMATION_MESSAGE);
-            return;
-        }
-        SolutionStep step = sudokuPanel.getNextStep(false);
-        sudokuPanel.abortStep();
-        fixFocus();
-        if (step != null) {
-            JOptionPane.showMessageDialog(this, java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.possible_step")
-                    + step.toString(1),
-                    java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.medium_hint"), JOptionPane.INFORMATION_MESSAGE);
-        } else {
-            JOptionPane.showMessageDialog(this, java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.dont_know"),
-                    java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.error"), JOptionPane.ERROR_MESSAGE);
-        }
+        getHint(1);
     }//GEN-LAST:event_mediumHintMenuItemActionPerformed
 
     private void vageHintMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_vageHintMenuItemActionPerformed
-        if (sudokuPanel.getSudoku().isSolved()) {
-            JOptionPane.showMessageDialog(this, java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.already_solved"));
-            return;
-        }
-        if (sudokuPanel.getSudoku().getStatus() == SudokuStatus.EMPTY
-                || sudokuPanel.getSudoku().getStatus() == SudokuStatus.INVALID) {
-            JOptionPane.showMessageDialog(this, java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.invalid_puzzle"));
-            return;
-        }
-        if (!sudokuPanel.isShowCandidates()) {
-            JOptionPane.showMessageDialog(this, java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.not_available"),
-                    java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.hint"), JOptionPane.INFORMATION_MESSAGE);
-            return;
-        }
-        if (sudokuPanel.getSudoku().checkSudoku() == false) {
-            JOptionPane.showMessageDialog(this, java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.invalid_values_or_candidates"),
-                    java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.hint"), JOptionPane.INFORMATION_MESSAGE);
-            return;
-        }
-        SolutionStep step = sudokuPanel.getNextStep(false);
-        sudokuPanel.abortStep();
-        fixFocus();
-        if (step != null) {
-            JOptionPane.showMessageDialog(this, java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.possible_step")
-                    + step.toString(0), java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.vage_hint"), JOptionPane.INFORMATION_MESSAGE);
-        } else {
-            JOptionPane.showMessageDialog(this, java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.dont_know"),
-                    java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.error"), JOptionPane.ERROR_MESSAGE);
-        }
+        getHint(0);
     }//GEN-LAST:event_vageHintMenuItemActionPerformed
 
     private void alleHiddenSinglesSetzenMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_alleHiddenSinglesSetzenMenuItemActionPerformed
@@ -1982,16 +2099,16 @@ public class MainFrame extends javax.swing.JFrame implements FlavorListener {
 //        sudokuPanel.abortStep();
 //        hinweisTextArea.setText("");
 //        hinweisAbbrechenButton.setEnabled(false);
-//        hinweisAusführenButton.setEnabled(false);
+//        hinweisAusfuehrenButton.setEnabled(false);
 //        fixFocus();
     }//GEN-LAST:event_hinweisAbbrechenButtonActionPerformed
 
-    private void hinweisAusführenButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_hinweisAusführenButtonActionPerformed
+    private void hinweisAusfuehrenButtonActionPerformed(java.awt.event.ActionEvent evt) {                                                       
         sudokuPanel.doStep();
         sudokuPanel.checkProgress();
         hinweisTextArea.setText("");
         hinweisAbbrechenButton.setEnabled(false);
-        hinweisAusführenButton.setEnabled(false);
+        hinweisAusfuehrenButton.setEnabled(false);
         if (executeStepToggleButton != null) {
             executeStepToggleButton.setEnabled(false);
         }
@@ -1999,41 +2116,14 @@ public class MainFrame extends javax.swing.JFrame implements FlavorListener {
             abortStepToggleButton.setEnabled(false);
         }
         fixFocus();
-    }//GEN-LAST:event_hinweisAusführenButtonActionPerformed
+    }                                                       
 
-    private void lösungsSchrittMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_lösungsSchrittMenuItemActionPerformed
-        if (sudokuPanel.getSudoku().isSolved()) {
-            JOptionPane.showMessageDialog(this, java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.already_solved"));
-            return;
-        }
-        if (sudokuPanel.getSudoku().getStatus() == SudokuStatus.EMPTY
-                || sudokuPanel.getSudoku().getStatus() == SudokuStatus.INVALID) {
-            JOptionPane.showMessageDialog(this, java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.invalid_puzzle"));
-            return;
-        }
-        if (!sudokuPanel.isShowCandidates()) {
-            JOptionPane.showMessageDialog(this, java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.not_available"),
-                    java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.hint"), JOptionPane.INFORMATION_MESSAGE);
-            return;
-        }
-        if (sudokuPanel.getSudoku().checkSudoku() == false) {
-            JOptionPane.showMessageDialog(this, java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.invalid_values_or_candidates"),
-                    java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.hint"), JOptionPane.INFORMATION_MESSAGE);
-            return;
-        }
-        SolutionStep step = sudokuPanel.getNextStep(false);
-        if (step != null) {
-            setSolutionStep(step, false);
-        } else {
-            hinweisTextArea.setText(java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.dont_know"));
-            hinweisTextArea.setCaretPosition(0);
-        }
-        check();
-        fixFocus();
-    }//GEN-LAST:event_lösungsSchrittMenuItemActionPerformed
+    private void loesungsSchrittMenuItemActionPerformed(java.awt.event.ActionEvent evt) {                                                       
+        getHint(2);
+    }                                                       
 
     private void neuerHinweisButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_neuerHinweisButtonActionPerformed
-        lösungsSchrittMenuItemActionPerformed(evt);
+        loesungsSchrittMenuItemActionPerformed(evt);
     }//GEN-LAST:event_neuerHinweisButtonActionPerformed
 
     private void neuMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_neuMenuItemActionPerformed
@@ -2041,7 +2131,7 @@ public class MainFrame extends javax.swing.JFrame implements FlavorListener {
     }//GEN-LAST:event_neuMenuItemActionPerformed
 
     private void copyCluesMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_copyCluesMenuItemActionPerformed
-        copyToClipboard(ClipboardMode.CLUES_ONLY);
+        copyToClipboard(ClipboardMode.CLUES_ONLY, false);
     }//GEN-LAST:event_copyCluesMenuItemActionPerformed
 
     private void showWrongValuesMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_showWrongValuesMenuItemActionPerformed
@@ -2051,31 +2141,82 @@ public class MainFrame extends javax.swing.JFrame implements FlavorListener {
     }//GEN-LAST:event_showWrongValuesMenuItemActionPerformed
 
     private void showCandidatesMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_showCandidatesMenuItemActionPerformed
-        sudokuPanel.setShowCandidates(showCandidatesMenuItem.isSelected());
+        if (!showCandidatesMenuItem.isSelected()) {
+            // just set the flag and be done!
+            sudokuPanel.setShowCandidates(showCandidatesMenuItem.isSelected());
+        } else {
+            // if no user candidates have been set, the internal flag is just toggled.
+            // if user candidates have been set, further checks have to be made
+            if (sudokuPanel.getSudoku().userCandidatesEmpty()) {
+                // just set the flag and be done!
+                sudokuPanel.setShowCandidates(showCandidatesMenuItem.isSelected());
+            } else {
+                // display a dialog, that lets the user choose, what to do
+                boolean doYes = true;
+                if (!sudokuPanel.getSudoku().checkUserCands()) {
+                    // necessary candidates are missing!
+                    int ret = JOptionPane.showConfirmDialog(null,
+                            java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.candidatesMissing"),
+                            java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.error"),
+                            JOptionPane.YES_NO_CANCEL_OPTION);
+                    if (ret == JOptionPane.CANCEL_OPTION) {
+                        // change the menu item!
+                        showCandidatesMenuItem.setSelected(false);
+                        fixFocus();
+                        return;
+                    } else if (ret == JOptionPane.YES_OPTION) {
+                        doYes = true;
+                    } else {
+                        doYes = false;
+                    }
+                }
+                if (doYes) {
+                    // retain all changes to the user candidates
+                    sudokuPanel.getSudoku().switchToAllCandidates();
+                    sudokuPanel.getSolver().setSudoku(sudokuPanel.getSudoku());
+                    sudokuPanel.checkProgress();
+                    sudokuPanel.setShowCandidates(showCandidatesMenuItem.isSelected());
+                } else {
+                    // revert all changes
+                    sudokuPanel.getSudoku().rebuildAllCandidates();
+                    sudokuPanel.getSolver().setSudoku(sudokuPanel.getSudoku());
+                    sudokuPanel.checkProgress();
+                    sudokuPanel.setShowCandidates(showCandidatesMenuItem.isSelected());
+                }
+            }
+        }
         check();
         fixFocus();
     }//GEN-LAST:event_showCandidatesMenuItemActionPerformed
 
     private void redoToolButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_redoToolButtonActionPerformed
         sudokuPanel.redo();
+        allStepsPanel.setSudoku(sudokuPanel.getSudoku());
+        allStepsPanel.resetPanel();
         check();
         fixFocus();
     }//GEN-LAST:event_redoToolButtonActionPerformed
 
     private void redoMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_redoMenuItemActionPerformed
         sudokuPanel.redo();
+        allStepsPanel.setSudoku(sudokuPanel.getSudoku());
+        allStepsPanel.resetPanel();
         check();
         fixFocus();
     }//GEN-LAST:event_redoMenuItemActionPerformed
 
     private void undoToolButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_undoToolButtonActionPerformed
         sudokuPanel.undo();
+        allStepsPanel.setSudoku(sudokuPanel.getSudoku());
+        allStepsPanel.resetPanel();
         check();
         fixFocus();
     }//GEN-LAST:event_undoToolButtonActionPerformed
 
     private void undoMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_undoMenuItemActionPerformed
         sudokuPanel.undo();
+        allStepsPanel.setSudoku(sudokuPanel.getSudoku());
+        allStepsPanel.resetPanel();
         check();
         fixFocus();
     }//GEN-LAST:event_undoMenuItemActionPerformed
@@ -2179,7 +2320,7 @@ private void hintPanelPropertyChange(java.beans.PropertyChangeEvent evt) {//GEN-
 }//GEN-LAST:event_hintPanelPropertyChange
 
 private void spielEingebenMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_spielEingebenMenuItemActionPerformed
-    // bestehendes Sudoku2 kann gelöscht werden, muss aber nicht
+    // bestehendes Sudoku2 kann gelÃ¶scht werden, muss aber nicht
     if (sudokuPanel.getSolvedCellsAnz() != 0) {
         int antwort = JOptionPane.showConfirmDialog(this, java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.delete_sudoku"),
                 java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.new_input"),
@@ -2202,6 +2343,7 @@ private void spielEditierenMenuItemActionPerformed(java.awt.event.ActionEvent ev
     resetResultPanels();
     sudokuPanel.setNoClues();
     sudokuPanel.checkProgress();
+    sudokuPanel.resetShowHintCellValues();
     hinweisAbbrechenButtonActionPerformed(null);
     setSpielen(false);
 }//GEN-LAST:event_spielEditierenMenuItemActionPerformed
@@ -2406,7 +2548,12 @@ private void showHintPanelMenuItemActionPerformed(java.awt.event.ActionEvent evt
     Options.getInstance().setShowHintPanel(showHintPanelMenuItem.isSelected());
     hintPanel.setVisible(showHintPanelMenuItem.isSelected());
     if (Options.getInstance().isShowHintPanel()) {
-        outerSplitPane.setDividerLocation(Options.getInstance().getInitialHorzDividerLoc());
+        int horzDivLoc = Options.getInstance().getInitialHorzDividerLoc();
+        if (horzDivLoc > getHeight() - 204) {
+            horzDivLoc = getHeight() - 204;
+            Options.getInstance().setInitialHorzDividerLoc(horzDivLoc);
+        }
+        outerSplitPane.setDividerLocation(horzDivLoc);
     }
 }//GEN-LAST:event_showHintPanelMenuItemActionPerformed
 
@@ -2426,8 +2573,120 @@ private void showHintButtonsCheckBoxMenuItemActionPerformed(java.awt.event.Actio
 
 private void extendedPrintMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_extendedPrintMenuItemActionPerformed
     new ExtendedPrintDialog(this, true).setVisible(true);
-    // TODO add your handling code here:
 }//GEN-LAST:event_extendedPrintMenuItemActionPerformed
+
+    private void copySSMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_copySSMenuItemActionPerformed
+        copyToClipboard(null, true);
+    }//GEN-LAST:event_copySSMenuItemActionPerformed
+
+    private void savePuzzleMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_savePuzzleMenuItemActionPerformed
+        if (sudokuFileName != null) {
+            try {
+                saveToFile(true, sudokuFileName, sudokuFileType);
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(this, ex.toString(), java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.error"), JOptionPane.ERROR_MESSAGE);
+                sudokuFileName = null;
+            }
+        }
+    }//GEN-LAST:event_savePuzzleMenuItemActionPerformed
+
+    private void showColorKuMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_showColorKuMenuItemActionPerformed
+        Options.getInstance().setShowColorKuAct(showColorKuMenuItem.isSelected());
+        sudokuPanel.setShowColorKu();
+        check();
+        fixFocus();
+    }//GEN-LAST:event_showColorKuMenuItemActionPerformed
+
+    private void askQuestionMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_askQuestionMenuItemActionPerformed
+        MyBrowserLauncher.getInstance().launchForum();
+    }//GEN-LAST:event_askQuestionMenuItemActionPerformed
+
+    private void reportErrorMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_reportErrorMenuItemActionPerformed
+        MyBrowserLauncher.getInstance().launchTracker();
+    }//GEN-LAST:event_reportErrorMenuItemActionPerformed
+
+    /**
+     * Adjusts icons for hint toggle buttons according to the mode (normal/ColorKu) and according
+     * to the colors (necessary for color changes). Icons are created on the fly
+     * as necessary.
+     * @param on
+     */
+    private void prepareToggleButtonIcons(boolean on) {
+        if (on) {
+            for (int i = 0, lim = toggleButtons.length - 1; i < lim; i++) {
+                if (toggleButtonImagesColorKu[i] == null || !toggleButtonImagesColorKu[i].getColor().equals(Options.getInstance().getColorKuColor(i + 1))) {
+                    // create a new image (we need the image to access the color without needing yet another class)
+                    toggleButtonImagesColorKu[i] = new ColorKuImage(TOGGLE_BUTTON_ICON_SIZE, Options.getInstance().getColorKuColor(i + 1));
+                    toggleButtonIconsColorKu[i] = new ImageIcon(toggleButtonImagesColorKu[i]);
+                }
+                toggleButtonIcons[i] = toggleButtonIconsColorKu[i];
+                emptyToggleButtonIcons[i] = emptyToggleButtonIconOrgColorKu;
+            }
+//            emptyToggleButtonIcon = emptyToggleButtonIconOrgColorKu;
+        } else {
+            for (int i = 0, lim = toggleButtons.length - 1; i < lim; i++) {
+                toggleButtonIcons[i] = toggleButtonIconsOrg[i];
+                emptyToggleButtonIcons[i] = emptyToggleButtonIconsOrg[i];
+            }
+//            emptyToggleButtonIcon = emptyToggleButtonIconOrg;
+        }
+    }
+
+    /**
+     * Gets a new hint for the sudoku if possible. Checks are made to ensure,
+     * that hints are only displayed for valid puzzles.
+     * 
+     * @param mode <code>0</code> for "vage hint", <code>1</code> for "concrete
+     * hint" and <code>2</code> for "show next step".
+     */
+    private void getHint(int mode) {
+        if (sudokuPanel.getSudoku().isSolved()) {
+            JOptionPane.showMessageDialog(this, java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.already_solved"));
+            return;
+        }
+        if (sudokuPanel.getSudoku().getStatus() == SudokuStatus.EMPTY
+                || sudokuPanel.getSudoku().getStatus() == SudokuStatus.INVALID) {
+            JOptionPane.showMessageDialog(this, java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.invalid_puzzle"));
+            return;
+        }
+        if (!sudokuPanel.isShowCandidates()) {
+            JOptionPane.showMessageDialog(this, java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.not_available"),
+                    java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.hint"), JOptionPane.INFORMATION_MESSAGE);
+            return;
+        }
+        if (sudokuPanel.getSudoku().checkSudoku() == false) {
+            JOptionPane.showMessageDialog(this, java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.invalid_values_or_candidates"),
+                    java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.hint"), JOptionPane.INFORMATION_MESSAGE);
+            return;
+        }
+        SolutionStep step = sudokuPanel.getNextStep(false);
+        if (mode == 0 || mode == 1) {
+            sudokuPanel.abortStep();
+            fixFocus();
+            if (step != null) {
+                int strMode = 0;
+                String msg = java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.vage_hint");
+                if (mode == 1) {
+                    strMode = 1;
+                    msg = java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.medium_hint");
+                }
+                JOptionPane.showMessageDialog(this, java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.possible_step")
+                        + step.toString(strMode), msg, JOptionPane.INFORMATION_MESSAGE);
+            } else {
+                JOptionPane.showMessageDialog(this, java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.dont_know"),
+                        java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.error"), JOptionPane.ERROR_MESSAGE);
+            }
+        } else {
+            if (step != null) {
+                setSolutionStep(step, false);
+            } else {
+                hinweisTextArea.setText(java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.dont_know"));
+                hinweisTextArea.setCaretPosition(0);
+            }
+        }
+        fixFocus();
+        check();
+    }
 
     /**
      * Sets a new mode ({@link GameMode#LEARNING}, {@link GameMode#PLAYING} or
@@ -2453,7 +2712,7 @@ private void extendedPrintMenuItemActionPerformed(java.awt.event.ActionEvent evt
                 }
             }
             String techniques = Options.getInstance().getTrainingStepsString(true);
-            if (techniques.equals("")) {
+            if (techniques.isEmpty()) {
                 JOptionPane.showMessageDialog(this,
                         ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.notechniques"),
                         ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.error"), JOptionPane.ERROR_MESSAGE);
@@ -2492,12 +2751,12 @@ private void extendedPrintMenuItemActionPerformed(java.awt.event.ActionEvent evt
      * and selected step), solutions and summary. Used by {@link #loadFromFile(boolean)} and
      * {@link RestoreSavePointDialog}.<br>
      * @param state
-     * @param ignoreSolutions
      */
     public void setState(GuiState state) {
         state.set();
         summaryPanel.initialize(SudokuSolverFactory.getDefaultSolverInstance());
         allStepsPanel.setSudoku(sudokuPanel.getSudoku());
+        allStepsPanel.resetPanel();
         setSolutionStep(state.getStep(), true);
         setSpielen(true);
         check();
@@ -2512,14 +2771,7 @@ private void extendedPrintMenuItemActionPerformed(java.awt.event.ActionEvent evt
      * @param sudoku
      */
     private void addSudokuToHistory(Sudoku2 sudoku) {
-        List<String> history = Options.getInstance().getHistoryOfCreatedPuzzles();
-        while (history.size() > Options.getInstance().getHistorySize() - 1) {
-            history.remove(history.size() - 1);
-        }
-        String str = sudoku.getSudoku(ClipboardMode.CLUES_ONLY) + "#"
-                + sudoku.getLevel().getOrdinal() + "#" + sudoku.getScore() + "#"
-                + new Date().getTime();
-        history.add(0, str);
+        Options.getInstance().addSudokuToHistory(sudoku);
     }
 
     /**
@@ -2652,6 +2904,8 @@ private void extendedPrintMenuItemActionPerformed(java.awt.event.ActionEvent evt
         }
         if (horzDivLoc > height - 204) {
             horzDivLoc = height - 204;
+            // can be used during program run, so has to be saved here
+            Options.getInstance().setInitialHorzDividerLoc(horzDivLoc);
         }
         if (screenSize.width - 20 < width) {
             width = screenSize.width - 20;
@@ -2717,6 +2971,7 @@ private void extendedPrintMenuItemActionPerformed(java.awt.event.ActionEvent evt
     }
 
     private void setSpielen(boolean isSpielen) {
+        eingabeModus = !isSpielen;
         if (isSpielen) {
             if (oldShowDeviationsValid) {
                 showDeviationsMenuItem.setSelected(oldShowDeviations);
@@ -2731,9 +2986,10 @@ private void extendedPrintMenuItemActionPerformed(java.awt.event.ActionEvent evt
 
         vageHintMenuItem.setEnabled(isSpielen);
         mediumHintMenuItem.setEnabled(isSpielen);
-        lösungsSchrittMenuItem.setEnabled(isSpielen);
+        loesungsSchrittMenuItem.setEnabled(isSpielen);
         alleHiddenSinglesSetzenMenuItem.setEnabled(isSpielen);
         showDeviationsMenuItem.setEnabled(isSpielen);
+        showColorKuMenuItem.setEnabled(isSpielen);
 
         spielSpielenMenuItem.setEnabled(!isSpielen);
         spielEditierenMenuItem.setEnabled(isSpielen);
@@ -2750,7 +3006,7 @@ private void extendedPrintMenuItemActionPerformed(java.awt.event.ActionEvent evt
         if (step == null) {
             hinweisTextArea.setText("");
             hinweisAbbrechenButton.setEnabled(false);
-            hinweisAusführenButton.setEnabled(false);
+            hinweisAusfuehrenButton.setEnabled(false);
             if (executeStepToggleButton != null) {
                 executeStepToggleButton.setEnabled(false);
             }
@@ -2761,8 +3017,8 @@ private void extendedPrintMenuItemActionPerformed(java.awt.event.ActionEvent evt
             hinweisTextArea.setText(step.toString());
             hinweisTextArea.setCaretPosition(0);
             hinweisAbbrechenButton.setEnabled(true);
-            hinweisAusführenButton.setEnabled(true);
-            getRootPane().setDefaultButton(hinweisAusführenButton);
+            hinweisAusfuehrenButton.setEnabled(true);
+            getRootPane().setDefaultButton(hinweisAusfuehrenButton);
             if (executeStepToggleButton != null) {
                 executeStepToggleButton.setEnabled(true);
             }
@@ -2773,8 +3029,30 @@ private void extendedPrintMenuItemActionPerformed(java.awt.event.ActionEvent evt
         fixFocus();
     }
 
-    private void copyToClipboard(ClipboardMode mode) {
-        String clipStr = sudokuPanel.getSudokuString(mode);
+    /**
+     * Copy the current sudoku to the clipboard. If <code>simpleSudoku</code>
+     * is set to <code>true</code>, the givensm the currently set cells and
+     * a PM grid are copied.
+     * 
+     * @param mode
+     * @param simpleSudoku 
+     */
+    private void copyToClipboard(ClipboardMode mode, boolean simpleSudoku) {
+        String clipStr = "";
+        if (simpleSudoku) {
+            String dummy = sudokuPanel.getSudokuString(ClipboardMode.CLUES_ONLY);
+            clipStr = SudokuUtil.getSSFormatted(dummy);
+            clipStr += SudokuUtil.NEW_LINE;
+            clipStr += SudokuUtil.NEW_LINE;
+            dummy = sudokuPanel.getSudokuString(ClipboardMode.VALUES_ONLY);
+            clipStr += SudokuUtil.getSSFormatted(dummy);
+            clipStr += SudokuUtil.NEW_LINE;
+            clipStr += SudokuUtil.NEW_LINE;
+            dummy = sudokuPanel.getSudokuString(ClipboardMode.PM_GRID);
+            clipStr += SudokuUtil.getSSPMGrid(dummy);
+        } else {
+            clipStr = sudokuPanel.getSudokuString(mode);
+        }
         try {
             Clipboard clip = Toolkit.getDefaultToolkit().getSystemClipboard();
             StringSelection content = new StringSelection(clipStr);
@@ -2831,7 +3109,7 @@ private void extendedPrintMenuItemActionPerformed(java.awt.event.ActionEvent evt
     private void saveToFile(boolean puzzle) {
         JFileChooser chooser = new JFileChooser(Options.getInstance().getDefaultFileDir());
         chooser.setAcceptAllFileFilterUsed(false);
-        MyFileFilter[] filters = puzzleFileFilters;
+        MyFileFilter[] filters = puzzleFileSaveFilters;
         if (!puzzle) {
             filters = configFileFilters;
         }
@@ -2845,46 +3123,150 @@ private void extendedPrintMenuItemActionPerformed(java.awt.event.ActionEvent evt
                 path = path.substring(0, path.lastIndexOf(File.separatorChar));
                 Options.getInstance().setDefaultFileDir(path);
                 MyFileFilter actFilter = (MyFileFilter) chooser.getFileFilter();
+                int filterType = actFilter.getType();
                 path = chooser.getSelectedFile().getAbsolutePath();
                 if (!puzzle) {
                     // Options
                     if (!path.endsWith("." + configFileExt)) {
                         path += "." + configFileExt;
                     }
-                    //Options.getInstance().writeOptions(path);
-                    writeOptionsWithWindowState(path);
                 } else {
-                    // Sudoku2 und Lösung
-                    if (!path.endsWith("." + solutionFileExt)) {
-                        path += "." + solutionFileExt;
+                    if (filterType == 1) {
+                        if (!path.endsWith("." + solutionFileExt)) {
+                            path += "." + solutionFileExt;
+                        }
+                    } else if (filterType == 9) {
+                        if (!path.endsWith("." + ssFileExt)) {
+                            path += "." + ssFileExt;
+                        }
+                    } else {
+                        if (!path.endsWith("." + textFileExt)) {
+                            path += "." + textFileExt;
+                        }
                     }
-                    ZipOutputStream zOut = new ZipOutputStream(new FileOutputStream(path));
-                    zOut.putNextEntry(new ZipEntry("SudokuData"));
-                    XMLEncoder out = new XMLEncoder(zOut);
-//                    out.writeObject(sudokuPanel.getSudoku());
-//                    out.writeObject(sudokuPanel.getSolvedSudoku());
-//                    SudokuSolver s = SudokuSolver.getInstance();
-//                    out.writeObject(s.getAnzSteps());
-//                    for (int i = 0; i < s.getSteps().size(); i++) {
-//                        out.writeObject(s.getSteps().get(i));
-//                    }
-                    out.writeObject(sudokuPanel.getSudoku());
-                    out.writeObject(SudokuSolverFactory.getDefaultSolverInstance().getAnzSteps());
-                    out.writeObject(SudokuSolverFactory.getDefaultSolverInstance().getSteps());
-                    out.writeObject(solutionPanel.getTitels());
-                    out.writeObject(solutionPanel.getTabSteps());
-                    out.writeObject(savePoints);
-                    out.close();
-                    zOut.flush();
-                    zOut.close();
+                }
+                File checkFile = new File(path);
+                if (checkFile.exists()) {
+                    // Override warning!
+                    MessageFormat msgf = new MessageFormat("");
+                    Object[] args = new Object[]{checkFile.getName()};
+                    msgf.applyPattern(java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.file_exists"));
+                    String warning = msgf.format(args);
+                    String title = java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.hint");
+                    if (JOptionPane.showConfirmDialog(null, warning, title, JOptionPane.YES_NO_OPTION) != JOptionPane.YES_OPTION) {
+                        return;
+                    }
+                }
+                saveToFile(puzzle, path, filterType);
 //                } else {
 //                    formatter.applyPattern(java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.invalid_filename"));
 //                    String msg = formatter.format(new Object[]{path});
 //                    JOptionPane.showMessageDialog(this, msg,
 //                            java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.error"), JOptionPane.ERROR_MESSAGE);
-                }
             } catch (Exception ex2) {
                 JOptionPane.showMessageDialog(this, ex2.toString(), java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.error"), JOptionPane.ERROR_MESSAGE);
+                sudokuFileName = null;
+            }
+            setTitleWithFile();
+        }
+    }
+
+    /**
+     * Actually writes configurations and sudoku files. If <code>puzzle</code>
+     * is <code>false</code>, a configuration is written. <code>filterType</code>
+     * is one of the file types defined by {@link MyFileFilter}. If the method
+     * is called via the "Save puzzle" menu item, <code>filterType</code> can be
+     * 8 (generic text file). In this case a PM grid is written.
+     * 
+     * @param puzzle
+     * @param path
+     * @param filterType
+     * @throws FileNotFoundException
+     * @throws IOException 
+     */
+    private void saveToFile(boolean puzzle, String path, int filterType) throws FileNotFoundException, IOException {
+        sudokuFileName = path;
+        if (!puzzle) {
+            // Options
+            writeOptionsWithWindowState(path);
+        } else {
+            // Sudoku2 und LÃ¯Â¿Â½sung
+            String newLine = System.getProperty("line.separator");
+            if (filterType == 1) {
+                sudokuFileType = 1;
+                ZipOutputStream zOut = new ZipOutputStream(new FileOutputStream(path));
+                zOut.putNextEntry(new ZipEntry("SudokuData"));
+                XMLEncoder out = new XMLEncoder(zOut);
+                out.writeObject(sudokuPanel.getSudoku());
+                out.writeObject(SudokuSolverFactory.getDefaultSolverInstance().getAnzSteps());
+                out.writeObject(SudokuSolverFactory.getDefaultSolverInstance().getSteps());
+                out.writeObject(solutionPanel.getTitels());
+                out.writeObject(solutionPanel.getTabSteps());
+                out.writeObject(savePoints);
+                out.close();
+                zOut.flush();
+                zOut.close();
+            } else if (filterType == 9) {
+                sudokuFileType = 9;
+                // SimpleSudoku format (see comment in loadFromFile())
+                PrintWriter out = new PrintWriter(new BufferedWriter(new FileWriter(path)));
+                String clues = sudokuPanel.getSudokuString(ClipboardMode.CLUES_ONLY);
+                out.println(SudokuUtil.getSSFormatted(clues));
+                out.println();
+                // additionally set cells
+                Sudoku2 tmpSudoku = sudokuPanel.getSudoku();
+                for (int i = 0; i < Sudoku2.LENGTH; i++) {
+                    if (tmpSudoku.getValue(i) != 0 && !tmpSudoku.isFixed(i)) {
+                        out.printf("I%02d%d%n", i, tmpSudoku.getValue(i));
+                    }
+                }
+                // eliminated candidates
+                for (int i = 0; i < Sudoku2.LENGTH; i++) {
+                    if (tmpSudoku.getValue(i) == 0) {
+                        for (int j = 1; j <= 9; j++) {
+                            if (tmpSudoku.isValidValue(i, j) && !tmpSudoku.isCandidate(i, j)) {
+                                out.printf("E%02d%03d%n", i, j);
+                            }
+                        }
+                    }
+                }
+                out.close();
+            } else {
+                sudokuFileType = 8;
+                if (filterType == 8) {
+                    // generic text file: can occur when save is executed
+                    filterType = 6;
+                }
+                BufferedWriter out = new BufferedWriter(new FileWriter(path));
+                String line = "";
+                switch (filterType) {
+                    case 2:
+                        line = sudokuPanel.getSudokuString(ClipboardMode.CLUES_ONLY);
+                        break;
+                    case 3:
+                        line = sudokuPanel.getSudokuString(ClipboardMode.CLUES_ONLY_FORMATTED);
+                        break;
+                    case 4:
+                        line = sudokuPanel.getSudokuString(ClipboardMode.PM_GRID);
+                        break;
+                    case 5:
+                        line = sudokuPanel.getSudokuString(ClipboardMode.PM_GRID_WITH_STEP);
+                        break;
+                    case 6:
+                        line = sudokuPanel.getSudokuString(ClipboardMode.CLUES_ONLY_FORMATTED);
+                        line += newLine;
+                        line += newLine;
+                        line += sudokuPanel.getSudokuString(ClipboardMode.VALUES_ONLY_FORMATTED);
+                        line += newLine;
+                        line += newLine;
+                        line += sudokuPanel.getSudokuString(ClipboardMode.PM_GRID);
+                        break;
+                    case 7:
+                        line = sudokuPanel.getSudokuString(ClipboardMode.LIBRARY);
+                        break;
+                }
+                out.write(line);
+                out.close();
             }
         }
     }
@@ -2897,7 +3279,7 @@ private void extendedPrintMenuItemActionPerformed(java.awt.event.ActionEvent evt
     private void loadFromFile(boolean puzzle) {
         JFileChooser chooser = new JFileChooser(Options.getInstance().getDefaultFileDir());
         chooser.setAcceptAllFileFilterUsed(false);
-        MyFileFilter[] filters = puzzleFileFilters;
+        MyFileFilter[] filters = puzzleFileLoadFilters;
         if (!puzzle) {
             filters = configFileFilters;
         }
@@ -2910,21 +3292,27 @@ private void extendedPrintMenuItemActionPerformed(java.awt.event.ActionEvent evt
             path = path.substring(0, path.lastIndexOf(File.separatorChar));
             Options.getInstance().setDefaultFileDir(path);
             path = chooser.getSelectedFile().getAbsolutePath();
-            loadFromFile(path);
+            MyFileFilter filter = (MyFileFilter) chooser.getFileFilter();
+            loadFromFile(path, filter.getType());
         }
     }
 
     /**
      * Loads a file
      * @param path
+     * @param fileType 0 .. options, 1 .. sudoku from hsol, 8 .. sudoku from text file
      */
-    private void loadFromFile(String path) {
+    @SuppressWarnings({"CallToThreadDumpStack", "unchecked"})
+    private void loadFromFile(String path, int fileType) {
         try {
-            if (path.endsWith("." + configFileExt)) {
+            sudokuFileName = path;
+            sudokuFileType = fileType;
+            if (fileType == 0) {
                 // Options
                 Options.readOptions(path);
                 BackgroundGeneratorThread.getInstance().resetAll();
-            } else if (path.endsWith("." + solutionFileExt)) {
+                sudokuFileName = null;
+            } else if (fileType == 1) {
                 // Puzzle
                 ZipInputStream zIn = new ZipInputStream(new FileInputStream(path));
                 zIn.getNextEntry();
@@ -2951,6 +3339,7 @@ private void extendedPrintMenuItemActionPerformed(java.awt.event.ActionEvent evt
                 state.setSteps((List<SolutionStep>) in.readObject());
                 state.setTitels((List<String>) in.readObject());
                 state.setTabSteps((List<List<SolutionStep>>) in.readObject());
+                state.resetAnzSteps();
                 try {
                     savePoints = (List<GuiState>) in.readObject();
                     for (int i = 0; i < savePoints.size(); i++) {
@@ -2965,16 +3354,93 @@ private void extendedPrintMenuItemActionPerformed(java.awt.event.ActionEvent evt
                 in.close();
                 setState(state);
                 setMode(GameMode.PLAYING, true);
+            } else if (fileType == 8) {
+                // load from text file
+                BufferedReader in = new BufferedReader(new FileReader(path));
+                StringBuilder tmp = new StringBuilder();
+                String line = null;
+                while ((line = in.readLine()) != null) {
+                    tmp.append(line);
+                    tmp.append("\r\n");
+                }
+                in.close();
+                setPuzzle(tmp.toString());
+                clearSavePoints();
+            } else if (fileType == 9) {
+                // SimpleSudoku format: The givens followed by set cells and eliminated candidates
+                // example:
+//                     *-----------*
+//                     |38.|...|5.6|
+//                     |...|9..|...|
+//                     |...|.4.|89.|
+//                     |---+---+---|
+//                     |.4.|6..|.3.|
+//                     |9..|7.1|..4|
+//                     |.7.|..8|.1.|
+//                     |---+---+---|
+//                     |.13|.6.|...|
+//                     |...|..4|...|
+//                     |2.5|...|.83|
+//                     *-----------*
+//
+//                    I388
+//                    I074
+//                    I029
+//                    I153
+//                    I358
+//                    I751
+//                    E78007
+//                    E78009
+//                    E73009
+                // Innc: nn - index of the cell, c - candidate
+                // Ennccc: nn - index of the cell, ccc - candidate
+                BufferedReader in = new BufferedReader(new FileReader(path));
+                StringBuilder tmp = new StringBuilder();
+                String line = null;
+                while ((line = in.readLine()) != null) {
+                    if (line.trim().isEmpty()) {
+                        // all the givens are read -> abort reading
+                        break;
+                    }
+                    tmp.append(line);
+                    tmp.append("\r\n");
+                }
+                // first set the givens
+                Sudoku2 tmpSudoku = new Sudoku2();
+                tmpSudoku.setSudoku(tmp.toString());
+                // now read set cells and eliminations
+                while ((line = in.readLine()) != null) {
+                    if (line.trim().isEmpty()) {
+                        continue;
+                    }
+                    char recordType = line.charAt(0);
+                    if (recordType == 'I') {
+                        int index = Integer.parseInt(line.substring(1, 3));
+                        int candidate = Character.digit(line.charAt(3), 10);
+                        tmpSudoku.setCell(index, candidate);
+                    } else if (recordType == 'E') {
+                        int index = Integer.parseInt(line.substring(1, 3));
+                        int candidate = Integer.parseInt(line.substring(3, 6));
+                        tmpSudoku.delCandidate(index, candidate);
+                    }
+                }
+                in.close();
+                // everything read and decoded -> set the sudoku
+                setPuzzle(tmpSudoku.getSudoku(ClipboardMode.LIBRARY));
+                clearSavePoints();
             } else {
                 formatter.applyPattern(java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.invalid_filename"));
                 String msg = formatter.format(new Object[]{path});
                 JOptionPane.showMessageDialog(this, msg,
                         java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.error"), JOptionPane.ERROR_MESSAGE);
+                sudokuFileName = null;
             }
         } catch (Exception ex2) {
             JOptionPane.showMessageDialog(this, ex2.toString(), java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.error"), JOptionPane.ERROR_MESSAGE);
             ex2.printStackTrace();
+            sudokuFileName = null;
         }
+        setTitleWithFile();
     }
 
     /**
@@ -2995,6 +3461,21 @@ private void extendedPrintMenuItemActionPerformed(java.awt.event.ActionEvent evt
         });
     }
 
+    private void setTitleWithFile() {
+        savePuzzleMenuItem.setEnabled(sudokuFileName != null);
+        if (sudokuFileName == null) {
+            setTitle(VERSION);
+        } else {
+            int index = sudokuFileName.lastIndexOf('\\') + 1;
+            int index2 = sudokuFileName.lastIndexOf('/') + 1;
+            if (index2 > index) {
+                index = index2;
+            }
+            String fileName = sudokuFileName.substring(index);
+            setTitle(VERSION + "  (" + fileName + ")");
+        }
+    }
+
     private void setLevelFromMenu() {
         int selected = 0;
         for (int i = 0; i < levelMenuItems.length; i++) {
@@ -3010,8 +3491,8 @@ private void extendedPrintMenuItemActionPerformed(java.awt.event.ActionEvent evt
         fixFocus();
     }
 
-    public void stepAusführen() {
-        hinweisAusführenButtonActionPerformed(null);
+    public void stepAusfuehren() {
+        hinweisAusfuehrenButtonActionPerformed(null);
     }
 
     public final void fixFocus() {
@@ -3035,15 +3516,41 @@ private void extendedPrintMenuItemActionPerformed(java.awt.event.ActionEvent evt
             showCandidatesMenuItem.setSelected(sudokuPanel.isShowCandidates());
             showWrongValuesMenuItem.setSelected(sudokuPanel.isShowWrongValues());
             showDeviationsMenuItem.setSelected(sudokuPanel.isShowDeviations());
-            for (int i = 0; i < toggleButtons.length; i++) {
-//                if (i == sudokuPanel.getShowHintCellValue() - 1) {
-                if (sudokuPanel.getShowHintCellValues()[i + 1]) {
-                    if (toggleButtons[i] != null) {
-                        toggleButtons[i].setSelected(true);
+            showColorKuMenuItem.setSelected(Options.getInstance().isShowColorKuAct());
+            prepareToggleButtonIcons(Options.getInstance().isShowColorKuAct());
+            // either all ToggleButtons are set or none is
+            if (toggleButtons[0] != null) {
+                boolean[] remainingCandidates = sudokuPanel.getRemainingCandidates();
+                for (int i = 0; i < remainingCandidates.length; i++) {
+                    JToggleButton button = toggleButtons[i];
+                    // change the standard icons
+//                    if (button.getIcon() != emptyToggleButtonIcon && button.getIcon() != toggleButtonIcons[i]) {
+//                        button.setIcon(toggleButtonIcons[i]);
+//                    }
+                    if (remainingCandidates[i]) {
+//                        if (!button.isEnabled()) {
+                            //button.setEnabled(true);
+                        if (button.getIcon() != toggleButtonIcons[i]) {
+                            button.setIcon(toggleButtonIcons[i]);
+                        }
+//                        }
+                    } else {
+//                        if (button.isEnabled()) {
+//                            button.setSelected(false);
+                            //button.setEnabled(false);
+                        if (button.getIcon() != emptyToggleButtonIcons[i]) {
+                            button.setIcon(emptyToggleButtonIcons[i]);
+                        }
+//                        }
                     }
-                } else {
-                    if (toggleButtons[i] != null) {
-                        toggleButtons[i].setSelected(false);
+                }
+                for (int i = 0; i < toggleButtons.length; i++) {
+                    if (toggleButtons[i].isEnabled()) {
+                        if (sudokuPanel.getShowHintCellValues()[i + 1]) {
+                            toggleButtons[i].setSelected(true);
+                        } else {
+                            toggleButtons[i].setSelected(false);
+                        }
                     }
                 }
             }
@@ -3053,8 +3560,13 @@ private void extendedPrintMenuItemActionPerformed(java.awt.event.ActionEvent evt
                 DifficultyLevel tmpLevel = sudoku.getLevel();
                 if (tmpLevel != null) {
                     statusLabelLevel.setText(StepConfig.getLevelName(tmpLevel) + " (" + sudoku.getScore() + ")");
+                } else {
+                    statusLabelLevel.setText("-");
                 }
                 setProgressLabel();
+            } else {
+                // no puzzle loaded
+                statusLabelLevel.setText(ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.statusLabelLevel.text"));
             }
             if (sudokuPanel.isColorCells()) {
                 colorCellsMenuItem.setSelected(true);
@@ -3156,7 +3668,7 @@ private void extendedPrintMenuItemActionPerformed(java.awt.event.ActionEvent evt
         sudokuPanel.abortStep();
         hinweisTextArea.setText("");
         hinweisAbbrechenButton.setEnabled(false);
-        hinweisAusführenButton.setEnabled(false);
+        hinweisAusfuehrenButton.setEnabled(false);
         if (executeStepToggleButton != null) {
             executeStepToggleButton.setEnabled(false);
         }
@@ -3193,7 +3705,6 @@ private void extendedPrintMenuItemActionPerformed(java.awt.event.ActionEvent evt
         if (sudoku.getStatus() != SudokuStatus.VALID) {
             progressLabel.setIcon(progressImages[0]);
             progressLabel.setText("-");
-            //TODO set hint according to status
             return;
         }
         //ok valid sudoku, currentLevel and currentScore must have been set
@@ -3213,7 +3724,6 @@ private void extendedPrintMenuItemActionPerformed(java.awt.event.ActionEvent evt
             }
             progressLabel.setText(intProc + "%");
         }
-        //TODO set hint with score!
     }
 
     /**
@@ -3243,7 +3753,7 @@ private void extendedPrintMenuItemActionPerformed(java.awt.event.ActionEvent evt
     public synchronized void setCurrentScore(int currentScore) {
         this.currentScore = currentScore;
     }
-    
+
     /**
      * Handles the display of the hint buttons in the toolbar.
      * If they are made visible the first time, they have to be created.
@@ -3262,6 +3772,7 @@ private void extendedPrintMenuItemActionPerformed(java.awt.event.ActionEvent evt
             vageHintToggleButton = new javax.swing.JButton();
             vageHintToggleButton.setIcon(new javax.swing.ImageIcon(getClass().getResource("/img/vageHint.png")));
             vageHintToggleButton.addActionListener(new java.awt.event.ActionListener() {
+
                 @Override
                 public void actionPerformed(java.awt.event.ActionEvent evt) {
                     hintToggleButtonActionPerformed(true);
@@ -3270,11 +3781,12 @@ private void extendedPrintMenuItemActionPerformed(java.awt.event.ActionEvent evt
             vageHintToggleButton.setToolTipText(java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.vageHintToolButton.toolTipText")); // NOI18N
             vageHintToggleButton.setVisible(false);
             jToolBar1.add(vageHintToggleButton);
-            
+
 //            concreteHintToggleButton = new javax.swing.JToggleButton();
             concreteHintToggleButton = new javax.swing.JButton();
             concreteHintToggleButton.setIcon(new javax.swing.ImageIcon(getClass().getResource("/img/concreteHint.png")));
             concreteHintToggleButton.addActionListener(new java.awt.event.ActionListener() {
+
                 @Override
                 public void actionPerformed(java.awt.event.ActionEvent evt) {
                     hintToggleButtonActionPerformed(false);
@@ -3283,34 +3795,37 @@ private void extendedPrintMenuItemActionPerformed(java.awt.event.ActionEvent evt
             concreteHintToggleButton.setVisible(false);
             concreteHintToggleButton.setToolTipText(java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.concreteHintToolButton.toolTipText")); // NOI18N
             jToolBar1.add(concreteHintToggleButton);
-            
+
             showNextStepToggleButton = new javax.swing.JButton();
             showNextStepToggleButton.setIcon(new javax.swing.ImageIcon(getClass().getResource("/img/nextHint.png")));
             showNextStepToggleButton.addActionListener(new java.awt.event.ActionListener() {
+
                 @Override
                 public void actionPerformed(java.awt.event.ActionEvent evt) {
-                    lösungsSchrittMenuItemActionPerformed(null);
+                    loesungsSchrittMenuItemActionPerformed(null);
                 }
             });
             showNextStepToggleButton.setToolTipText(java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.neuerHinweisButton.toolTipText")); // NOI18N
             showNextStepToggleButton.setVisible(false);
             jToolBar1.add(showNextStepToggleButton);
-            
+
             executeStepToggleButton = new javax.swing.JButton();
             executeStepToggleButton.setIcon(new javax.swing.ImageIcon(getClass().getResource("/img/executeHint.png")));
             executeStepToggleButton.addActionListener(new java.awt.event.ActionListener() {
+
                 @Override
                 public void actionPerformed(java.awt.event.ActionEvent evt) {
-                    hinweisAusführenButtonActionPerformed(null);
+                    hinweisAusfuehrenButtonActionPerformed(null);
                 }
             });
-            executeStepToggleButton.setToolTipText(java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.hinweisAusführenButton.toolTipText")); // NOI18N
+            executeStepToggleButton.setToolTipText(java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.hinweisAusfuehrenButton.toolTipText")); // NOI18N
             executeStepToggleButton.setVisible(false);
             jToolBar1.add(executeStepToggleButton);
-            
+
             abortStepToggleButton = new javax.swing.JButton();
             abortStepToggleButton.setIcon(new javax.swing.ImageIcon(getClass().getResource("/img/abortHint.png")));
             abortStepToggleButton.addActionListener(new java.awt.event.ActionListener() {
+
                 @Override
                 public void actionPerformed(java.awt.event.ActionEvent evt) {
                     hinweisAbbrechenButtonActionPerformed(null);
@@ -3327,8 +3842,8 @@ private void extendedPrintMenuItemActionPerformed(java.awt.event.ActionEvent evt
             showNextStepToggleButton.setVisible(true);
             executeStepToggleButton.setVisible(true);
             abortStepToggleButton.setVisible(true);
-            executeStepToggleButton.setEnabled(hinweisAusführenButton.isEnabled());
-            abortStepToggleButton.setEnabled(hinweisAusführenButton.isEnabled());
+            executeStepToggleButton.setEnabled(hinweisAusfuehrenButton.isEnabled());
+            abortStepToggleButton.setEnabled(hinweisAusfuehrenButton.isEnabled());
         } else {
             hintSeperator.setVisible(false);
             vageHintToggleButton.setVisible(false);
@@ -3340,7 +3855,7 @@ private void extendedPrintMenuItemActionPerformed(java.awt.event.ActionEvent evt
         check();
         fixFocus();
     }
-    
+
     /**
      * Action event for hint buttons
      * @param isVage 
@@ -3353,6 +3868,9 @@ private void extendedPrintMenuItemActionPerformed(java.awt.event.ActionEvent evt
         }
     }
 
+    public boolean isEingabeModus() {
+        return eingabeModus;
+    }
 
     class MyFileFilter extends FileFilter {
 
@@ -3376,11 +3894,31 @@ private void extendedPrintMenuItemActionPerformed(java.awt.event.ActionEvent evt
                         if (ext.equalsIgnoreCase(java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.config_file_ext"))) {
                             return true;
                         }
+                        break;
                     case 1:
                         // Puzzles with Solutions
                         if (ext.equalsIgnoreCase(java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.solution_file_ext"))) {
                             return true;
                         }
+                        break;
+                    case 2:
+                    case 3:
+                    case 4:
+                    case 5:
+                    case 6:
+                    case 7:
+                    case 8:
+                        // Any kind of text file
+                        if (ext.equalsIgnoreCase(java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.text_file_ext"))) {
+                            return true;
+                        }
+                        break;
+                    case 9:
+                        // SimpleSudoku files
+                        if (ext.equalsIgnoreCase(java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.ss_file_ext"))) {
+                            return true;
+                        }
+                        break;
                     default:
                         return false;
                 }
@@ -3395,9 +3933,29 @@ private void extendedPrintMenuItemActionPerformed(java.awt.event.ActionEvent evt
                     return java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.config_file_descr");
                 case 1:
                     return java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.solution_file_descr");
+                case 2:
+                    return java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.solution_file_descr_gal");
+                case 3:
+                    return java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.solution_file_descr_gf");
+                case 4:
+                    return java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.solution_file_descr_pm");
+                case 5:
+                    return java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.solution_file_descr_pms");
+                case 6:
+                    return java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.solution_file_descr_pmg");
+                case 7:
+                    return java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.solution_file_descr_l");
+                case 8:
+                    return java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.solution_file_descr_text");
+                case 9:
+                    return java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.solution_file_descr_ss");
                 default:
                     return java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.unknown_file_type");
             }
+        }
+
+        public int getType() {
+            return type;
         }
     }
 
@@ -3461,6 +4019,7 @@ private void extendedPrintMenuItemActionPerformed(java.awt.event.ActionEvent evt
     private javax.swing.JRadioButtonMenuItem allStepsMenuItem;
     private javax.swing.JMenuItem alleHiddenSinglesSetzenMenuItem;
     private javax.swing.JMenu ansichtMenu;
+    private javax.swing.JMenuItem askQuestionMenuItem;
     private javax.swing.JMenuItem backdoorSearchMenuItem;
     private javax.swing.JMenu bearbeitenMenu;
     private javax.swing.JMenuItem beendenMenuItem;
@@ -3474,6 +4033,7 @@ private void extendedPrintMenuItemActionPerformed(java.awt.event.ActionEvent evt
     private javax.swing.JMenuItem copyLibraryMenuItem;
     private javax.swing.JMenuItem copyPmGridMenuItem;
     private javax.swing.JMenuItem copyPmGridWithStepMenuItem;
+    private javax.swing.JMenuItem copySSMenuItem;
     private javax.swing.JMenuItem createSavePointMenuItem;
     private javax.swing.JMenu dateiMenu;
     private javax.swing.JMenuItem druckenMenuItem;
@@ -3492,34 +4052,35 @@ private void extendedPrintMenuItemActionPerformed(java.awt.event.ActionEvent evt
     private javax.swing.JMenu helpMenu;
     private javax.swing.JPanel hintPanel;
     private javax.swing.JButton hinweisAbbrechenButton;
-    private javax.swing.JButton hinweisAusführenButton;
+    private javax.swing.JButton hinweisAusfuehrenButton;
     private javax.swing.JTextArea hinweisTextArea;
     private javax.swing.JMenuItem historyMenuItem;
     private javax.swing.JMenuBar jMenuBar1;
     private javax.swing.JPanel jPanel1;
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JSeparator jSeparator1;
-    private javax.swing.JSeparator jSeparator10;
     private javax.swing.JSeparator jSeparator11;
     private javax.swing.JSeparator jSeparator12;
     private javax.swing.JSeparator jSeparator13;
-    private javax.swing.JSeparator jSeparator14;
-    private javax.swing.JSeparator jSeparator15;
-    private javax.swing.JSeparator jSeparator16;
-    private javax.swing.JSeparator jSeparator17;
-    private javax.swing.JSeparator jSeparator18;
-    private javax.swing.JSeparator jSeparator19;
-    private javax.swing.JSeparator jSeparator2;
-    private javax.swing.JSeparator jSeparator20;
-    private javax.swing.JSeparator jSeparator21;
-    private javax.swing.JSeparator jSeparator22;
+    private javax.swing.JPopupMenu.Separator jSeparator20;
     private javax.swing.JPopupMenu.Separator jSeparator23;
     private javax.swing.JSeparator jSeparator24;
-    private javax.swing.JSeparator jSeparator3;
-    private javax.swing.JSeparator jSeparator4;
-    private javax.swing.JSeparator jSeparator5;
-    private javax.swing.JSeparator jSeparator6;
-    private javax.swing.JSeparator jSeparator7;
+    private javax.swing.JPopupMenu.Separator jSeparator25;
+    private javax.swing.JPopupMenu.Separator jSeparator26;
+    private javax.swing.JPopupMenu.Separator jSeparator27;
+    private javax.swing.JPopupMenu.Separator jSeparator28;
+    private javax.swing.JPopupMenu.Separator jSeparator29;
+    private javax.swing.JPopupMenu.Separator jSeparator30;
+    private javax.swing.JPopupMenu.Separator jSeparator31;
+    private javax.swing.JPopupMenu.Separator jSeparator32;
+    private javax.swing.JPopupMenu.Separator jSeparator33;
+    private javax.swing.JPopupMenu.Separator jSeparator34;
+    private javax.swing.JPopupMenu.Separator jSeparator35;
+    private javax.swing.JPopupMenu.Separator jSeparator36;
+    private javax.swing.JPopupMenu.Separator jSeparator37;
+    private javax.swing.JPopupMenu.Separator jSeparator38;
+    private javax.swing.JPopupMenu.Separator jSeparator39;
+    private javax.swing.JPopupMenu.Separator jSeparator6;
     private javax.swing.JSeparator jSeparator8;
     private javax.swing.JSeparator jSeparator9;
     private javax.swing.JToolBar jToolBar1;
@@ -3535,7 +4096,7 @@ private void extendedPrintMenuItemActionPerformed(java.awt.event.ActionEvent evt
     private javax.swing.JRadioButtonMenuItem levelSchwerMenuItem;
     private javax.swing.JMenuItem loadConfigMenuItem;
     private javax.swing.JMenuItem loadPuzzleMenuItem;
-    private javax.swing.JMenuItem lösungsSchrittMenuItem;
+    private javax.swing.JMenuItem loesungsSchrittMenuItem;
     private javax.swing.JMenuItem mediumHintMenuItem;
     private javax.swing.ButtonGroup modeButtonGroup;
     private javax.swing.JMenu modeMenu;
@@ -3549,19 +4110,22 @@ private void extendedPrintMenuItemActionPerformed(java.awt.event.ActionEvent evt
     private javax.swing.JRadioButtonMenuItem practisingMenuItem;
     private javax.swing.JLabel progressLabel;
     private javax.swing.JMenuItem projectHomePageMenuItem;
+    private javax.swing.JMenu raetselMenu;
     private javax.swing.JToggleButton redGreenToggleButton;
     private javax.swing.JMenuItem redoMenuItem;
     private javax.swing.JButton redoToolButton;
+    private javax.swing.JMenuItem reportErrorMenuItem;
     private javax.swing.JMenuItem resetSpielMenuItem;
     private javax.swing.JMenuItem resetViewMenuItem;
     private javax.swing.JMenuItem restartSpielMenuItem;
     private javax.swing.JMenuItem restoreSavePointMenuItem;
-    private javax.swing.JMenu rätselMenu;
     private javax.swing.JMenuItem saveConfigAsMenuItem;
     private javax.swing.JMenuItem savePuzzleAsMenuItem;
+    private javax.swing.JMenuItem savePuzzleMenuItem;
     private javax.swing.JMenuItem seiteEinrichtenMenuItem;
     private javax.swing.JMenuItem setGivensMenuItem;
     private javax.swing.JCheckBoxMenuItem showCandidatesMenuItem;
+    private javax.swing.JCheckBoxMenuItem showColorKuMenuItem;
     private javax.swing.JCheckBoxMenuItem showDeviationsMenuItem;
     private javax.swing.JCheckBoxMenuItem showHintButtonsCheckBoxMenuItem;
     private javax.swing.JCheckBoxMenuItem showHintPanelMenuItem;

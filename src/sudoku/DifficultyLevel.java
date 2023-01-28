@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-11  Bernhard Hobiger
+ * Copyright (C) 2008-12  Bernhard Hobiger
  *
  * This file is part of HoDoKu.
  *
@@ -34,7 +34,7 @@ public final class DifficultyLevel {
     private Color foregroundColor;
     
     public DifficultyLevel() {
-        // für XMLEncoder
+        // fÃ¼r XMLEncoder
     }
     
     public DifficultyLevel(DifficultyType type, int maxScore, String name, Color backgroundColor, Color foregroundColor) {

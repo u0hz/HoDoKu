@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-11  Bernhard Hobiger
+ * Copyright (C) 2008-12  Bernhard Hobiger
  *
  * This file is part of HoDoKu.
  *
@@ -34,6 +34,7 @@ import java.io.FileOutputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.Date;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -49,12 +50,13 @@ public final class Options {
     // Schwierigkeitsstufen
     public static final DifficultyLevel[] DEFAULT_DIFFICULTY_LEVELS = {
         new DifficultyLevel(DifficultyType.INCOMPLETE, 0, java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.incomplete"), Color.BLACK, Color.WHITE),
-        new DifficultyLevel(DifficultyType.EASY, 600, java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.easy"), Color.WHITE, Color.BLACK),
+        new DifficultyLevel(DifficultyType.EASY, 800, java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.easy"), Color.WHITE, Color.BLACK),
         new DifficultyLevel(DifficultyType.MEDIUM, 1000, java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.medium"), new Color(100, 255, 100), Color.BLACK),
-        new DifficultyLevel(DifficultyType.HARD, 3500, java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.hard"), new Color(255, 255, 100), Color.BLACK),
-        new DifficultyLevel(DifficultyType.UNFAIR, 5000, java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.unfair"), new Color(255, 150, 80), Color.BLACK),
+        new DifficultyLevel(DifficultyType.HARD, 1600, java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.hard"), new Color(255, 255, 100), Color.BLACK),
+        new DifficultyLevel(DifficultyType.UNFAIR, 1800, java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.unfair"), new Color(255, 150, 80), Color.BLACK),
         new DifficultyLevel(DifficultyType.EXTREME, Integer.MAX_VALUE, java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.extreme"), new Color(255, 100, 100), Color.BLACK)
     };
+
     private DifficultyLevel[] difficultyLevels = null;
     // Reihenfolge und Konfiguration der SolutionSteps
     // ACHTUNG: New solver steps must be added at the end of the array! The position is determined by "index"
@@ -66,7 +68,8 @@ public final class Options {
         new StepConfig(300, SolutionType.HIDDEN_SINGLE, DifficultyType.EASY.ordinal(), SolutionCategory.SINGLES, 14, 0, true, true, 300, true, false),
         new StepConfig(1000, SolutionType.LOCKED_PAIR, DifficultyType.MEDIUM.ordinal(), SolutionCategory.INTERSECTIONS, 40, 0, true, true, 1000, true, false),
         new StepConfig(1100, SolutionType.LOCKED_TRIPLE, DifficultyType.MEDIUM.ordinal(), SolutionCategory.INTERSECTIONS, 60, 0, true, true, 1100, true, false),
-        new StepConfig(1200, SolutionType.LOCKED_CANDIDATES, DifficultyType.MEDIUM.ordinal(), SolutionCategory.INTERSECTIONS, 50, 0, true, true, 1200, true, false),
+        //        new StepConfig(1200, SolutionType.LOCKED_CANDIDATES, DifficultyType.MEDIUM.ordinal(), SolutionCategory.INTERSECTIONS, 50, 0, true, true, 1200, true, false),
+        new StepConfig(1200, SolutionType.LOCKED_CANDIDATES_1, DifficultyType.MEDIUM.ordinal(), SolutionCategory.INTERSECTIONS, 50, 0, true, true, 1200, true, false),
         new StepConfig(1300, SolutionType.NAKED_PAIR, DifficultyType.MEDIUM.ordinal(), SolutionCategory.SUBSETS, 60, 0, true, true, 1300, true, false),
         new StepConfig(1400, SolutionType.NAKED_TRIPLE, DifficultyType.MEDIUM.ordinal(), SolutionCategory.SUBSETS, 80, 0, true, true, 1400, true, false),
         new StepConfig(1500, SolutionType.HIDDEN_PAIR, DifficultyType.MEDIUM.ordinal(), SolutionCategory.SUBSETS, 70, 0, true, true, 1500, true, false),
@@ -149,13 +152,14 @@ public final class Options {
         new StepConfig(5330, SolutionType.SIMPLE_COLORS, DifficultyType.HARD.ordinal(), SolutionCategory.COLORING, 150, 0, true, true, 5330, false, false),
         new StepConfig(5360, SolutionType.MULTI_COLORS, DifficultyType.HARD.ordinal(), SolutionCategory.COLORING, 200, 0, true, true, 5360, false, false),
         new StepConfig(8450, SolutionType.KRAKEN_FISH, DifficultyType.EXTREME.ordinal(), SolutionCategory.LAST_RESORT, 500, 0, false, false, 8450, false, false),
-        new StepConfig(3120, SolutionType.TURBOT_FISH, DifficultyType.HARD.ordinal(), SolutionCategory.SINGLE_DIGIT_PATTERNS, 120, 0, true, true, 3120, false, false)
+        new StepConfig(3120, SolutionType.TURBOT_FISH, DifficultyType.HARD.ordinal(), SolutionCategory.SINGLE_DIGIT_PATTERNS, 120, 0, true, true, 3120, false, false),
+        new StepConfig(1210, SolutionType.LOCKED_CANDIDATES_2, DifficultyType.MEDIUM.ordinal(), SolutionCategory.INTERSECTIONS, 50, 0, true, true, 1210, true, false)
     };
-    // nicht sortierte steps mit allen Änderungen -> wird so in *.cfg-File geschrieben
+    // nicht sortierte steps mit allen Ã„nderungen -> wird so in *.cfg-File geschrieben
     private StepConfig[] orgSolverSteps = null;
     // sortierte Kopie, wird intern verwendet, darf aber nicht im *.cfg-File landen
     public StepConfig[] solverSteps = null;
-    // sortierte Kopie für Step-Progress, wird intern verwendet, darf aber nicht im *.cfg-File landen
+    // sortierte Kopie fÃ¼r Step-Progress, wird intern verwendet, darf aber nicht im *.cfg-File landen
     public StepConfig[] solverStepsProgress = null;
     // internal cache for background creation
     public static final int CACHE_SIZE = 10;
@@ -164,9 +168,9 @@ public final class Options {
     private String[] practisingPuzzles = new String[CACHE_SIZE];  // 10 puzzles for practising
     private int practisingPuzzlesLevel = -1;                      // the DifficultyLevel, for which the practising puzzles have been created
     // ChainSolver
-    public static final int RESTRICT_CHAIN_LENGTH = 20;      // maximale Länge von X-/XY-Chains, wenn restrictChainSize gesetzt ist
-    public static final int RESTRICT_NICE_LOOP_LENGTH = 10;  // maximale Länge von Nice-Loops, wenn restrictChainSize gesetzt ist
-    public static final boolean RESTRICT_CHAIN_SIZE = true;  // Länge der chains beschränken?
+    public static final int RESTRICT_CHAIN_LENGTH = 20;      // maximale LÃ¤nge von X-/XY-Chains, wenn restrictChainSize gesetzt ist
+    public static final int RESTRICT_NICE_LOOP_LENGTH = 10;  // maximale LÃ¤nge von Nice-Loops, wenn restrictChainSize gesetzt ist
+    public static final boolean RESTRICT_CHAIN_SIZE = true;  // LÃ¤nge der chains beschrÃ¤nken?
     private int restrictChainLength = RESTRICT_CHAIN_LENGTH;
     private int restrictNiceLoopLength = RESTRICT_NICE_LOOP_LENGTH;
     private boolean restrictChainSize = RESTRICT_CHAIN_SIZE;
@@ -194,11 +198,11 @@ public final class Options {
     // FishSolver
     public static final int MAX_FINS = 5;                 // Maximale Anzahl Fins
     public static final int MAX_ENDO_FINS = 2;            // Maximale Anzahl Endo-Fins
-    public static final boolean CHECK_TEMPLATES = true;   // Template-Check um Kandidaten von der Suche auszuschließen
+    public static final boolean CHECK_TEMPLATES = true;   // Template-Check um Kandidaten von der Suche auszuschlieÃŸen
     public static final int KRAKEN_MAX_FISH_TYPE = 1;     // 0: nur basic, 1: basic+franken, 2: basic+franken+mutant
     public static final int KRAKEN_MAX_FISH_SIZE = 4;     // number of units in base/cover sets
-    public static final int MAX_KRAKEN_FINS = 2;          // Maximale Anzahl Fins für Kraken-Suche
-    public static final int MAX_KRAKEN_ENDO_FINS = 0;     // Maximale Anzahl Endo-Fins für Kraken-Suche
+    public static final int MAX_KRAKEN_FINS = 2;          // Maximale Anzahl Fins fÃ¼r Kraken-Suche
+    public static final int MAX_KRAKEN_ENDO_FINS = 0;     // Maximale Anzahl Endo-Fins fÃ¼r Kraken-Suche
     public static final boolean ONLY_ONE_FISH_PER_STEP = true; // only the smallest fish for every elimination
     public static final int FISH_DISPLAY_MODE = 0;        // 0: normal; 1: statistics numbers; 2: statistics cells
     private int maxFins = MAX_FINS;
@@ -217,15 +221,17 @@ public final class Options {
     public static final int ALL_STEPS_MAX_FISH_SIZE = 4;     // number of units in base/cover sets
     public static final int ALL_STEPS_MAX_FINS = 5;                 // Maximale Anzahl Fins
     public static final int ALL_STEPS_MAX_ENDO_FINS = 2;            // Maximale Anzahl Endo-Fins
-    public static final boolean ALL_STEPS_CHECK_TEMPLATES = true;   // Template-Check um Kandidaten von der Suche auszuschließen
+    public static final boolean ALL_STEPS_CHECK_TEMPLATES = true;   // Template-Check um Kandidaten von der Suche auszuschlieÃŸen
     public static final int ALL_STEPS_MAX_KRAKEN_FISH_TYPE = 1;     // 0: nur basic, 1: basic+franken, 2: basic+franken+mutant
     public static final int ALL_STEPS_MIN_KRAKEN_FISH_SIZE = 2;     // number of units in base/cover sets
     public static final int ALL_STEPS_MAX_KRAKEN_FISH_SIZE = 4;     // number of units in base/cover sets
-    public static final int ALL_STEPS_MAX_KRAKEN_FINS = 2;          // Maximale Anzahl Fins für Kraken-Suche
-    public static final int ALL_STEPS_MAX_KRAKEN_ENDO_FINS = 0;     // Maximale Anzahl Endo-Fins für Kraken-Suche
+    public static final int ALL_STEPS_MAX_KRAKEN_FINS = 2;          // Maximale Anzahl Fins fÃ¼r Kraken-Suche
+    public static final int ALL_STEPS_MAX_KRAKEN_ENDO_FINS = 0;     // Maximale Anzahl Endo-Fins fÃ¼r Kraken-Suche
     public static final String ALL_STEPS_FISH_CANDIDATES = "111111111";        // 1 for every candidate that should be searched, 0 otherwise
     public static final String ALL_STEPS_KRAKEN_FISH_CANDIDATES = "111111111"; // see above
     public static final int ALL_STEPS_SORT_MODE = 4; // sort by StepType
+    public static final int ALL_STEPS_ALS_CHAIN_LENGTH = 6; // maximum chain length in ALS-Chain search (all steps only)
+    public static final boolean ALL_STEPS_ALS_CHAIN_FORWARD_ONLY = true;
     private boolean allStepsSearchFish = ALL_STEPS_SEARCH_FISH;
     private int allStepsMaxFishType = ALL_STEPS_MAX_FISH_TYPE;
     private int allStepsMinFishSize = ALL_STEPS_MIN_FISH_SIZE;
@@ -241,18 +247,20 @@ public final class Options {
     private String allStepsFishCandidates = ALL_STEPS_FISH_CANDIDATES;
     private String allStepsKrakenFishCandidates = ALL_STEPS_KRAKEN_FISH_CANDIDATES;
     private int allStepsSortMode = ALL_STEPS_SORT_MODE;
+    private int allStepsAlsChainLength = ALL_STEPS_ALS_CHAIN_LENGTH;
+    private boolean allStepsAlsChainForwardOnly = ALL_STEPS_ALS_CHAIN_FORWARD_ONLY;
     //SudokuPanel
     // Coloring Solver
     public static final Color[] COLORING_COLORS = {
-        new Color(254, 204, 129), // 'a' - first color of first color pair
-        new Color(252, 234, 190), // 'A' - second color of first color pair
-        new Color(184, 184, 248), // 'b' - first color of second color pair
-        new Color(220, 220, 252), // 'B' - second color of second color pair
-        new Color(255, 185, 185), // 'c' - first color of third color pair
+        new Color(255, 192, 89),  // 'a' - first color of first color pair
+        new Color(247, 222, 143), // 'A' - second color of first color pair
+        new Color(177, 165, 243), // 'b' - first color of second color pair
+        new Color(220, 212, 252), // 'B' - second color of second color pair
+        new Color(247, 165, 167), // 'c' - first color of third color pair
         new Color(255, 210, 210), // 'C' - second color of third color pair
-        new Color(159, 247, 220), // 'd' - first color of fourth color pair
+        new Color(134, 232, 208), // 'd' - first color of fourth color pair
         new Color(206, 251, 237), // 'D' - second color of fourth color pair
-        new Color(168, 255, 168), // 'e' - first color of fifth color pair
+        new Color(134, 242, 128), // 'e' - first color of fifth color pair
         new Color(215, 255, 215) // 'E' - second color of fifth color pair
     //        new Color(140, 198, 255),   // 'a' - first color of first color pair
     //        new Color(205, 171, 255),   // 'A' - second color of first color pair
@@ -278,15 +286,21 @@ public final class Options {
     private boolean allowUniquenessMissingCandidates = ALLOW_UNIQUENESS_MISSING_CANDIDATES;
     // Allgemeines
     public static final boolean SHOW_CANDIDATES = true;    // alle Kandidaten anzeigen
-    public static final boolean SHOW_WRONG_VALUES = true;  // Ungültige Zellen-/Kandidatenwerte anzeigen (Constraint-Verletzungen)
-    public static final boolean SHOW_DEVIATIONS = true;    // Abweichungen von der richtigen Lösung anzeigen
+    public static final boolean SHOW_WRONG_VALUES = true;  // UngÃ¼ltige Zellen-/Kandidatenwerte anzeigen (Constraint-Verletzungen)
+    public static final boolean SHOW_DEVIATIONS = true;    // Abweichungen von der richtigen LÃ¶sung anzeigen
+    public static final boolean SHOW_COLORKU = false;	   // use colors instead of numbers
     public static final boolean INVALID_CELLS = false;     // show possible cells
+    public static final boolean COLOR_CELLS = true;        // color cells or candidates
     public static final boolean SAVE_WINDOW_LAYOUT = true; // save window layout at shutdown
     public static final boolean USE_SHIFT_FOR_REGION_SELECT = true; // use shift for selecting cells or toggeling candidates
     public static final boolean ALTERNATIVE_MOUSE_MODE = false; // use simpler mouse mode (less clicks required)
     public static final boolean DELETE_CURSOR_DISPLAY = false; // let the cursor disappear after a while
     public static final int DELETE_CURSOR_DISPLAY_LENGTH = 1000; // time in ms
     public static final boolean USE_OR_INSTEAD_OF_AND_FOR_FILTER = false; // used when filtering more than one candidate
+    /** Draw filters an the candidates themselves, not on the whole cell */
+    public static final boolean ONLY_SMALL_FILTERS = false;
+    public static final boolean USE_DEFAULT_FONT_SIZE = true; // default siz for all fonts in the GUI
+    public static final int CUSTOM_FONT_SIZE = 12;            // custom size for all fonts in the GUI
     public static final int DRAW_MODE = 1;
     //public static final int INITIAL_HEIGHT = 728;           // used to store window layout at shutdown
     public static final int INITIAL_HEIGHT = 844;           // used to store window layout at shutdown
@@ -302,16 +316,24 @@ public final class Options {
     public static final boolean INITIAL_SHOW_TOOLBAR = true;
     public static final int ACT_LEVEL = DEFAULT_DIFFICULTY_LEVELS[1].getOrdinal(); // Standard is EASY
     public static final boolean SHOW_SUDOKU_SOLVED = false;
+    public static final boolean EDIT_MODE_AUTO_ADVANCE = false;
     private boolean showCandidates = SHOW_CANDIDATES;
     private boolean showWrongValues = SHOW_WRONG_VALUES;
     private boolean showDeviations = SHOW_DEVIATIONS;
+    private boolean showColorKu = SHOW_COLORKU;
+    /** Current state, set by {@link MainFrame}. */
+    private boolean showColorKuAct = SHOW_COLORKU;
     private boolean invalidCells = INVALID_CELLS;
+    private boolean colorCells = COLOR_CELLS;
     private boolean saveWindowLayout = SAVE_WINDOW_LAYOUT;
     private boolean useShiftForRegionSelect = USE_SHIFT_FOR_REGION_SELECT;
     private boolean alternativeMouseMode = ALTERNATIVE_MOUSE_MODE;
     private boolean deleteCursorDisplay = DELETE_CURSOR_DISPLAY;
     private int deleteCursorDisplayLength = DELETE_CURSOR_DISPLAY_LENGTH;
+    private boolean useDefaultFontSize = USE_DEFAULT_FONT_SIZE;
+    private int customFontSize = CUSTOM_FONT_SIZE;
     private boolean useOrInsteadOfAndForFilter = USE_OR_INSTEAD_OF_AND_FOR_FILTER;
+    private boolean onlySmallFilters = ONLY_SMALL_FILTERS;
     private int drawMode = DRAW_MODE;
     private int initialHeight = INITIAL_HEIGHT;
     private int initialWidth = INITIAL_WIDTH;
@@ -324,56 +346,74 @@ public final class Options {
     private boolean showToolBar = INITIAL_SHOW_TOOLBAR;
     private int actLevel = ACT_LEVEL;
     private boolean showSudokuSolved = SHOW_SUDOKU_SOLVED;
+    private boolean editModeAutoAdvance = EDIT_MODE_AUTO_ADVANCE;
     // Clipboard
     public static final boolean USE_ZERO_INSTEAD_OF_DOT = false; // as the name says...
     private boolean useZeroInsteadOfDot = USE_ZERO_INSTEAD_OF_DOT;
     // Farben und Fonts
-    public static final Color GRID_COLOR = Color.BLACK;                                       // Zeichenfarbe für den Rahmen
+    public static final Color GRID_COLOR = Color.BLACK;                                       // Zeichenfarbe fÃ¼r den Rahmen
     public static final Color INNER_GRID_COLOR = Color.LIGHT_GRAY;                            // Linien innerhalb des Rahmens
-    public static final Color WRONG_VALUE_COLOR = Color.RED;                                  // Wert oder Kandidat an dieser Stelle nicht möglich
-    public static final Color DEVIATION_COLOR = new Color(255, 185, 185);                     // Wert oder Kandidat stimmt nicht mit Lösung überein
+    public static final Color WRONG_VALUE_COLOR = Color.RED;                                  // Wert oder Kandidat an dieser Stelle nicht mÃ¶glich
+    public static final Color DEVIATION_COLOR = new Color(255, 185, 185);                     // Wert oder Kandidat stimmt nicht mit LÃ¶sung Ã¼berein
     public static final Color CELL_FIXED_VALUE_COLOR = Color.BLACK;                           // vorgegebene Werte
     public static final Color CELL_VALUE_COLOR = Color.BLUE;                                  // korrekte selbst eingegebene Zellenwerte
     public static final Color CANDIDATE_COLOR = new Color(100, 100, 100);                     // korrekte Kandidaten
     public static final Color DEFAULT_CELL_COLOR = Color.WHITE;                               // Hintergrund normale Zelle
     public static final Color ALTERNATE_CELL_COLOR = Color.WHITE;                             // Hintergrund normale Zelle in jedem zweiten Block
     public static final Color AKT_CELL_COLOR = new Color(255, 255, 150);                      // Hintergrund aktuell markierte Zelle
-    public static final Color INVALID_CELL_COLOR = new Color(255, 185, 185);                  // Hintergrund Zelle mit ungültigen Wert
-    public static final Color POSSIBLE_CELL_COLOR = new Color(185, 255, 185);                 // Hintergrund Zelle mit möglichem Wert
-    public static final Color HINT_CANDIDATE_BACK_COLOR = new Color(113, 221, 137);           // Hintergrund Kandidat in Hinweis
-    public static final Color HINT_CANDIDATE_DELETE_BACK_COLOR = new Color(249, 147, 162);    // Hintergrund für zu löschende Kandidaten
-    public static final Color HINT_CANDIDATE_CANNIBALISTIC_BACK_COLOR = new Color(255, 0, 0); // Hintergrund für zu löschende Kandidaten
-    public static final Color HINT_CANDIDATE_FIN_BACK_COLOR = new Color(140, 198, 255);       // Hintergrund für Fins
-    public static final Color HINT_CANDIDATE_ENDO_FIN_BACK_COLOR = new Color(205, 171, 255);  // Hintergrund für Endo-Fins
+    public static final Color INVALID_CELL_COLOR = new Color(255, 185, 185);                  // Hintergrund Zelle mit ungÃ¼ltigen Wert
+    public static final Color POSSIBLE_CELL_COLOR = new Color(185, 255, 185);                 // Hintergrund Zelle mit mÃ¶glichem Wert
+    public static final Color HINT_CANDIDATE_BACK_COLOR = new Color(63, 218, 101);            // Hintergrund Kandidat in Hinweis
+    public static final Color HINT_CANDIDATE_DELETE_BACK_COLOR = new Color(255, 118, 132);    // Hintergrund fÃ¼r zu lÃ¶schende Kandidaten
+    public static final Color HINT_CANDIDATE_CANNIBALISTIC_BACK_COLOR = new Color(235, 0, 0); // Hintergrund fÃ¼r zu lÃ¶schende Kandidaten
+    public static final Color HINT_CANDIDATE_FIN_BACK_COLOR = new Color(127, 187, 255);       // Hintergrund fÃ¼r Fins
+    public static final Color HINT_CANDIDATE_ENDO_FIN_BACK_COLOR = new Color(216, 178, 255);  // Hintergrund fÃ¼r Endo-Fins
     public static final Color HINT_CANDIDATE_COLOR = Color.BLACK;                             // Zeichenfarbe Kandidat in Hinweis
-    public static final Color HINT_CANDIDATE_DELETE_COLOR = Color.BLACK;                      // Zeichenfarbe für zu löschende Kandidaten
-    public static final Color HINT_CANDIDATE_CANNIBALISTIC_COLOR = Color.BLACK;               // Zeichenfarbe für zu löschende Kandidaten
-    public static final Color HINT_CANDIDATE_FIN_COLOR = Color.BLACK;                         // Zeichenfarbe für Fins
-    public static final Color HINT_CANDIDATE_ENDO_FIN_COLOR = Color.BLACK;                    // Zeichenfarbe für Endo-Fins
-    public static final Color[] HINT_CANDIDATE_ALS_BACK_COLORS = { // Hintergrund für ALS (verschieden wegen Chains und Wings)
-        new Color(215, 255, 215),
-        new Color(255, 210, 210),
-        new Color(206, 251, 237),
-        new Color(252, 234, 190)
+    public static final Color HINT_CANDIDATE_DELETE_COLOR = Color.BLACK;                      // Zeichenfarbe fÃ¼r zu lÃ¶schende Kandidaten
+    public static final Color HINT_CANDIDATE_CANNIBALISTIC_COLOR = Color.BLACK;               // Zeichenfarbe fÃ¼r zu lÃ¶schende Kandidaten
+    public static final Color HINT_CANDIDATE_FIN_COLOR = Color.BLACK;                         // Zeichenfarbe fÃ¼r Fins
+    public static final Color HINT_CANDIDATE_ENDO_FIN_COLOR = Color.BLACK;                    // Zeichenfarbe fÃ¼r Endo-Fins
+    public static final Color[] HINT_CANDIDATE_ALS_BACK_COLORS = { // Hintergrund fÃ¼r ALS (verschieden wegen Chains und Wings)
+        new Color(197, 232, 140),
+        new Color(255, 203, 203),
+        new Color(178, 223, 223),
+        new Color(252, 220, 165)
 //        new Color(150, 150, 255),
 //        new Color(150, 255, 150),
 //        new Color(150, 100, 255),
 //        new Color(150, 255, 100)
     };
-    public static final Color[] HINT_CANDIDATE_ALS_COLORS = { // Zeichenfarbe für ALS-Candidaten
+    public static final Color[] COLORKU_COLORS = {
+        new Color(252, 20, 16),
+        new Color(251, 153, 0), // a better orange
+        new Color(255, 218, 27),
+        new Color(0, 192, 41), // dark green
+//        new Color(43, 24, 255),
+        new Color(0, 45, 255),
+        new Color(221, 84, 177), // purple
+        new Color(159, 252, 51), // light green
+        new Color(144, 246, 249), // sky blue
+        new Color(255, 175, 252), // light purple (fuchsia)
+        Color.BLACK, new Color(128, 128, 128)
+    };
+//    public static final Color COLORKU_INVALID_COLOR = Color.BLACK;
+//    public static final Color COLORKU_DEVIATION_COLOR = new Color(128, 128, 128);
+    public static final Color[] HINT_CANDIDATE_ALS_COLORS = { // Zeichenfarbe fÃ¼r ALS-Candidaten
         Color.BLACK,
         Color.BLACK,
         Color.BLACK,
         Color.BLACK
     };
-    public static final Color ARROW_COLOR = Color.RED;                                        // Farbe für Pfeile
-    public static final double VALUE_FONT_FACTOR = 0.6;      // Zellengröße * valueFontFactor gibt Schriftgröße für Zellenwerte
-    public static final double CANDIDATE_FONT_FACTOR = 0.25; // Zellengröße * candidateFontFactor gibt Schriftgröße für Kandidaten
-    public static final double HINT_BACK_FACTOR = 1.6;       // um wie viel der Kreis beim Hint größer ist als die Zahl
-    public static Font DEFAULT_VALUE_FONT = new Font("Tahoma", Font.PLAIN, 10);     // Standard für Zellenwerte (Größe wird ignoriert)
-    public static Font DEFAULT_CANDIDATE_FONT = new Font("Tahoma", Font.PLAIN, 10); // Standard für Kandidaten (Größe wird ignoriert)
-    public static Font BIG_FONT = new Font("Arial", Font.BOLD, 16);    // Font für Ausdruck Überschrift
-    public static Font SMALL_FONT = new Font("Arial", Font.PLAIN, 10); // Font für Ausdruck Rating
+    public static final Color ARROW_COLOR = Color.RED;                                        // Farbe fÃ¼r Pfeile
+    public static final double VALUE_FONT_FACTOR = 0.6;      // ZellengrÃ¶ÃŸe * valueFontFactor gibt SchriftgrÃ¶ÃŸe fÃ¼r Zellenwerte
+    public static final double CANDIDATE_FONT_FACTOR = 0.25; // ZellengrÃ¶ÃŸe * candidateFontFactor gibt SchriftgrÃ¶ÃŸe fÃ¼r Kandidaten
+    public static final double HINT_BACK_FACTOR = 1.6;       // um wie viel der Kreis beim Hint grÃ¶ÃŸer ist als die Zahl
+    /** How much should the lines around the boxes be thicker than normal lines */
+    public static final double BOX_LINE_FACTOR = 1.5;
+    public static Font DEFAULT_VALUE_FONT = new Font("Tahoma", Font.PLAIN, 10);     // Standard fÃ¼r Zellenwerte (GrÃ¶ÃŸe wird ignoriert)
+    public static Font DEFAULT_CANDIDATE_FONT = new Font("Tahoma", Font.PLAIN, 10); // Standard fÃ¼r Kandidaten (GrÃ¶ÃŸe wird ignoriert)
+    public static Font BIG_FONT = new Font("Arial", Font.BOLD, 16);    // Font fÃ¼r Ausdruck Ãœberschrift
+    public static Font SMALL_FONT = new Font("Arial", Font.PLAIN, 10); // Font fÃ¼r Ausdruck Rating
     private Color gridColor = GRID_COLOR;
     private Color innerGridColor = INNER_GRID_COLOR;
     private Color wrongValueColor = WRONG_VALUE_COLOR;
@@ -398,22 +438,28 @@ public final class Options {
     private Color hintCandidateEndoFinColor = HINT_CANDIDATE_ENDO_FIN_COLOR;
     private Color[] hintCandidateAlsBackColors = null;
     private Color[] hintCandidateAlsColors = null;
+//    private Color colorKuInvalidColor = COLORKU_INVALID_COLOR;
+//    private Color colorKuDeviationColor = COLORKU_DEVIATION_COLOR;
+    private Color[] colorKuColors = null;
     private Color arrowColor = ARROW_COLOR;
     private double valueFontFactor = VALUE_FONT_FACTOR;
     private double candidateFontFactor = CANDIDATE_FONT_FACTOR;
     private double hintBackFactor = HINT_BACK_FACTOR;
+    private double boxLineFactor = BOX_LINE_FACTOR;
     private Font defaultValueFont = new Font(DEFAULT_VALUE_FONT.getName(), DEFAULT_VALUE_FONT.getStyle(), DEFAULT_VALUE_FONT.getSize());
     private Font defaultCandidateFont = new Font(DEFAULT_CANDIDATE_FONT.getName(), DEFAULT_CANDIDATE_FONT.getStyle(), DEFAULT_CANDIDATE_FONT.getSize());
     private Font bigFont = new Font(BIG_FONT.getName(), BIG_FONT.getStyle(), BIG_FONT.getSize());
     private Font smallFont = new Font(SMALL_FONT.getName(), SMALL_FONT.getStyle(), SMALL_FONT.getSize());
     public static final String DEFAULT_FILE_DIR = System.getProperty("user.home");
+    public static final String DEFAULT_IMAGE_DIR = System.getProperty("user.home");
     private String defaultFileDir = DEFAULT_FILE_DIR;
+    private String defaultImageDir = DEFAULT_IMAGE_DIR;
     public static final String DEFAULT_LANGUAGE = "";
     private String language = DEFAULT_LANGUAGE;
     public static final String DEFAULT_LAF = "";
     private String laf = DEFAULT_LAF;
     // paint cursor only as small frame around cell
-    public static final boolean ONLY_SMALL_CURSORS = false;
+    public static final boolean ONLY_SMALL_CURSORS = true;
     public static final double CURSOR_FRAME_SIZE = 0.08;
     private boolean onlySmallCursors = ONLY_SMALL_CURSORS;
     private double cursorFrameSize = CURSOR_FRAME_SIZE;
@@ -424,7 +470,7 @@ public final class Options {
     public static final boolean SHOW_HINT_BUTTONS_IN_TOOLBAR = false;
     private boolean showHintButtonsInToolbar = SHOW_HINT_BUTTONS_IN_TOOLBAR;
     // history of created puzzles and savepoints
-    public static final int HISTORY_SIZE = 20;
+    public static final int HISTORY_SIZE = 50;
     public static final boolean HISTORY_PREVIEW = true;
     private int historySize = HISTORY_SIZE;
     private boolean historyPreview = HISTORY_PREVIEW;
@@ -440,6 +486,8 @@ public final class Options {
     public static final int GENERATOR_PATTERN_INDEX = -1;
     private ArrayList<GeneratorPattern> generatorPatterns = new ArrayList<GeneratorPattern>();
     private int generatorPatternIndex = GENERATOR_PATTERN_INDEX;
+    // Check for available fonts
+    private static String[] availableFontNames = null;
     //Singleton
     public static Options instance = null;
 
@@ -462,45 +510,113 @@ public final class Options {
         for (int i = 0; i < COLORING_COLORS.length; i++) {
             coloringColors[i] = new Color(COLORING_COLORS[i].getRGB());
         }
+        colorKuColors = new Color[COLORKU_COLORS.length];
+        for (int i = 0; i < COLORKU_COLORS.length; i++) {
+            colorKuColors[i] = new Color(COLORKU_COLORS[i].getRGB());
+        }
 
-//    public static final Font DEFAULT_VALUE_FONT = new Font("Tahoma", Font.PLAIN, 10);     // Standard für Zellenwerte (Größe wird ignoriert)
-//    public static final Font DEFAULT_CANDIDATE_FONT = new Font("Tahoma", Font.PLAIN, 10); // Standard für Kandidaten (Größe wird ignoriert)
-//    public static final Font BIG_FONT = new Font("Arial", Font.BOLD, 16);    // Font für Ausdruck Überschrift
-//    public static final Font SMALL_FONT = new Font("Arial", Font.PLAIN, 10); // Font für Ausdruck Rating
+//    public static final Font DEFAULT_VALUE_FONT = new Font("Tahoma", Font.PLAIN, 10);     // Standard fÃ¼r Zellenwerte (GrÃ¶ÃŸe wird ignoriert)
+//    public static final Font DEFAULT_CANDIDATE_FONT = new Font("Tahoma", Font.PLAIN, 10); // Standard fÃ¼r Kandidaten (GrÃ¶ÃŸe wird ignoriert)
+//    public static final Font BIG_FONT = new Font("Arial", Font.BOLD, 16);    // Font fÃ¼r Ausdruck Ãœberschrift
+//    public static final Font SMALL_FONT = new Font("Arial", Font.PLAIN, 10); // Font fÃ¼r Ausdruck Rating
+//        // allow for different fonts in different OSes
+//        if (!checkFont(DEFAULT_CANDIDATE_FONT)) {
+//            DEFAULT_CANDIDATE_FONT = new Font(Font.SANS_SERIF, DEFAULT_CANDIDATE_FONT.getStyle(), DEFAULT_CANDIDATE_FONT.getSize());
+//            defaultCandidateFont = new Font(DEFAULT_CANDIDATE_FONT.getName(), DEFAULT_CANDIDATE_FONT.getStyle(), DEFAULT_CANDIDATE_FONT.getSize());
+//        }
+//        if (!checkFont(DEFAULT_VALUE_FONT)) {
+//            DEFAULT_VALUE_FONT = new Font(Font.SANS_SERIF, DEFAULT_VALUE_FONT.getStyle(), DEFAULT_VALUE_FONT.getSize());
+//            defaultValueFont = new Font(DEFAULT_VALUE_FONT.getName(), DEFAULT_VALUE_FONT.getStyle(), DEFAULT_VALUE_FONT.getSize());
+//        }
+//        if (!checkFont(defaultCandidateFont)) {
+//            defaultCandidateFont = new Font(DEFAULT_CANDIDATE_FONT.getName(), DEFAULT_CANDIDATE_FONT.getStyle(), DEFAULT_CANDIDATE_FONT.getSize());
+//        }
+//        if (!checkFont(defaultValueFont)) {
+//            defaultValueFont = new Font(DEFAULT_VALUE_FONT.getName(), DEFAULT_VALUE_FONT.getStyle(), DEFAULT_VALUE_FONT.getSize());
+//        }
+//        if (!checkFont(BIG_FONT)) {
+//            BIG_FONT = new Font(Font.SANS_SERIF, BIG_FONT.getStyle(), BIG_FONT.getSize());
+//            bigFont = new Font(BIG_FONT.getName(), BIG_FONT.getStyle(), BIG_FONT.getSize());
+//        }
+//        if (!checkFont(SMALL_FONT)) {
+//            SMALL_FONT = new Font(Font.SANS_SERIF, SMALL_FONT.getStyle(), SMALL_FONT.getSize());
+//            smallFont = new Font(SMALL_FONT.getName(), SMALL_FONT.getStyle(), SMALL_FONT.getSize());
+//        }
+//        if (!checkFont(bigFont)) {
+//            bigFont = new Font(BIG_FONT.getName(), BIG_FONT.getStyle(), BIG_FONT.getSize());
+//        }
+//        if (!checkFont(smallFont)) {
+//            smallFont = new Font(SMALL_FONT.getName(), SMALL_FONT.getStyle(), SMALL_FONT.getSize());
+//        }
+    }
+
+    /**
+     * Adds a new sudoku to the creation history. The size of the history buffer
+     * is adjusted accordingly. New sudokus are always inserted at the start of
+     * the list and deleted from the end of the list, effectively turning the list in
+     * a queue (the performance overhead can be ignored here).
+     * @param sudoku
+     */
+    public void addSudokuToHistory(Sudoku2 sudoku) {
+        if (sudoku.getLevel() == null) {
+            //something went wrong, dont add it to the history
+            return;
+        }
+        List<String> history = getHistoryOfCreatedPuzzles();
+        while (history.size() > getHistorySize() - 1) {
+            history.remove(history.size() - 1);
+        }
+        String str = sudoku.getSudoku(ClipboardMode.CLUES_ONLY) + "#"
+                + sudoku.getLevel().getOrdinal() + "#" + sudoku.getScore() + "#"
+                + new Date().getTime();
+        history.add(0, str);
+    }
+
+    /**
+     * Due to a bug in JRE 1.7_05 this method must not be called befor
+     * the first JFrame is created or all fonts will always be bold.
+     */
+    public void checkAllFonts() {
         // allow for different fonts in different OSes
-        String[] fontNames = GraphicsEnvironment.getLocalGraphicsEnvironment().getAvailableFontFamilyNames();
-        if (!checkFont(DEFAULT_CANDIDATE_FONT, fontNames)) {
+        if (!checkFont(DEFAULT_CANDIDATE_FONT)) {
             DEFAULT_CANDIDATE_FONT = new Font(Font.SANS_SERIF, DEFAULT_CANDIDATE_FONT.getStyle(), DEFAULT_CANDIDATE_FONT.getSize());
             defaultCandidateFont = new Font(DEFAULT_CANDIDATE_FONT.getName(), DEFAULT_CANDIDATE_FONT.getStyle(), DEFAULT_CANDIDATE_FONT.getSize());
         }
-        if (!checkFont(DEFAULT_VALUE_FONT, fontNames)) {
+        if (!checkFont(DEFAULT_VALUE_FONT)) {
             DEFAULT_VALUE_FONT = new Font(Font.SANS_SERIF, DEFAULT_VALUE_FONT.getStyle(), DEFAULT_VALUE_FONT.getSize());
             defaultValueFont = new Font(DEFAULT_VALUE_FONT.getName(), DEFAULT_VALUE_FONT.getStyle(), DEFAULT_VALUE_FONT.getSize());
         }
-        if (!checkFont(defaultCandidateFont, fontNames)) {
+        if (!checkFont(defaultCandidateFont)) {
             defaultCandidateFont = new Font(DEFAULT_CANDIDATE_FONT.getName(), DEFAULT_CANDIDATE_FONT.getStyle(), DEFAULT_CANDIDATE_FONT.getSize());
         }
-        if (!checkFont(defaultValueFont, fontNames)) {
+        if (!checkFont(defaultValueFont)) {
             defaultValueFont = new Font(DEFAULT_VALUE_FONT.getName(), DEFAULT_VALUE_FONT.getStyle(), DEFAULT_VALUE_FONT.getSize());
         }
-        if (!checkFont(BIG_FONT, fontNames)) {
+        if (!checkFont(BIG_FONT)) {
             BIG_FONT = new Font(Font.SANS_SERIF, BIG_FONT.getStyle(), BIG_FONT.getSize());
             bigFont = new Font(BIG_FONT.getName(), BIG_FONT.getStyle(), BIG_FONT.getSize());
         }
-        if (!checkFont(SMALL_FONT, fontNames)) {
+        if (!checkFont(SMALL_FONT)) {
             SMALL_FONT = new Font(Font.SANS_SERIF, SMALL_FONT.getStyle(), SMALL_FONT.getSize());
             smallFont = new Font(SMALL_FONT.getName(), SMALL_FONT.getStyle(), SMALL_FONT.getSize());
         }
-        if (!checkFont(bigFont, fontNames)) {
+        if (!checkFont(bigFont)) {
             bigFont = new Font(BIG_FONT.getName(), BIG_FONT.getStyle(), BIG_FONT.getSize());
         }
-        if (!checkFont(smallFont, fontNames)) {
+        if (!checkFont(smallFont)) {
             smallFont = new Font(SMALL_FONT.getName(), SMALL_FONT.getStyle(), SMALL_FONT.getSize());
         }
     }
 
-    private boolean checkFont(Font font, String[] fontNames) {
-        if (Arrays.binarySearch(fontNames, font.getName()) >= 0) {
+    public boolean checkFont(Font font) {
+        return checkFont(font.getName());
+    }
+
+    public boolean checkFont(String fontName) {
+        if (availableFontNames == null) {
+            availableFontNames = GraphicsEnvironment.getLocalGraphicsEnvironment().getAvailableFontFamilyNames();
+        }
+        if (Arrays.binarySearch(availableFontNames, fontName) >= 0) {
             return true;
         }
         return false;
@@ -542,7 +658,7 @@ public final class Options {
 
     public StepConfig[] copyStepConfigs(StepConfig[] src, boolean noLastTwo,
             boolean addLastTwo, boolean noSort, boolean sortProgress) {
-        // Wenn noLastTwo oder addLastTwo gesetzt sind, ist src bereits sortiert, das heißt
+        // Wenn noLastTwo oder addLastTwo gesetzt sind, ist src bereits sortiert, das heiÃŸt
         // INCOMPLETE und GIVE_UP stehen ganz hinten
         // That's not true if src == DEFAULT_SOLVER_STEPS! (reset in ConfigSolverPanel)
         int length = src.length;
@@ -592,8 +708,8 @@ public final class Options {
     }
 
     /**
-     * Alle Änderungen in solverSteps werden in orgSolverSteps übernommen, orgSolverSteps bleibt
-     * allerdings weiterhin unsortiert (für XmlWriter)
+     * Alle Ã„nderungen in solverSteps werden in orgSolverSteps Ã¼bernommen, orgSolverSteps bleibt
+     * allerdings weiterhin unsortiert (fÃ¼r XmlWriter)
      */
     public void adjustOrgSolverSteps() {
         boolean somethingChanged = false;
@@ -761,6 +877,22 @@ public final class Options {
         // the same for solverStepsProgress
         instance.solverSteps = instance.copyStepConfigs(instance.orgSolverSteps, false, false, false);
         instance.solverStepsProgress = instance.copyStepConfigs(instance.orgSolverSteps, false, false, false, true);
+        
+        // reduction of standard scores in v 2.2 could lead to strange effects, if a user had
+        // changed the level scores manually (max scores could get out of order)
+        // we cant have this
+        boolean changed = false;
+        int maxScore = instance.difficultyLevels[1].getMaxScore();
+        for (int i = 2; i < instance.difficultyLevels.length; i++) {
+            if (instance.difficultyLevels[i].getMaxScore() <= maxScore) {
+                instance.difficultyLevels[i].setMaxScore(maxScore + 100);
+                changed = true;
+            }
+            maxScore = instance.difficultyLevels[i].getMaxScore();
+        }
+        if (changed) {
+            BackgroundGeneratorThread.getInstance().resetAll();
+        }
     }
 
     @SuppressWarnings("CallToThreadDumpStack")
@@ -1182,6 +1314,93 @@ public final class Options {
      */
     public void setUseOrInsteadOfAndForFilter(boolean useOrInsteadOfAndForFilter) {
         this.useOrInsteadOfAndForFilter = useOrInsteadOfAndForFilter;
+    }
+
+    /**
+     * @return the useDefaultFontSize
+     */
+    public boolean isUseDefaultFontSize() {
+        return useDefaultFontSize;
+    }
+
+    /**
+     * @param useDefaultFontSize the useDefaultFontSize to set
+     */
+    public void setUseDefaultFontSize(boolean useDefaultFontSize) {
+        this.useDefaultFontSize = useDefaultFontSize;
+    }
+
+    /**
+     * @return the customFontSize
+     */
+    public int getCustomFontSize() {
+        return customFontSize;
+    }
+
+    /**
+     * @param customFontSize the customFontSize to set
+     */
+    public void setCustomFontSize(int customFontSize) {
+        this.customFontSize = customFontSize;
+    }
+
+    /**
+     * @return the allStepsAlsChainLength
+     */
+    public int getAllStepsAlsChainLength() {
+        return allStepsAlsChainLength;
+    }
+
+    /**
+     * @param allStepsAlsChainLength the allStepsAlsChainLength to set
+     */
+    public void setAllStepsAlsChainLength(int allStepsAlsChainLength) {
+        this.allStepsAlsChainLength = allStepsAlsChainLength;
+    }
+
+    /**
+     * @return the colorKuColors
+     */
+    public Color[] getColorKuColors() {
+        return colorKuColors;
+    }
+
+    public Color getColorKuColor(int n) {
+        return (((n >= 1) && (n <= colorKuColors.length)) ? colorKuColors[n - 1] : Color.black);
+    }
+    /**
+     * @param colorKuColors the colorKuColors to set
+     */
+    public void setColorKuColors(Color[] colorKuColors) {
+        this.colorKuColors = colorKuColors;
+    }
+
+    /**
+     * @return the colorCells
+     */
+    public boolean isColorCells() {
+        return colorCells;
+    }
+
+    /**
+     * @param colorCells the colorCells to set
+     */
+    public void setColorCells(boolean colorCells) {
+        this.colorCells = colorCells;
+    }
+
+    /**
+     * @return the allStepsAlsChainForwardOnly
+     */
+    public boolean isAllStepsAlsChainForwardOnly() {
+        return allStepsAlsChainForwardOnly;
+    }
+
+    /**
+     * @param allStepsAlsChainForwardOnly the allStepsAlsChainForwardOnly to set
+     */
+    public void setAllStepsAlsChainForwardOnly(boolean allStepsAlsChainForwardOnly) {
+        this.allStepsAlsChainForwardOnly = allStepsAlsChainForwardOnly;
     }
 
     private static class ProgressComparator implements Comparator<StepConfig> {
@@ -1953,5 +2172,117 @@ public final class Options {
      */
     public void setHistorySize(int aHistorySize) {
         historySize = aHistorySize;
+    }
+
+    /**
+     * @return the showColorKu
+     */
+    public boolean isShowColorKu() {
+        return showColorKu;
+    }
+
+    /**
+     * @param showColorKu the showColorKu to set
+     */
+    public void setShowColorKu(boolean showColorKu) {
+        this.showColorKu = showColorKu;
+    }
+
+//    /**
+//     * @return the colorKuInvalidColor
+//     */
+//    public Color getColorKuInvalidColor() {
+//        return colorKuInvalidColor;
+//    }
+//
+//    /**
+//     * @param colorKuInvalidColor the colorKuInvalidColor to set
+//     */
+//    public void setColorKuInvalidColor(Color colorKuInvalidColor) {
+//        this.colorKuInvalidColor = colorKuInvalidColor;
+//    }
+//
+//    /**
+//     * @return the colorKuDeviationColor
+//     */
+//    public Color getColorKuDeviationColor() {
+//        return colorKuDeviationColor;
+//    }
+//
+//    /**
+//     * @param colorKuDeviationColor the colorKuDeviationColor to set
+//     */
+//    public void setColorKuDeviationColor(Color colorKuDeviationColor) {
+//        this.colorKuDeviationColor = colorKuDeviationColor;
+//    }
+
+    /**
+     * @return the defaultImageDir
+     */
+    public String getDefaultImageDir() {
+        return defaultImageDir;
+    }
+
+    /**
+     * @param defaultImageDir the defaultImageDir to set
+     */
+    public void setDefaultImageDir(String defaultImageDir) {
+        this.defaultImageDir = defaultImageDir;
+    }
+
+    /**
+     * @return the showColorKuAct
+     */
+    public boolean isShowColorKuAct() {
+        return showColorKuAct;
+    }
+
+    /**
+     * @param showColorKuAct the showColorKuAct to set
+     */
+    public void setShowColorKuAct(boolean showColorKuAct) {
+        this.showColorKuAct = showColorKuAct;
+    }
+
+    /**
+     * @return the onlySmallFilters
+     */
+    public boolean isOnlySmallFilters() {
+        return onlySmallFilters;
+    }
+
+    /**
+     * @param onlySmallFilters the onlySmallFilters to set
+     */
+    public void setOnlySmallFilters(boolean onlySmallFilters) {
+        this.onlySmallFilters = onlySmallFilters;
+    }
+
+    /**
+     * @return the editModeAutoAdvance
+     */
+    public boolean isEditModeAutoAdvance() {
+        return editModeAutoAdvance;
+    }
+
+    /**
+     * @param editModeAutoAdvance the editModeAutoAdvance to set
+     */
+    public void setEditModeAutoAdvance(boolean editModeAutoAdvance) {
+        this.editModeAutoAdvance = editModeAutoAdvance;
+    }
+
+    /**
+     * @return the boxLineFactor
+     */
+    public double getBoxLineFactor() {
+        return boxLineFactor;
+    }
+
+    /**
+     * @param boxLineFactor the boxLineFactor to set
+     */
+    public void setBoxLineFactor(double boxLineFactor) {
+        this.boxLineFactor = boxLineFactor;
     }
 }

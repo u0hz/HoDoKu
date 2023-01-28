@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-11  Bernhard Hobiger
+ * Copyright (C) 2008-12  Bernhard Hobiger
  *
  * This file is part of HoDoKu.
  *
@@ -47,6 +47,7 @@ import javax.swing.tree.TreeSelectionModel;
  */
 public class ConfigSolverPanel extends javax.swing.JPanel
 implements ListDragAndDropChange {
+    private static final long serialVersionUID = 1L;
     private StepConfig[] steps;
     private DefaultListModel model;
     private int dropIndex = -1;
@@ -55,13 +56,13 @@ implements ListDragAndDropChange {
     private Stroke dndStroke;
     
     // wird true gesetzt, nachdem ein Eintrag selektiert wurde; beim
-    // nächsten Klick wird dann getoggelt
+    // nÃ¤chsten Klick wird dann getoggelt
     private boolean firstSelected = false;
     
     private boolean listView = false; // absichtlich verkehrt, damit stepList gesetzt wird
     
     /** Creates new form ConfigSolverPanel */
-    @SuppressWarnings("ResultOfObjectAllocationIgnored")
+    @SuppressWarnings({"ResultOfObjectAllocationIgnored", "unchecked"})
     public ConfigSolverPanel() {
         initComponents();
         
@@ -397,6 +398,7 @@ implements ListDragAndDropChange {
         }
     }//GEN-LAST:event_stepListMouseClicked
     
+    @SuppressWarnings("unchecked")
     private void moveOneStep(int index, boolean up) {
         //System.out.println("move one step: " + index + "/" + up);
         int toIndex = up ? index + 1 : index - 1;
@@ -445,13 +447,14 @@ implements ListDragAndDropChange {
     }
     
     public void okPressed() {
-        // Alle Werte übernehmen
+        // Alle Werte Ã¼bernehmen
         Options.getInstance().solverSteps = Options.getInstance().copyStepConfigs(steps, false, true);
         Options.getInstance().adjustOrgSolverSteps();
     }
     
+    @SuppressWarnings("unchecked")
     private void initAll(boolean setDefault) {
-        // Zuerst die Daten zurücksetzen
+        // Zuerst die Daten zurÃ¼cksetzen
         if (setDefault) {
             steps = Options.getInstance().copyStepConfigs(Options.DEFAULT_SOLVER_STEPS, true, false);
         } else {
@@ -476,10 +479,11 @@ implements ListDragAndDropChange {
     public void buildTree() {
         CheckNode root = new CheckNode();
         for (int i = 0; i < steps.length; i++) {
-            Enumeration en = root.children();
+            @SuppressWarnings("unchecked")
+            Enumeration<CheckNode> en = (Enumeration<CheckNode>)root.children();
             CheckNode act = null;
             while (en.hasMoreElements()) {
-                act = (CheckNode)en.nextElement();
+                act = en.nextElement();
                 if (act.getCategory() == steps[i].getCategory()) {
                     break;
                 }
@@ -539,10 +543,11 @@ implements ListDragAndDropChange {
     }
     
     class CheckBoxRenderer extends JCheckBox implements ListCellRenderer {
+        private static final long serialVersionUID = 1L;
         private boolean isTargetCell;
         private int index;
         
-        public CheckBoxRenderer() {
+        CheckBoxRenderer() {
         }
         
         @Override
@@ -634,7 +639,7 @@ implements ListDragAndDropChange {
         }
         private void update(DocumentEvent e) {
             String txt = scoreTextField.getText().trim();
-            if (txt == null || txt.equals("")) {
+            if (txt == null || txt.isEmpty()) {
                 return;
             }
             StepConfig conf = (StepConfig)stepList.getSelectedValue();

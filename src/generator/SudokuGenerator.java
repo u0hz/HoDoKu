@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-11  Bernhard Hobiger
+ * Copyright (C) 2008-12  Bernhard Hobiger
  *
  * This file is part of HoDoKu.
  *
@@ -38,6 +38,9 @@ import sudoku.SudokuStatus;
  * @author hobiwan
  */
 public class SudokuGenerator {
+    /** Debug flag */
+    private static final boolean DEBUG = false;
+    
     /** Maximum number of tries when generating a puzzle using a pattern */
     private static final int MAX_TRIES = 1000000;
 
@@ -165,7 +168,7 @@ public class SudokuGenerator {
 
     /**
      * Solves a sudoku given by a 81 int array.
-     * @param sudokuString
+     * @param cellValues 
      */
     public void solve(int[] cellValues) {
 //        System.out.println("start solving " + getSolutionAsString(cellValues));
@@ -210,8 +213,14 @@ public class SudokuGenerator {
         anzHS = 0;
         solutionCount = 0;
         // first set all Singles exposed by building up the Sudoku grid
+        if (DEBUG) {
+            System.out.println("solve start:");
+        }
         if (!setAllExposedSingles(stack[0].sudoku)) {
             // puzzle was invalid all along
+            if (DEBUG) {
+                System.out.println("  puzzle was invalid!");
+            }
             return;
         }
 //        setNanos += System.nanoTime() - actSetNanos;
@@ -221,6 +230,9 @@ public class SudokuGenerator {
             // already solved, nothing to do
             solution = Arrays.copyOf(stack[0].sudoku.getValues(), Sudoku2.LENGTH);
             solutionCount++;
+            if (DEBUG) {
+                System.out.println("  puzzle was already solved!");
+            }
             return;
         }
         int level = 0;
@@ -235,6 +247,9 @@ public class SudokuGenerator {
                     solution = Arrays.copyOf(stack[level].sudoku.getValues(), Sudoku2.LENGTH);
                 } else if (solutionCount > 1) {
                     // but not more than 1000
+                    if (DEBUG) {
+                        System.out.println("  puzzle has more than one solution (" + solutionCount + ")!");
+                    }
                     return;
                 }
             } else {
@@ -251,6 +266,11 @@ public class SudokuGenerator {
                     }
                 }
                 level++;
+                // missing candidates lead to exception -> avoid that
+                if (index < 0) {
+                    solutionCount = 0;
+                    return;
+                }
                 stack[level].index = (short) index;
                 stack[level].candidates = Sudoku2.POSSIBLE_VALUES[stack[level - 1].sudoku.getCell(index)];
                 stack[level].candIndex = 0;
@@ -292,6 +312,9 @@ public class SudokuGenerator {
                 break;
             }
         }
+        if (DEBUG) {
+            System.out.println("  puzzle has " + solutionCount + " solution!");
+        }
     }
 
     /**
@@ -301,7 +324,6 @@ public class SudokuGenerator {
      * 
      * This method is used by the {@link BackgroundGenerator}.
      * 
-     * @param level
      * @param symmetric
      * @return
      */
@@ -530,8 +552,11 @@ public class SudokuGenerator {
             // get the next position to try
             int i = rand.nextInt(81);
             do {
-                if( i < 80 ) i++;
-                else i = 0;
+                if( i < 80 ) {
+                    i++;
+                } else {
+                    i = 0;
+                }
             } while (used[i]);
             used[i] = true;
             usedCount--;
@@ -590,6 +615,9 @@ public class SudokuGenerator {
                     // only set the cell if the Single is still valid
                     anzNS++;
                     valid = sudoku.setCell(index, value, false, false);
+                    if (DEBUG && ! valid) {
+                        System.out.println("   NS " + index + "/" + value + "/" + valid);
+                    }
                 }
             }
             // then all Hidden Singles
@@ -600,6 +628,9 @@ public class SudokuGenerator {
                     // only set the cell if the Single is still valid
                     anzHS++;
                     valid = sudoku.setCell(index, value, false, false);
+                    if (DEBUG && ! valid) {
+                        System.out.println("   HS " + index + "/" + value + "/" + valid);
+                    }
                 }
             }
         } while (valid && !(nsQueue.isEmpty() && hsQueue.isEmpty()));

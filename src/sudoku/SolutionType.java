@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-11  Bernhard Hobiger
+ * Copyright (C) 2008-12  Bernhard Hobiger
  *
  * This file is part of HoDoKu.
  *
@@ -140,7 +140,7 @@ public enum SolutionType {
     private String argName;
 
     SolutionType() {
-        // für XMLEncoder
+        // fÃ¼r XMLEncoder
     }
 
     SolutionType(String stepName, String libraryType, String argName) {
@@ -176,7 +176,21 @@ public enum SolutionType {
                 // same category -> type.ordinal can be used
                 // unfortunately not!
                 //return ordinal() - t.ordinal();
-                return getFishSize() - t.getFishSize();
+                int size = getFishSize() - t.getFishSize();
+                if (size != 0) {
+                    return size;
+                }
+                // same category and same size: check for Finned/Sashimi
+                boolean sl = isSashimiFish();
+                boolean sr = t.isSashimiFish();
+                if (sl && sr || ! sl && ! sr) {
+                    // both are sashimi or both are not sashimi -> equal
+                    return 0;
+                } else if (sl) {
+                    return 1;
+                } else {
+                    return -1;
+                }
             }
         }
         // for non-fishes use the sort order of the solver
@@ -282,9 +296,10 @@ public enum SolutionType {
      * @return The StepConfig appropriate for type
      */
     public static StepConfig getStepConfig(SolutionType type) {
-        if (type == SolutionType.LOCKED_CANDIDATES_1 || type == SolutionType.LOCKED_CANDIDATES_2) {
-            type = SolutionType.LOCKED_CANDIDATES;
-        }
+        // Split Locked Candidates in two
+//        if (type == SolutionType.LOCKED_CANDIDATES_1 || type == SolutionType.LOCKED_CANDIDATES_2) {
+//            type = SolutionType.LOCKED_CANDIDATES;
+//        }
         if (type == SolutionType.CONTINUOUS_NICE_LOOP || type == SolutionType.DISCONTINUOUS_NICE_LOOP ||
                 type == SolutionType.AIC) {
             type = SolutionType.NICE_LOOP;

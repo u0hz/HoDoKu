@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-11  Bernhard Hobiger
+ * Copyright (C) 2008-12  Bernhard Hobiger
  *
  * This file is part of HoDoKu.
  *
@@ -53,7 +53,9 @@ public class WingSolver extends AbstractSolver {
     /** The second index of the strong link for W-Wings */
     private int wIndex2 = -1;
     
-    /** Creates a new instance of WingSolver */
+    /** Creates a new instance of WingSolver
+     * @param finder 
+     */
     public WingSolver(SudokuStepFinder finder) {
         super(finder);
     }
@@ -136,7 +138,7 @@ public class WingSolver extends AbstractSolver {
      * Spalte des ersten Elements (zweites Element in Spalte: nur Zeile) eine dritte Bivalue-Zelle, die
      * den neuen Kandidaten mit der zweiten Zelle gemeinsam hat und deren zweiter Kandidat der
      * fehlende Kandidat der ersten Zelle ist - yz (yz). Alle Zellen die die zweite und dritte Zelle
-     * (alle drei Zellen) sehen können, können z nicht als Kandidaten haben.
+     * (alle drei Zellen) sehen kÃ¶nnen, kÃ¶nnen z nicht als Kandidaten haben.
      */
     /**
      * Try all combinations of three bivalue cells (for xyz: one trivalue

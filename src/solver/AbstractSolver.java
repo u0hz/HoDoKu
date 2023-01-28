@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-11  Bernhard Hobiger
+ * Copyright (C) 2008-12  Bernhard Hobiger
  *
  * This file is part of HoDoKu.
  *
@@ -18,7 +18,7 @@
  */
 
 /*
- * Sudoku2-Grid mit Indices für Debugging:
+ * Sudoku2-Grid mit Indices fÃ¼r Debugging:
  *
  *      1  2  3    4  5  6    7  8  9
  *   +----------+----------+----------+
@@ -42,7 +42,6 @@ package solver;
 import sudoku.SolutionStep;
 import sudoku.SolutionType;
 import sudoku.Sudoku2;
-import sudoku.SudokuSet;
 
 /**
  *
@@ -54,9 +53,11 @@ public abstract class AbstractSolver {
     /** Every solver needs the sudoku... */
     protected Sudoku2 sudoku;
 
-    private SudokuSet tmpSet = new SudokuSet();
+//    private SudokuSet tmpSet = new SudokuSet();
     
-    /** Creates a new instance of AbstractSolver */
+    /** Creates a new instance of AbstractSolver
+     * @param finder 
+     */
     public AbstractSolver(SudokuStepFinder finder) {
         this.finder = finder;
     }

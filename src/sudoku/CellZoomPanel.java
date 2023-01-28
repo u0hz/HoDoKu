@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-11  Bernhard Hobiger
+ * Copyright (C) 2008-12  Bernhard Hobiger
  *
  * This file is part of HoDoKu.
  *
@@ -44,22 +44,22 @@ package sudoku;
 import java.awt.Color;
 import java.awt.Font;
 import java.awt.FontMetrics;
-import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Image;
 import java.awt.RenderingHints;
 import java.awt.image.BufferedImage;
 import java.util.ResourceBundle;
 import java.util.SortedMap;
+import javax.swing.Icon;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JPanel;
-import javax.swing.UIManager;
 
 /**
  *
  * @author hobiwan
  */
+@SuppressWarnings("serial")
 public class CellZoomPanel extends javax.swing.JPanel {
 
     private static final int X_OFFSET = 10;
@@ -86,34 +86,37 @@ public class CellZoomPanel extends javax.swing.JPanel {
     private int aktColor = -1;
     private SudokuPanel sudokuPanel;
     private int colorImageHeight = -1;
+    private Icon[] colorKuIcons = new Icon[9];
 
-    /** Creates new form CellZoomPanel */
+    /** Creates new form CellZoomPanel
+     * @param mainFrame 
+     */
     public CellZoomPanel(MainFrame mainFrame) {
         this.mainFrame = mainFrame;
 
         initComponents();
 
         setValueButtons = new JButton[]{
-                    setValueButton1, setValueButton2, setValueButton3,
-                    setValueButton4, setValueButton5, setValueButton6,
-                    setValueButton7, setValueButton8, setValueButton9
-                };
+            setValueButton1, setValueButton2, setValueButton3,
+            setValueButton4, setValueButton5, setValueButton6,
+            setValueButton7, setValueButton8, setValueButton9
+        };
         toggleCandidatesButtons = new JButton[]{
-                    toggleCandidatesButton1, toggleCandidatesButton2, toggleCandidatesButton3,
-                    toggleCandidatesButton4, toggleCandidatesButton5, toggleCandidatesButton6,
-                    toggleCandidatesButton7, toggleCandidatesButton8, toggleCandidatesButton9
-                };
+            toggleCandidatesButton1, toggleCandidatesButton2, toggleCandidatesButton3,
+            toggleCandidatesButton4, toggleCandidatesButton5, toggleCandidatesButton6,
+            toggleCandidatesButton7, toggleCandidatesButton8, toggleCandidatesButton9
+        };
         normButtonForeground = setValueButton1.getForeground();
         normButtonBackground = setValueButton1.getBackground();
 
-        cellPanels = new JPanel[] {
+        cellPanels = new JPanel[]{
             chooseCellColorM2Panel, chooseCellColorM1Panel, chooseCellColor0Panel,
             chooseCellColor1Panel, chooseCellColor2Panel, chooseCellColor3Panel,
             chooseCellColor4Panel, chooseCellColor5Panel, chooseCellColor6Panel,
             chooseCellColor7Panel, chooseCellColor8Panel, chooseCellColor9Panel
         };
 
-        candidatePanels = new JPanel[] {
+        candidatePanels = new JPanel[]{
             chooseCandidateColorM2Panel, chooseCandidateColorM1Panel, chooseCandidateColor0Panel,
             chooseCandidateColor1Panel, chooseCandidateColor2Panel, chooseCandidateColor3Panel,
             chooseCandidateColor4Panel, chooseCandidateColor5Panel, chooseCandidateColor6Panel,
@@ -122,10 +125,23 @@ public class CellZoomPanel extends javax.swing.JPanel {
 
         jFontButton.setVisible(false);
         buttonFont = jFontButton.getFont();
-        buttonFontSize = buttonFont.getSize();
+//        buttonFontSize = buttonFont.getSize();
+        buttonFontSize = 11;
         defaultButtonFontSize = buttonFontSize;
-        defaultButtonHeight = jFontButton.getHeight();
+        // the height of the button is not adjusted when the font changes
+        // -> calculate the height from the font height
+//        FontMetrics metrics = getFontMetrics(buttonFont);
+//        defaultButtonHeight = jFontButton.getHeight();
+        defaultButtonHeight = 23;
         iconFont = new Font(buttonFont.getName(), buttonFont.getStyle(), defaultButtonFontSize - DIFF_SIZE);
+//        System.out.println("jFOntButton: " + defaultButtonHeight + "/" + metrics.getHeight() + "/" + buttonFontSize + "/" + buttonFont + "/" + iconFont);
+
+        int fontSize = 12;
+        if (getFont().getSize() > 12) {
+            fontSize = getFont().getSize();
+        }
+        Font font = titleLabel.getFont();
+        titleLabel.setFont(new Font(font.getName(), Font.BOLD, fontSize));
 
         calculateLayout();
     }
@@ -963,7 +979,7 @@ public class CellZoomPanel extends javax.swing.JPanel {
                 break;
             }
         }
-        if (! found) {
+        if (!found) {
             for (int i = 0; i < candidatePanels.length; i++) {
                 if (panel == candidatePanels[i]) {
                     colorNumber = i - 2; // adjust for -1 and -2
@@ -978,7 +994,7 @@ public class CellZoomPanel extends javax.swing.JPanel {
             mainFrame.setColoring(colorNumber, isCell);
         }
     }
-    
+
     public final void calculateLayout() {
         if (defaultButtonHeight == -1) {
             // not yet initialized!
@@ -988,12 +1004,17 @@ public class CellZoomPanel extends javax.swing.JPanel {
         int height = getHeight();
         int y = Y_OFFSET;
 
+        // adjust height and width for the labels
+        FontMetrics metrics = getFontMetrics(getFont());
+        int textHeight = metrics.getHeight();
+
         // calculate widths and height of components
         // how much vertical space is actually available?
-        int labelHeight = setValueLabel.getHeight();
-        labelHeight += toggleCandidatesLabel.getHeight();
-        labelHeight += cellColorLabel.getHeight();
-        labelHeight += chooseCandidateColorLabel.getHeight();
+//        int labelHeight = setValueLabel.getHeight();
+//        labelHeight += toggleCandidatesLabel.getHeight();
+//        labelHeight += cellColorLabel.getHeight();
+//        labelHeight += chooseCandidateColorLabel.getHeight();
+        int labelHeight = 4 * textHeight;
         int availableVert = height - Y_OFFSET - 4 * (SMALL_GAP + LARGE_GAP) - labelHeight;
 
         // try default sizes
@@ -1010,55 +1031,66 @@ public class CellZoomPanel extends javax.swing.JPanel {
             colorPanelHeight -= (120 - buttonPanelHeight);
             buttonPanelHeight = 120;
         }
-        int colorPanelGesWidth = (int) (colorPanelHeight * 4);
+        int colorPanelGesWidth = colorPanelHeight * 4;
         if (colorPanelGesWidth > width - 2 * X_OFFSET) {
             colorPanelHeight = (int) ((width - 2 * X_OFFSET) / 4.5);
         }
-        colorPanelGesWidth = (int) (colorPanelHeight * 4);
-        colorImageHeight = colorPanelHeight * 2 / 3;
+        colorPanelGesWidth = colorPanelHeight * 4;
+        int newColorImageHeight = colorPanelHeight * 2 / 3;
 
         // ok, do the layout
-        titleLabel.setSize(width, titleLabel.getHeight());
-        setValueLabel.setSize(width - 2 * X_OFFSET, setValueLabel.getHeight());
+//        titleLabel.setSize(width, titleLabel.getHeight());
+        titleLabel.setSize(width, textHeight);
+//        setValueLabel.setSize(width - 2 * X_OFFSET, setValueLabel.getHeight());
+        setValueLabel.setSize(width - 2 * X_OFFSET, textHeight);
         setValueLabel.setLocation(X_OFFSET, y);
-        y += setValueLabel.getHeight();
+//        y += setValueLabel.getHeight();
+        y += textHeight;
         y += SMALL_GAP;
         setValuePanel.setSize(buttonPanelHeight, buttonPanelHeight);
         setValuePanel.setLocation((width - buttonPanelHeight) / 2, y);
         setValuePanel.doLayout();
         y += buttonPanelHeight;
         y += LARGE_GAP;
-        toggleCandidatesLabel.setSize(width - 2 * X_OFFSET, toggleCandidatesLabel.getHeight());
+//        toggleCandidatesLabel.setSize(width - 2 * X_OFFSET, toggleCandidatesLabel.getHeight());
+        toggleCandidatesLabel.setSize(width - 2 * X_OFFSET, textHeight);
         toggleCandidatesLabel.setLocation(X_OFFSET, y);
-        y += toggleCandidatesLabel.getHeight();
+//        y += toggleCandidatesLabel.getHeight();
+        y += textHeight;
         y += SMALL_GAP;
         toggleCandidatesPanel.setSize(buttonPanelHeight, buttonPanelHeight);
         toggleCandidatesPanel.setLocation((width - buttonPanelHeight) / 2, y);
         toggleCandidatesPanel.doLayout();
 
         int cpx = (width - colorPanelGesWidth) / 2;
-        y = height - 2 * (SMALL_GAP + LARGE_GAP) - cellColorLabel.getHeight() -
-                chooseCandidateColorLabel.getHeight() - 2 * colorPanelHeight;
-        cellColorLabel.setSize(width - 2 * X_OFFSET, cellColorLabel.getHeight());
+//        y = height - 2 * (SMALL_GAP + LARGE_GAP) - cellColorLabel.getHeight() -
+//                chooseCandidateColorLabel.getHeight() - 2 * colorPanelHeight;
+        y = height - 2 * (SMALL_GAP + LARGE_GAP) - textHeight
+                - textHeight - 2 * colorPanelHeight;
+//        cellColorLabel.setSize(width - 2 * X_OFFSET, cellColorLabel.getHeight());
+        cellColorLabel.setSize(width - 2 * X_OFFSET, textHeight);
         cellColorLabel.setLocation(X_OFFSET, y);
-        y += cellColorLabel.getHeight();
+//        y += cellColorLabel.getHeight();
+        y += textHeight;
         y += SMALL_GAP;
         cellColorPanel.setSize(colorPanelHeight * 2 / 3, colorPanelHeight * 2 / 3);
         cellColorPanel.setLocation(cpx, y + colorPanelHeight / 6);
         cellColorPanel.doLayout();
-        chooseCellColorPanel.setSize((int) (3 * colorPanelHeight), colorPanelHeight);
+        chooseCellColorPanel.setSize((3 * colorPanelHeight), colorPanelHeight);
         chooseCellColorPanel.setLocation(cpx + colorPanelHeight, y);
         chooseCellColorPanel.doLayout();
         y += colorPanelHeight;
         y += LARGE_GAP;
-        chooseCandidateColorLabel.setSize(width - 2 * X_OFFSET, chooseCandidateColorLabel.getHeight());
+//        chooseCandidateColorLabel.setSize(width - 2 * X_OFFSET, chooseCandidateColorLabel.getHeight());
+        chooseCandidateColorLabel.setSize(width - 2 * X_OFFSET, textHeight);
         chooseCandidateColorLabel.setLocation(X_OFFSET, y);
-        y += chooseCandidateColorLabel.getHeight();
+//        y += chooseCandidateColorLabel.getHeight();
+        y += textHeight;
         y += SMALL_GAP;
         candidateColorPanel.setSize(colorPanelHeight * 2 / 3, colorPanelHeight * 2 / 3);
         candidateColorPanel.setLocation(cpx, y + colorPanelHeight / 6);
         candidateColorPanel.doLayout();
-        chooseCandidateColorPanel.setSize((int) (3 * colorPanelHeight), colorPanelHeight);
+        chooseCandidateColorPanel.setSize((3 * colorPanelHeight), colorPanelHeight);
         chooseCandidateColorPanel.setLocation(cpx + colorPanelHeight, y);
         chooseCandidateColorPanel.doLayout();
 
@@ -1073,6 +1105,14 @@ public class CellZoomPanel extends javax.swing.JPanel {
             for (int i = 0; i < setValueButtons.length; i++) {
                 setValueButtons[i].setFont(buttonFont);
                 toggleCandidatesButtons[i].setFont(buttonFont);
+            }
+        }
+        // ColorKu icons should be the same size as the candidate numbers
+        // icons are only created, if colorKu mode is active
+        if (newColorImageHeight > 0 && Options.getInstance().isShowColorKuAct() && newColorImageHeight != colorImageHeight) {
+            colorImageHeight = newColorImageHeight;
+            for (int i = 0; i < colorKuIcons.length; i++) {
+                colorKuIcons[i] = new ImageIcon(new ColorKuImage(colorImageHeight, Options.getInstance().getColorKuColor(i + 1)));
             }
         }
         repaint();
@@ -1096,6 +1136,7 @@ public class CellZoomPanel extends javax.swing.JPanel {
      * @param aktColor
      * @param index
      * @param colorCellOrCandidate
+     * @param singleCell 
      * @param coloredCells
      * @param coloredCandidates
      */
@@ -1125,14 +1166,26 @@ public class CellZoomPanel extends javax.swing.JPanel {
             for (int i = 0; i < values.size(); i++) {
                 int cand = values.get(i) - 1;
                 if (cand >= 0 && cand <= 8) {
-                    setValueButtons[cand].setText(NUMBERS[cand]);
+                    if (Options.getInstance().isShowColorKuAct()) {
+                        setValueButtons[cand].setText(null);
+                        setValueButtons[cand].setIcon(colorKuIcons[cand]);
+                    } else {
+                        setValueButtons[cand].setText(NUMBERS[cand]);
+                        setValueButtons[cand].setIcon(null);
+                    }
                     setValueButtons[cand].setEnabled(true);
                 }
             }
             for (int i = 0; i < candidates.size(); i++) {
                 int cand = candidates.get(i) - 1;
                 if (cand >= 0 && cand <= 8) {
-                    toggleCandidatesButtons[cand].setText(NUMBERS[cand]);
+                    if (Options.getInstance().isShowColorKuAct()) {
+                        toggleCandidatesButtons[cand].setText(null);
+                        toggleCandidatesButtons[cand].setIcon(colorKuIcons[cand]);
+                    } else {
+                        toggleCandidatesButtons[cand].setText(NUMBERS[cand]);
+                        toggleCandidatesButtons[cand].setIcon(null);
+                    }
                     toggleCandidatesButtons[cand].setEnabled(true);
                 }
             }
@@ -1193,14 +1246,19 @@ public class CellZoomPanel extends javax.swing.JPanel {
             g.setColor(color);
             g.fillRect(0, 0, size, size);
             if (cand > 0) {
-                g.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
-                g.setFont(iconFont);
-                FontMetrics fm = g.getFontMetrics();
-                String str = String.valueOf(cand);
-                int strWidth = fm.stringWidth(str);
-                int strHeight = fm.getAscent();
-                g.setColor(normButtonForeground);
-                g.drawString(String.valueOf(cand), (size - strWidth) / 2, (size + strHeight - 2) / 2);
+                if (Options.getInstance().isShowColorKuAct()) {
+                    BufferedImage cImg = new ColorKuImage(size, Options.getInstance().getColorKuColor(cand));
+                    g.drawImage(cImg, 0, 0, null);
+                } else {
+                    g.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+                    g.setFont(iconFont);
+                    FontMetrics fm = g.getFontMetrics();
+                    String str = String.valueOf(cand);
+                    int strWidth = fm.stringWidth(str);
+                    int strHeight = fm.getAscent();
+                    g.setColor(normButtonForeground);
+                    g.drawString(String.valueOf(cand), (size - strWidth) / 2, (size + strHeight - 2) / 2);
+                }
             }
             return new ImageIcon(img);
         } else {
@@ -1208,18 +1266,18 @@ public class CellZoomPanel extends javax.swing.JPanel {
         }
     }
 
-    private void initButton(JButton button, Color color) {
-        //button.setText(" ");
-        Image img = new BufferedImage(10, 10, BufferedImage.TYPE_INT_RGB);
-        Graphics g = img.getGraphics();
-        g.setColor(color);
-        g.fillRect(0, 0, 10, 10);
-        button.setIcon(new ImageIcon(img));
-        if (UIManager.getLookAndFeel().getName().equals("CDE/Motif")) {
-            button.setBackground(color);
-        }
-    }
-
+//    private void initButton(JButton button, Color color) {
+//        //button.setText(" ");
+//        Image img = new BufferedImage(10, 10, BufferedImage.TYPE_INT_RGB);
+//        Graphics g = img.getGraphics();
+//        g.setColor(color);
+//        g.fillRect(0, 0, 10, 10);
+//        button.setIcon(new ImageIcon(img));
+//        if (UIManager.getLookAndFeel().getName().equals("CDE/Motif")) {
+//            button.setBackground(color);
+//        }
+//    }
+//
     private void printSize() {
 //        System.out.println(getDimensions(this, "cellZoomPanel"));
 //

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-11  Bernhard Hobiger
+ * Copyright (C) 2008-12  Bernhard Hobiger
  *
  * This file is part of HoDoKu.
  *
@@ -74,7 +74,9 @@ public class UniquenessSolver extends AbstractSolver {
     /** A flag that indicates if the last search was for ARs */
     private boolean lastSearchWasAR = false;
 
-    /** Creates a new instance of SimpleSolver */
+    /** Creates a new instance of SimpleSolver
+     * @param finder 
+     */
     public UniquenessSolver(SudokuStepFinder finder) {
         super(finder);
     }
@@ -343,10 +345,10 @@ public class UniquenessSolver extends AbstractSolver {
     /**
      * - Feststellen, in welcher Unit1 sich die Zelle befindet
      * - alle anderen Zellen dieser Unit1 anschauen, die im selben Block sind
-     * - wenn eine Zelle die selben zwei Kandidaten (plus beliebig viele andere) hat, f¸r beide Zellen
+     * - wenn eine Zelle die selben zwei Kandidaten (plus beliebig viele andere) hat, f√ºr beide Zellen
      *   die Unit2 finden
      * - Alle Zellen dieser Unit2(s) durchgehen, die nicht im selben Block wie die Unit1(s) sind
-     * - Wenn beide Zellen die selben beiden Kandidaten haben -> mˆgliches Unique Rectangle, SolutionStep pr¸fen
+     * - Wenn beide Zellen die selben beiden Kandidaten haben -> m√∂gliches Unique Rectangle, SolutionStep pr√ºfen
      * 
      * when checking for avoidable rectangles some rules change: index11/index12 have
      * to be solved cells, they designate the candidates; the other side of the
@@ -447,6 +449,20 @@ public class UniquenessSolver extends AbstractSolver {
         // collects all cells that contain only cand1 and/or cand2 in twoCandidates
         // and all canddiates in the UR except cand1 and cand2 in additionalCandidates
         initCheck(indexe);
+        
+        // TODO: Delete code before making a release
+        // ignore all steps, where not all cells hold both candidates
+//        boolean missing = false;
+//        for (int i = 0; i < indexe.length; i++) {
+//            if (! sudoku.isCandidate(indexe[i], cand1) || ! sudoku.isCandidate(indexe[i], cand2)) {
+//                // UR has missing candidates
+//                missing = true;
+//            }
+//        }
+//        if(! missing) {
+//            return null;
+//        }
+        // END TODO
 
         SolutionStep step = null;
         int twoSize = twoCandidates.size();

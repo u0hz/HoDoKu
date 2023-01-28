@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-11  Bernhard Hobiger
+ * Copyright (C) 2008-12  Bernhard Hobiger
  *
  * This file is part of HoDoKu.
  *
@@ -59,8 +59,10 @@ import solver.SudokuSolverFactory;
  *
  * @author hobiwan
  */
+@SuppressWarnings("serial")
 public class PrintSolutionDialog extends javax.swing.JDialog implements Printable {
     private static final double LINE_HEIGHT = 1.2;
+    private static final long serialVersionUID = 1L;
     
     private SolutionStep[] steps = null;
     private boolean[] selected = null;
@@ -88,7 +90,13 @@ public class PrintSolutionDialog extends javax.swing.JDialog implements Printabl
     private boolean printDone;
 
 
-    /** Creates new form PrintSolutionDialog */
+    /** Creates new form PrintSolutionDialog
+     * @param parent
+     * @param modal 
+     * @param stepsAsList
+     * @param initialState  
+     */
+    @SuppressWarnings("unchecked")
     public PrintSolutionDialog(java.awt.Frame parent, boolean modal, List<SolutionStep> stepsAsList, String initialState) {
         super(parent, modal);
         initComponents();
@@ -97,6 +105,7 @@ public class PrintSolutionDialog extends javax.swing.JDialog implements Printabl
 
         KeyStroke escapeKeyStroke = KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0, false);
         Action escapeAction = new AbstractAction() {
+            private static final long serialVersionUID = 1L;
             @Override
             public void actionPerformed(ActionEvent e) {
                 setVisible( false );
@@ -419,7 +428,7 @@ public class PrintSolutionDialog extends javax.swing.JDialog implements Printabl
         StringWriter writer = new StringWriter();
         PrintWriter out = new PrintWriter(new BufferedWriter(writer));
         String title = titleTextField.getText();
-        if (! title.equals("")) {
+        if (! title.isEmpty()) {
             out.println(title);
             out.println();
         }
@@ -580,7 +589,7 @@ public class PrintSolutionDialog extends javax.swing.JDialog implements Printabl
             printG2.setFont(bigFont);
             FontMetrics metrics = printG2.getFontMetrics();
             String title = titleTextField.getText();
-            if (!title.equals("")) {
+            if (!title.isEmpty()) {
                 int textWidth = metrics.stringWidth(title);
                 int textHeight = metrics.getHeight();
                 y = (int) (LINE_HEIGHT * textHeight);
@@ -720,9 +729,10 @@ public class PrintSolutionDialog extends javax.swing.JDialog implements Printabl
         });
     }
 
-    class CheckBoxRenderer extends JCheckBox implements ListCellRenderer {
+class CheckBoxRenderer extends JCheckBox implements ListCellRenderer {
+        private static final long serialVersionUID = 1L;
 
-        public CheckBoxRenderer() {
+        CheckBoxRenderer() {
         }
 
         @Override

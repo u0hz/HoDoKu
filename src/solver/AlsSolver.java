@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-11  Bernhard Hobiger
+ * Copyright (C) 2008-12  Bernhard Hobiger
  *
  * This file is part of HoDoKu.
  *
@@ -18,7 +18,6 @@
  */
 package solver;
 
-import sudoku.Chain;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -27,6 +26,7 @@ import java.util.List;
 import java.util.SortedMap;
 import java.util.TreeMap;
 import sudoku.Candidate;
+import sudoku.Chain;
 import sudoku.Options;
 import sudoku.SolutionStep;
 import sudoku.SolutionType;
@@ -40,7 +40,11 @@ import sudoku.SudokuSet;
 public class AlsSolver extends AbstractSolver {
 
     /** Enable additional trace output */
-    private static boolean DEBUG = true;
+    private static final boolean DEBUG = false;
+    /** Enable additional timing */
+    private static final boolean TIMING = false;
+    /** Maximum number of RCs in an ALS-Chain (forward search only!) */
+    private static final int MAX_RC = 50;
     /** A list holding all ALS present in the curent state of the gid. */
     private List<Als> alses = new ArrayList<Als>(500);
     /** A list with all restricted commons in the present grid. */
@@ -58,7 +62,7 @@ public class AlsSolver extends AbstractSolver {
     /** One step instance for optimization. */
     private SolutionStep globalStep = new SolutionStep(SolutionType.HIDDEN_SINGLE);
     /** The current ALS Chain: The chain consists only of its RCs. A chain cannot be longer than <code>chain.length</code>.*/
-    private RestrictedCommon[] chain = new RestrictedCommon[100];
+    private RestrictedCommon[] chain = new RestrictedCommon[MAX_RC];
     /** The index into {@link #chain} for the current search. */
     private int chainIndex = -1;
     /** The first RC in the current chain (always is {@link #chain}[0]; needed for test for eliminations, cached for performance reasons). */
@@ -97,6 +101,8 @@ public class AlsSolver extends AbstractSolver {
     private int stemCellIndex = 0;
     /** For various checks */
     private SudokuSet tmpSet = new SudokuSet();
+    /** For various checks */
+    private SudokuSet tmpSet1 = new SudokuSet();
     /** Statistics: Number of calls. */
     private static int anzCalls = 0;
     /** Statistics: Time for collectAllAlses(). */
@@ -106,7 +112,9 @@ public class AlsSolver extends AbstractSolver {
     /** Statistics: Total time. */
     private static long allNanos = 0;
 
-    /** Creates a new instance of AlsSolver */
+    /** Creates a new instance of AlsSolver
+     * @param finder 
+     */
     public AlsSolver(SudokuStepFinder finder) {
         super(finder);
         if (alsComparator == null) {
@@ -118,6 +126,8 @@ public class AlsSolver extends AbstractSolver {
     protected SolutionStep getStep(SolutionType type) {
         SolutionStep result = null;
         sudoku = finder.getSudoku();
+        // normal search: only forward references
+        finder.setRcOnlyForward(true);
         switch (type) {
             case ALS_XZ:
                 result = getAlsXZ(true);
@@ -126,6 +136,9 @@ public class AlsSolver extends AbstractSolver {
                 result = getAlsXYWing(true);
                 break;
             case ALS_XY_CHAIN:
+                if (chain.length != MAX_RC) {
+                    chain = new RestrictedCommon[MAX_RC];
+                }
                 result = getAlsXYChain();
                 break;
             case DEATH_BLOSSOM:
@@ -156,31 +169,46 @@ public class AlsSolver extends AbstractSolver {
 
     /**
      * Finds all ALS steps except Death Blossom present in the current grid.
-     * @return
+     * The parameters specify, which types should be searched.
+     * 
+     * @param doXz
+     * @param doXy
+     * @param doChain
+     * @return 
      */
-    protected List<SolutionStep> getAllAlses() {
+    protected List<SolutionStep> getAllAlses(boolean doXz, boolean doXy, boolean doChain) {
         sudoku = finder.getSudoku();
         List<SolutionStep> oldSteps = steps;
         List<SolutionStep> resultSteps = new ArrayList<SolutionStep>();
+        finder.setRcOnlyForward(Options.getInstance().isAllStepsAlsChainForwardOnly());
+        if (chain.length == MAX_RC) {
+            chain = new RestrictedCommon[Options.getInstance().getAllStepsAlsChainLength()];
+        }
         long millis1 = 0;
-        if (DEBUG) {
+        if (TIMING) {
             millis1 = System.nanoTime();
         }
         collectAllAlses();
         collectAllRestrictedCommons(Options.getInstance().isAllowAlsOverlap());
-        steps.clear();
-        getAlsXZInt(false);
-        Collections.sort(steps, alsComparator);
-        resultSteps.addAll(steps);
-        steps.clear();
-        getAlsXYWingInt(false);
-        Collections.sort(steps, alsComparator);
-        resultSteps.addAll(steps);
-        steps.clear();
-        getAlsXYChainInt();
-        Collections.sort(steps, alsComparator);
-        resultSteps.addAll(steps);
-        if (DEBUG) {
+        if (doXz) {
+            steps.clear();
+            getAlsXZInt(false);
+            Collections.sort(steps, alsComparator);
+            resultSteps.addAll(steps);
+        }
+        if (doXy) {
+            steps.clear();
+            getAlsXYWingInt(false);
+            Collections.sort(steps, alsComparator);
+            resultSteps.addAll(steps);
+        }
+        if (doChain) {
+            steps.clear();
+            getAlsXYChainInt();
+            Collections.sort(steps, alsComparator);
+            resultSteps.addAll(steps);
+        }
+        if (TIMING) {
             millis1 = System.nanoTime() - millis1;
 //            System.out.println("getAllAlses() total: " + (millis1 / 1000000.0) + "ms");
         }
@@ -198,7 +226,7 @@ public class AlsSolver extends AbstractSolver {
         List<SolutionStep> oldSteps = steps;
         List<SolutionStep> resultSteps = new ArrayList<SolutionStep>();
         long millis1 = 0;
-        if (DEBUG) {
+        if (TIMING) {
             millis1 = System.nanoTime();
         }
         collectAllAlses();
@@ -207,7 +235,7 @@ public class AlsSolver extends AbstractSolver {
         getAlsDeathBlossomInt(false);
         Collections.sort(steps, alsComparator);
         resultSteps.addAll(steps);
-        if (DEBUG) {
+        if (TIMING) {
             millis1 = System.nanoTime() - millis1;
 //            System.out.println("getAllDeathBlossoms() total: " + millis1 + "ms");
         }
@@ -279,7 +307,10 @@ public class AlsSolver extends AbstractSolver {
      * @return Next step or <code>null</code> if no step could be found.
      */
     private SolutionStep getAlsXZ(boolean onlyOne) {
-        long nanos = System.nanoTime();
+        long nanos = 0;
+        if (TIMING) {
+            nanos = System.nanoTime();
+        }
         anzCalls++;
         steps.clear();
         collectAllAlses();
@@ -289,8 +320,10 @@ public class AlsSolver extends AbstractSolver {
             Collections.sort(steps, alsComparator);
             step = steps.get(0);
         }
-        nanos = System.nanoTime() - nanos;
-        allNanos += nanos;
+        if (TIMING) {
+            nanos = System.nanoTime() - nanos;
+            allNanos += nanos;
+        }
         return step;
     }
 
@@ -319,8 +352,12 @@ public class AlsSolver extends AbstractSolver {
             if (rc.getCand2() != 0) {
                 // als1 and als2 are doubly linked -> check for additional eliminations
                 checkCandidatesToDelete(als1, als2, rc.getCand2());
-                checkDoublyLinkedAls(als1, als2, rc.getCand1(), rc.getCand2());
-                checkDoublyLinkedAls(als2, als1, rc.getCand1(), rc.getCand2());
+                boolean d1 = checkDoublyLinkedAls(als1, als2, rc.getCand1(), rc.getCand2());
+                boolean d2 = checkDoublyLinkedAls(als2, als1, rc.getCand1(), rc.getCand2());
+                if (d1 || d2) {
+                    // no common candidates for doublylinked als-xz
+                    globalStep.getFins().clear();
+                }
             }
             if (globalStep.getCandidatesToDelete().size() > 0) {
                 // Step zusammenbauen
@@ -491,10 +528,16 @@ public class AlsSolver extends AbstractSolver {
             }
             alsInChain[i] = true;
             firstRC = null;
+            if (DEBUG) {
+                System.out.println("============== Start search: " + i + " " + startAls);
+            }
             getAlsXYChainRecursive(i, null);
+            if (DEBUG) {
+                System.out.println("               End search: " + alses.get(i));
+            }
         }
         if (DEBUG) {
-//            System.out.println(steps.size() + " (maxRecDepth: " + maxRecDepth + ")");
+            System.out.println(steps.size() + " (maxRecDepth: " + maxRecDepth + ")");
         }
     }
 
@@ -512,8 +555,13 @@ public class AlsSolver extends AbstractSolver {
      */
     private void getAlsXYChainRecursive(int alsIndex, RestrictedCommon lastRC) {
         // check for end of recursion
-        if (alsIndex >= alses.size()) {
-            // nothing left to do
+        // wrong condition: the chain ends, when it becomes too long!
+//        if (alsIndex >= alses.size()) {
+//            // nothing left to do
+//            return;
+//        }
+        if (chainIndex >= chain.length) {
+            // no space left -> stop it!
             return;
         }
         recDepth++;
@@ -545,6 +593,9 @@ public class AlsSolver extends AbstractSolver {
             }
             chain[chainIndex++] = rc;
             alsInChain[rc.getAls2()] = true;
+            if (DEBUG) {
+//                showActAlsChain(recDepth);
+            }
             // if the chain length has reached at least 4 RCs check for candidates to eliminate
             if (chainIndex >= 3) {
                 globalStep.getCandidatesToDelete().clear();
@@ -638,6 +689,39 @@ public class AlsSolver extends AbstractSolver {
             }
         }
         recDepth--;
+    }
+    
+    /**
+     * For debugging only: show the current state of {@link #chain}.
+     * 
+     * @param recDepth 
+     */
+    private void showActAlsChain(int recDepth) {
+        if (DEBUG) {
+            globalStep.reset();
+            globalStep.setType(SolutionType.ALS_XY_CHAIN);
+            globalStep.addAls(startAls.indices, startAls.candidates);
+            Als tmpAls = startAls;
+            for (int j = 0; j < chainIndex; j++) {
+                Als tmp = alses.get(chain[j].getAls2());
+                globalStep.addAls(tmp.indices, tmp.candidates);
+                globalStep.addRestrictedCommon((RestrictedCommon) chain[j].clone());
+
+                // write all RCs for this chain (nothing has been done yet)
+                //if (DEBUG) System.out.println("chain[" + j + "]: " + chain[j] + " (" + tmpAls + "/" + tmp + ")");
+                if (chain[j].getActualRC() == 1 || chain[j].getActualRC() == 3) {
+                    addRestrictedCommonToStep(tmpAls, tmp, chain[j].getCand1(), true);
+                }
+                if (chain[j].getActualRC() == 2 || chain[j].getActualRC() == 3) {
+                    addRestrictedCommonToStep(tmpAls, tmp, chain[j].getCand2(), true);
+                }
+                tmpAls = tmp;
+            }
+            for (int i = 0; i < recDepth; i++) {
+                System.out.print(" ");
+            }
+            System.out.println(globalStep.toString(2));
+        }
     }
 
     /**
@@ -936,6 +1020,12 @@ public class AlsSolver extends AbstractSolver {
                 for (int l = 0; l < restrictedCommonBuddiesSet.size(); l++) {
                     globalStep.addCandidateToDelete(restrictedCommonBuddiesSet.get(l), cand);
                 }
+                //add the common candidates themselves as fins (for display only)
+                tmpSet1.set(als1.indicesPerCandidat[cand]);
+                tmpSet1.or(als2.indicesPerCandidat[cand]);
+                for (int l = 0; l < tmpSet1.size(); l++) {
+                    globalStep.addFin(tmpSet1.get(l), cand);
+                }
             }
         }
     }
@@ -996,14 +1086,15 @@ public class AlsSolver extends AbstractSolver {
      * @param rc1 The first Restricted Common
      * @param rc2 The second Restricted Common
      */
-    private void checkDoublyLinkedAls(Als als1, Als als2, int rc1, int rc2) {
+    private boolean checkDoublyLinkedAls(Als als1, Als als2, int rc1, int rc2) {
+        boolean isDoubly = false;
         // collect the remaining candidates
         possibleRestrictedCommonsSet = als1.candidates;
         possibleRestrictedCommonsSet &= ~Sudoku2.MASKS[rc1];
         possibleRestrictedCommonsSet &= ~Sudoku2.MASKS[rc2];
         if (possibleRestrictedCommonsSet == 0) {
             // nothing can be eliminated
-            return;
+            return false;
         }
         // for any candidate left get all buddies, subtract als1 and als2 and check for eliminations
         int[] prcs = Sudoku2.POSSIBLE_VALUES[possibleRestrictedCommonsSet];
@@ -1014,9 +1105,11 @@ public class AlsSolver extends AbstractSolver {
             if (!restrictedCommonIndexSet.isEmpty()) {
                 for (int j = 0; j < restrictedCommonIndexSet.size(); j++) {
                     globalStep.addCandidateToDelete(restrictedCommonIndexSet.get(j), cand);
+                    isDoubly = true;
                 }
             }
         }
+        return isDoubly;
     }
 
     /**
@@ -1032,17 +1125,20 @@ public class AlsSolver extends AbstractSolver {
      */
     private void collectAllRestrictedCommons(boolean withOverlap) {
         long ticks = 0;
-        if (DEBUG) {
+        if (TIMING) {
 //                System.out.println("Entering collectAllRestrictedCommons");
             ticks = System.nanoTime();
         }
         restrictedCommons = finder.getRestrictedCommons(alses, withOverlap);
         startIndices = finder.getStartIndices();
         endIndices = finder.getEndIndices();
-        if (DEBUG) {
+        if (TIMING) {
             ticks = System.nanoTime() - ticks;
             allRcsNanos += ticks;
 //                System.out.println("collectAllRestrictedCommons(): " + ticks + "ms; restrictedCommon size: " + restrictedCommons.size());
+        }
+        if (DEBUG) {
+            System.out.println("collectAllRestrictedCommons(): " + (ticks / 1000000.0) + "ms; restrictedCommon size: " + restrictedCommons.size());
         }
     }
 
@@ -1053,13 +1149,16 @@ public class AlsSolver extends AbstractSolver {
      */
     private void collectAllAlses() {
         long ticks = 0;
-        if (DEBUG) {
+        if (TIMING) {
             ticks = System.nanoTime();
         }
         alses = finder.getAlses();
-        if (DEBUG) {
+        if (TIMING) {
             ticks = System.nanoTime() - ticks;
             allAlsesNanos += ticks;
+        }
+        if (DEBUG) {
+            System.out.println("collectAllAlses(): " + (ticks / 1000000.0) + "ms; alses size: " + alses.size());
         }
     }
 
@@ -1075,7 +1174,7 @@ public class AlsSolver extends AbstractSolver {
      */
     private void collectAllRCsForDeathBlossom() {
         long ticks = 0;
-        if (DEBUG) {
+        if (TIMING) {
             ticks = System.nanoTime();
         }
         // initialize rcdb
@@ -1100,7 +1199,7 @@ public class AlsSolver extends AbstractSolver {
                 }
             }
         }
-        if (DEBUG) {
+        if (TIMING) {
             ticks = System.nanoTime() - ticks;
 //            System.out.println("collectAllRCsForDeathBlossom(): " + ticks + "ms");
         }
@@ -1141,7 +1240,7 @@ public class AlsSolver extends AbstractSolver {
         /**
          * creates a new instance.
          */
-        public RCForDeathBlossom() {
+        RCForDeathBlossom() {
         }
 
         /**
@@ -1166,7 +1265,7 @@ public class AlsSolver extends AbstractSolver {
     }
 
     public static void main(String[] args) {
-        DEBUG = true;
+        //DEBUG = true;
         //Sudoku2 sudoku = new Sudoku2(true);
         Sudoku2 sudoku = new Sudoku2();
         //sudoku.setSudoku(":0361:4:..5.132673268..14917...2835..8..1.262.1.96758.6..283...12....83693184572..723.6..:434 441 442 461 961 464 974:411:r7c39 r6c1b9 fr3c3");
@@ -1190,18 +1289,20 @@ public class AlsSolver extends AbstractSolver {
         // Very long running time
         //sudoku.setSudoku(":9001:369:.......173.+1.8+7.+5+2+7......+3+8+4+371..+5+86+1..+84+53+7+9+985.+7.+1+2+42+7....84+5+51.7..+2.+3...5..+7.+1:215 216 416 235 236 436:396 615 635 686 686 686 686 696 696 696 696 915 935 986 996:");
         // ALS Chain not found: Almost Locked Set Chain: A=r3c4 {57}, B=r4c4 {57}, C=r4c69 {257}, D=r56c8 {567}, RCs=5,7, X=7 => r3c8<>7
-        sudoku.setSudoku(":9003:7:.+6.+4.+9+213+94.+2+3+1+68.2+1+3.6+8+9.+46+89.+1.4+3.+3..8..+1.....3..+8..+43+61..5+9+8.+5.+94+37+26+7+9+2+6+8+5+3+4+1:753 256 756 763 266 766 569:738:");
+//        sudoku.setSudoku(":9003:7:.+6.+4.+9+213+94.+2+3+1+68.2+1+3.6+8+9.+46+89.+1.4+3.+3..8..+1.....3..+8..+43+61..5+9+8.+5.+94+37+26+7+9+2+6+8+5+3+4+1:753 256 756 763 266 766 569:738:");
         // doubly linked ALS not found
 //        sudoku.setSudoku(":0901-2:12357:9..17....4.1....7..7...31..14...6.98.9248173.38.5.......48...2.......6.7....6...3:793:172 244 385 571 572 796::");
         // ALS-Chain not found: 127- r1c156789 {1234679} -9- r3c4 {49} -4- r9c4 {49} -9- r2359c3 {12679} -127 => r1c3<>1, r1c3<>2, r1c3<>7
-        sudoku.setSudoku(":0903:127:...+8......3.+57.8.98....315.9.8142......+3+5....5.+36...4.1.42+3....+3..7....6.8...531.:412 612 712 613 916 933 572 986 587 987:113 213 713::");
+//        sudoku.setSudoku(":0903:127:...+8......3.+57.8.98....315.9.8142......+3+5....5.+36...4.1.42+3....+3..7....6.8...531.:412 612 712 613 916 933 572 986 587 987:113 213 713::");
+        // Exception when sorting
+        sudoku.setSudoku(":0903-1:35:1+53+9+642+7+8+9847+2.3+6.72+6..8+9..638.+4+9..+7+4+91..+78.+6+5+7+2+8+1+6493+8+6+74+9..32+3.9.+7268.+2.56+8+37.9:139:334 355 534::");
         SudokuSolver solver = SudokuSolverFactory.getDefaultSolverInstance();
 //        AlsSolver as = new AlsSolver(null);
         long millis = System.nanoTime();
         int itAnz = 1;
         List<SolutionStep> steps = null;
         for (int i = 0; i < itAnz; i++) {
-            steps = solver.getStepFinder().getAllAlses(sudoku);
+            steps = solver.getStepFinder().getAllAlses(sudoku, false, false, true);
 //            as.getAlsXZ(true);
 //            as.getAlsXYWing();
 //            as.getAlsXYChain();
@@ -1232,6 +1333,7 @@ public class AlsSolver extends AbstractSolver {
  * @author hobiwan
  */
 class AlsComparator implements Comparator<SolutionStep> {
+    private static final boolean debug = false;
 
     /**
      * Sort order:<br>
@@ -1245,29 +1347,51 @@ class AlsComparator implements Comparator<SolutionStep> {
      */
     @Override
     public int compare(SolutionStep o1, SolutionStep o2) {
+        if (debug) {
+            System.out.println("Comparing:");
+            System.out.println("   " + o1);
+            System.out.println("   " + o2);
+        }
         int sum1 = 0, sum2 = 0;
 
-        // zuerst nach Anzahl zu löschende Kandidaten (absteigend!)
+        // zuerst nach Anzahl zu lÃ¶schende Kandidaten (absteigend!)
         int result = o2.getCandidatesToDelete().size() - o1.getCandidatesToDelete().size();
+        if (debug) {
+            System.out.println("      1: " + result);
+        }
         if (result != 0) {
-            return result;        // nach Äquivalenz (gleiche zu löschende Kandidaten)
+            return result;        // nach Ã„quivalenz (gleiche zu lÃ¶schende Kandidaten)
         }
         if (!o1.isEquivalent(o2)) {
-            // nicht äquivalent: nach Indexsumme der zu löschenden Kandidaten
+            // nicht Ã¤quivalent: nach Indexsumme der zu lÃ¶schenden Kandidaten
             sum1 = o1.getIndexSumme(o1.getCandidatesToDelete());
-            sum2 = o1.getIndexSumme(o2.getCandidatesToDelete());
-            return sum1 == sum2 ? 1 : sum1 - sum2;
+            sum2 = o2.getIndexSumme(o2.getCandidatesToDelete());
+        if (debug) {
+            System.out.println("      2: " + (sum1 - sum2) + " (" + sum1 + "/" + sum2 + ")");
+        }
+            return (sum1 - sum2);
         }
 
         // Nach Anzahl ALS
         result = o1.getAlses().size() - o2.getAlses().size();
+        if (debug) {
+            System.out.println("      3: " + result);
+        }
         if (result != 0) {
             return result;        // Nach Anzahl Kandidaten in allen ALS
         }
         result = o1.getAlsesIndexCount() - o2.getAlsesIndexCount();
+        if (debug) {
+            System.out.println("      4: " + result);
+        }
         if (result != 0) {
             return result;        // zuletzt nach Typ
         }
-        return o1.getType().ordinal() - o2.getType().ordinal();
+//        return o1.getType().ordinal() - o2.getType().ordinal();
+                if (debug) {
+            System.out.println("      5: " + (o1.getType().compare(o2.getType())));
+        }
+
+        return o1.getType().compare(o2.getType());
     }
 }

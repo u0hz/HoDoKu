@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-11  Bernhard Hobiger
+ * Copyright (C) 2008-12  Bernhard Hobiger
  *
  * This file is part of HoDoKu.
  *
@@ -19,9 +19,9 @@
 
 package sudoku;
 
-import solver.Als;
 import java.util.ArrayList;
 import java.util.List;
+import solver.Als;
 
 /**
  *
@@ -44,6 +44,7 @@ public class AlsInSolutionStep implements Cloneable {
     }
     
     @Override
+    @SuppressWarnings("unchecked")
     public Object clone()
     throws CloneNotSupportedException {
         AlsInSolutionStep newAls = (AlsInSolutionStep) super.clone();

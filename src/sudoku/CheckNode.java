@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-11  Bernhard Hobiger
+ * Copyright (C) 2008-12 Bernhard Hobiger
  *
  * This file is part of HoDoKu.
  *
@@ -30,6 +30,7 @@ public class CheckNode extends DefaultMutableTreeNode {
     protected static final int NONE = 0;
     protected static final int HALF = 1;
     protected static final int FULL = 2;
+    private static final long serialVersionUID = 1L;
     private int selectionState;
     private StepConfig step;
     private boolean allSteps;
@@ -62,7 +63,7 @@ public class CheckNode extends DefaultMutableTreeNode {
             // normaler Knoten, kann nur AN oder AUS sein
             selectionState = selectionState == FULL ? NONE : FULL;
             adjustModel(this);
-            // der selectionState des parents muss ebenfalls überprüft werden
+            // der selectionState des parents muss ebenfalls Ã¼berprÃ¼ft werden
             int actState = -1;
             CheckNode tmpParent = (CheckNode) getParent();
             for (int i = 0; i < tmpParent.children.size(); i++) {
@@ -82,9 +83,10 @@ public class CheckNode extends DefaultMutableTreeNode {
             // HALF -> FULL
             // FULL -> NONE
             selectionState = selectionState == FULL ? NONE : FULL;
-            Enumeration enumeration = children.elements();
+            @SuppressWarnings("unchecked")
+            Enumeration<CheckNode> enumeration = (Enumeration<CheckNode>)children.elements();
             while (enumeration.hasMoreElements()) {
-                CheckNode node = (CheckNode) enumeration.nextElement();
+                CheckNode node = enumeration.nextElement();
                 node.selectionState = selectionState;
                 adjustModel(node);
             }

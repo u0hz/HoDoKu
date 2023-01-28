@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-11  Bernhard Hobiger
+ * Copyright (C) 2008-12  Bernhard Hobiger
  *
  * This file is part of HoDoKu.
  *
@@ -28,7 +28,9 @@ import sudoku.SolutionType;
  */
 public class IncompleteSolver extends AbstractSolver {
     
-    /** Creates a new instance of IncompleteSolver */
+    /** Creates a new instance of IncompleteSolver
+     * @param finder 
+     */
     public IncompleteSolver(SudokuStepFinder finder) {
         super(finder);
     }

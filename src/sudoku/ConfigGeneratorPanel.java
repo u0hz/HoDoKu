@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-11  Bernhard Hobiger
+ * Copyright (C) 2008-12  Bernhard Hobiger
  *
  * This file is part of HoDoKu.
  *
@@ -42,6 +42,7 @@ import javax.swing.filechooser.FileNameExtensionFilter;
  * @author hobiwan
  */
 public class ConfigGeneratorPanel extends javax.swing.JPanel {
+    private static final long serialVersionUID = 1L;
     /** The standard background color of the textfield {@link #numberOfGivensTextField}. */
     private Color okColor;
     /** The background color for "error" (a light red) */
@@ -266,6 +267,7 @@ public class ConfigGeneratorPanel extends javax.swing.JPanel {
         }
     }//GEN-LAST:event_jComboBoxPatternsActionPerformed
 
+    @SuppressWarnings("unchecked")
     private void jButtonNewActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonNewActionPerformed
         String defaultName = java.util.ResourceBundle.getBundle("intl/ConfigGeneratorPanel").getString("ConfigGeneratorPanel.pattern") +
                 " " + (patterns.size() + 1);
@@ -292,6 +294,7 @@ public class ConfigGeneratorPanel extends javax.swing.JPanel {
         }
     }//GEN-LAST:event_jButtonChangeNameActionPerformed
 
+    @SuppressWarnings("unchecked")
 private void jButtonLoadActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonLoadActionPerformed
     String extension = java.util.ResourceBundle.getBundle("intl/ConfigGeneratorPanel").getString("ConfigGeneratorPanel.extension");
     String description = java.util.ResourceBundle.getBundle("intl/ConfigGeneratorPanel").getString("ConfigGeneratorPanel.description");
@@ -397,6 +400,7 @@ private void jButtonSaveActionPerformed(java.awt.event.ActionEvent evt) {//GEN-F
     /**
      * Fills {@link #jComboBoxPatterns} with the names from {@link #patterns}.
      */
+    @SuppressWarnings("unchecked")
     private void fillCombo(int index) {
         jComboBoxPatterns.removeAllItems();
         jComboBoxPatterns.addItem(java.util.ResourceBundle.getBundle("intl/ConfigGeneratorPanel").getString("ConfigGeneratorPanel.nopattern"));

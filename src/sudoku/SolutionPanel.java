@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-11  Bernhard Hobiger
+ * Copyright (C) 2008-12  Bernhard Hobiger
  *
  * This file is part of HoDoKu.
  *
@@ -21,6 +21,7 @@ package sudoku;
 
 import java.awt.Color;
 import java.awt.Component;
+import java.awt.Font;
 import java.awt.Rectangle;
 import java.util.ArrayList;
 import java.util.List;
@@ -39,6 +40,7 @@ import solver.SudokuSolverFactory;
  * @author  hobiwan
  */
 public class SolutionPanel extends javax.swing.JPanel {
+    private static final long serialVersionUID = 1L;
 
     private MainFrame mainFrame;
     private SudokuSolver solver;
@@ -57,15 +59,24 @@ public class SolutionPanel extends javax.swing.JPanel {
     private Color[] actStepForegroundColors;
     private boolean inTabbedPaneRemoveAll = false;
 
-    /** Creates new form SolutionPanel */
+    /** Creates new form SolutionPanel
+     * @param mainFrame 
+     */
     public SolutionPanel(MainFrame mainFrame) {
         this.mainFrame = mainFrame;
 
         initComponents();
 
-//        solutionTabbedPane.add("Lösung 1", solutionScrollPane);
-//        solutionTabbedPane.add("Lösung 2", solutionScrollPane);
-//        solutionTabbedPane.add("Lösung 3", solutionScrollPane);
+        int fontSize = 12;
+        if (getFont().getSize() > 12) {
+            fontSize = getFont().getSize();
+        }
+        Font font = titleLabel.getFont();
+        titleLabel.setFont(new Font(font.getName(), Font.BOLD, fontSize));
+        
+//        solutionTabbedPane.add("LÃ¶sung 1", solutionScrollPane);
+//        solutionTabbedPane.add("LÃ¶sung 2", solutionScrollPane);
+//        solutionTabbedPane.add("LÃ¶sung 3", solutionScrollPane);
         addTabPane();
         getActTab();
     }
@@ -177,7 +188,6 @@ public class SolutionPanel extends javax.swing.JPanel {
         setLayout(new java.awt.BorderLayout());
 
         titleLabel.setBackground(new java.awt.Color(0, 51, 255));
-        titleLabel.setFont(new java.awt.Font("Tahoma", 1, 12));
         titleLabel.setForeground(new java.awt.Color(255, 255, 255));
         titleLabel.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
         titleLabel.setText(bundle.getString("SolutionPanel.titleLabel.text")); // NOI18N
@@ -277,7 +287,7 @@ public class SolutionPanel extends javax.swing.JPanel {
     private void solutionListMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_solutionListMouseClicked
         getActTab();
         //System.out.println("solutionListMouseClicked: " + evt.getButton() + "/" + evt.getClickCount());
-        // Element in der Liste ausgewählt
+        // Element in der Liste ausgewÃ¤hlt
         if (evt.getButton() == 1) {
             int index = solutionList.getSelectedIndex();
             if (index != -1) {
@@ -335,7 +345,7 @@ public class SolutionPanel extends javax.swing.JPanel {
                 mainFrame.setSolutionStep(actSteps.get(actSelectedIndex), true);
                 return;
             } else {
-                mainFrame.stepAusführen();
+                mainFrame.stepAusfuehren();
             }
         }
         if (actSelectedIndex < actSteps.size() - 1) {
@@ -500,11 +510,11 @@ private void tabPrintMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//
     
     private void processDoubleClick(int index) {
         // bei Doppelklick wird das Sudoku2 neu geladen, dann werden alle Schritte bis zum
-        // geklickten ausgeführt
+        // geklickten ausgefÃ¼hrt
         getActTab();
         resetSudokuToIndex(index);
         
-        // wenn der aktuelle letzte Step INCOMPLETE ist, wird das Sudoku2 von hier weg neu gelöst
+        // wenn der aktuelle letzte Step INCOMPLETE ist, wird das Sudoku2 von hier weg neu gelÃ¶st
         if (actSteps.get(index).getType() == SolutionType.INCOMPLETE) {
             actSteps.remove(actSteps.size() - 1);
             Sudoku2 actSudoku = mainFrame.getSudokuPanel().getSudoku().clone();
@@ -518,6 +528,7 @@ private void tabPrintMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//
         }
     }
     
+    @SuppressWarnings("unchecked")
     private void setStepsInList() {
         getActTab();
         String[] data = new String[actSteps.size()];
@@ -530,7 +541,15 @@ private void tabPrintMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//
         stepForegroundColors.add(tmpIndex, actStepForegroundColors);
         for (int i = 0; i < actSteps.size(); i++) {
             //data[i] = steps.get(i).toString(1);
+//            System.out.println("setStepsInList(): " + actSteps.get(i));
             data[i] = actSteps.get(i).toString(2);
+//            System.out.println("setStepsInList(): " + data[i]);
+//            System.out.println("   type: " + actSteps.get(i).getType());
+//            System.out.println("   config: " + SolutionType.getStepConfig(actSteps.get(i).getType()));
+//            System.out.println("   level: " + SolutionType.getStepConfig(actSteps.get(i).getType()).getLevel());
+//            System.out.println("   level2: " + Options.getInstance().getDifficultyLevels()[SolutionType.getStepConfig(actSteps.get(i).getType()).getLevel()]);
+//            System.out.println("   background: " + Options.getInstance().getDifficultyLevels()[SolutionType.getStepConfig(actSteps.get(i).getType()).getLevel()].getBackgroundColor());
+//            System.out.println("   foreground: " + Options.getInstance().getDifficultyLevels()[SolutionType.getStepConfig(actSteps.get(i).getType()).getLevel()].getForegroundColor());
             actStepBackgroundColors[i] = Options.getInstance().getDifficultyLevels()[SolutionType.getStepConfig(actSteps.get(i).getType()).getLevel()].getBackgroundColor();
             actStepForegroundColors[i] = Options.getInstance().getDifficultyLevels()[SolutionType.getStepConfig(actSteps.get(i).getType()).getLevel()].getForegroundColor();
         }
@@ -538,7 +557,7 @@ private void tabPrintMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//
     }
     
     private void stepListMouseClicked(java.awt.event.MouseEvent evt) {                                          
-        // Element in der Liste ausgewählt
+        // Element in der Liste ausgewÃ¤hlt
         getActTab();
         if (evt.getButton() == 1) {
             int index = actList.getSelectedIndex();
@@ -579,6 +598,7 @@ private void tabPrintMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//
         addTabPane(steps, titel);
     }
     
+    @SuppressWarnings("unchecked")
     private void addTabPane(List<SolutionStep> steps, String titel) {
         JList tmpList = new JList();
         tmpList.setSelectionMode(javax.swing.ListSelectionModel.SINGLE_SELECTION);
@@ -703,6 +723,7 @@ private void tabPrintMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//
      * @param state
      * @param copy
      */
+    @SuppressWarnings("unchecked")
     public void getState(GuiState state, boolean copy) {
         if (copy) {
             state.setTitels((List<String>) ((ArrayList)titels).clone());
@@ -723,8 +744,9 @@ private void tabPrintMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//
     }
     
     class SolutionListRenderer extends JLabel implements ListCellRenderer {
+        private static final long serialVersionUID = 1L;
         
-        public SolutionListRenderer() {
+        SolutionListRenderer() {
             setOpaque(true);
         }
         

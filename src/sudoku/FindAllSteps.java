@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-11  Bernhard Hobiger
+ * Copyright (C) 2008-12  Bernhard Hobiger
  *
  * This file is part of HoDoKu.
  *
@@ -51,6 +51,8 @@ public class FindAllSteps implements Runnable {
         this();
         
         this.sudoku = sudoku;
+        // sometimes the internal chaching data can become invalid -> better save than sorry
+        sudoku.rebuildInternalData();
         
         this.steps = steps;
         this.dlg = dlg;
@@ -119,8 +121,14 @@ public class FindAllSteps implements Runnable {
                     steps1 = stepFinder.findAllNakedXle(sudoku);
                     steps.addAll(steps1);
                     filterSteps(steps);
-                    if (isAllStepsEnabled(SolutionType.LOCKED_CANDIDATES)) {
+                    if (isAllStepsEnabled(SolutionType.LOCKED_CANDIDATES_1) && isAllStepsEnabled(SolutionType.LOCKED_CANDIDATES_2)) {
                         steps1 = stepFinder.findAllLockedCandidates(sudoku);
+                        steps.addAll(steps1);
+                    } else if (isAllStepsEnabled(SolutionType.LOCKED_CANDIDATES_1)) {
+                        steps1 = stepFinder.findAllLockedCandidates1(sudoku);
+                        steps.addAll(steps1);
+                    } else if (isAllStepsEnabled(SolutionType.LOCKED_CANDIDATES_2)) {
+                        steps1 = stepFinder.findAllLockedCandidates2(sudoku);
                         steps.addAll(steps1);
                     }
                     if (isAllStepsEnabled(SolutionType.SKYSCRAPER)) {
@@ -255,7 +263,9 @@ public class FindAllSteps implements Runnable {
                     updateProgress(java.util.ResourceBundle.getBundle("intl/FindAllStepsProgressDialog").getString("FindAllStepsProgressDialog.als"), actStep);
                     if (isAllStepsEnabled(SolutionType.ALS_XZ) || isAllStepsEnabled(SolutionType.ALS_XY_WING) ||
                             isAllStepsEnabled(SolutionType.ALS_XY_CHAIN)) {
-                        steps1 = stepFinder.getAllAlses(sudoku);
+                        steps1 = stepFinder.getAllAlses(sudoku, isAllStepsEnabled(SolutionType.ALS_XZ),
+                                isAllStepsEnabled(SolutionType.ALS_XY_WING),
+                                isAllStepsEnabled(SolutionType.ALS_XY_CHAIN));
                         filterSteps(steps1);
                         steps.addAll(steps1);
                     }

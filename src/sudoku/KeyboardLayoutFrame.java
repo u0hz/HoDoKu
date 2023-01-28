@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-11  Bernhard Hobiger
+ * Copyright (C) 2008-12  Bernhard Hobiger
  *
  * This file is part of HoDoKu.
  *
@@ -36,6 +36,7 @@ import javax.swing.KeyStroke;
  * @author  hobiwan
  */
 public class KeyboardLayoutFrame extends javax.swing.JFrame {
+    private static final long serialVersionUID = 1L;
 
     /** Creates new form KeyboardLayoutFrame */
     public KeyboardLayoutFrame() {
@@ -64,6 +65,7 @@ public class KeyboardLayoutFrame extends javax.swing.JFrame {
 
         KeyStroke escapeKeyStroke = KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0, false);
         Action escapeAction = new AbstractAction() {
+            private static final long serialVersionUID = 1L;
 
             @Override
             public void actionPerformed(ActionEvent e) {

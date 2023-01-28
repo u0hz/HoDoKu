@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-11  Bernhard Hobiger
+ * Copyright (C) 2008-12  Bernhard Hobiger
  *
  * This file is part of HoDoKu.
  *
@@ -33,6 +33,7 @@ import java.util.logging.StreamHandler;
  * @author  hobiwan
  */
 public class SudokuConsoleFrame extends javax.swing.JFrame {
+    private static final long serialVersionUID = 1L;
     private StreamHandler consoleHandler = null;
 
     /** Creates new form SudokuConsoleFrame */

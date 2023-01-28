@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-11  Bernhard Hobiger
+ * Copyright (C) 2008-12  Bernhard Hobiger
  *
  * This file is part of HoDoKu.
  *
@@ -93,7 +93,9 @@ public class SudokuGeneratorFactory {
      */
     private SudokuGeneratorFactory() { /* class cannot be instantiated! */ }
 
-    /** Get the {@link #defaultGenerator}. */
+    /** Get the {@link #defaultGenerator}.
+     * @return 
+     */
     public static SudokuGenerator getDefaultGeneratorInstance() {
         return defaultGenerator;
     }

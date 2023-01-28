@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-11  Bernhard Hobiger
+ * Copyright (C) 2008-12  Bernhard Hobiger
  *
  * This file is part of HoDoKu.
  *
@@ -140,7 +140,11 @@ public class Chain implements Cloneable {
     public Chain() {
     }
 
-    /** Create ans initialize a new chain. */
+    /** Create and initialize a new chain.
+     * @param start
+     * @param end
+     * @param chain  
+     */
     public Chain(int start, int end, int[] chain) {
         this.start = start;
         this.end = end;
@@ -644,14 +648,21 @@ public class Chain implements Cloneable {
      * @return
      */
     public static String toString(int entry) {
+        if (entry == Integer.MIN_VALUE) {
+            return "MIN";
+        }
+        String sign = "";
+        if (entry < 0) {
+            sign = "-";
+        }
         if (getSNodeType(entry) == ALS_NODE) {
-            return TYPE_NAMES[getSNodeType(entry)] + " - " +
-                    getSAlsIndex(entry) + " - " +
-                    getSCellIndex(entry) + " - " + isSStrong(entry) + " - " + getSCandidate(entry);
+            return sign + TYPE_NAMES[getSNodeType(entry)] + "/" +
+                    getSAlsIndex(entry) + "/" +
+                    getSCellIndex(entry) + "/" + isSStrong(entry) + "/" + getSCandidate(entry);
         } else {
-            return TYPE_NAMES[getSNodeType(entry)] + " - " +
-                    getSCellIndex3(entry) + " - " + getSCellIndex2(entry) + " - " +
-                    getSCellIndex(entry) + " - " + isSStrong(entry) + " - " + getSCandidate(entry);
+            return sign + TYPE_NAMES[getSNodeType(entry)] + "/" +
+                    getSCellIndex3(entry) + "/" + getSCellIndex2(entry) + "/" +
+                    getSCellIndex(entry) + "/" + isSStrong(entry) + "/" + getSCandidate(entry);
         }
     }
 

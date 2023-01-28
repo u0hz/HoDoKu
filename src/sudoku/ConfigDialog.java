@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-11  Bernhard Hobiger
+ * Copyright (C) 2008-12  Bernhard Hobiger
  *
  * This file is part of HoDoKu.
  *
@@ -36,16 +36,23 @@ import javax.swing.UIManager;
  * @author  hobiwan
  */
 public class ConfigDialog extends javax.swing.JDialog {
+    private static final long serialVersionUID = 1L;
     private ConfigSolverPanel myConfigSolverPanel;
     private ConfigGeneralPanel myGeneralPanel;
+    private ConfigLevelFontPanel myLevelFontPanel;
     private ConfigStepPanel myConfigStepPanel;
     private ConfigColorPanel myConfigColorPanel;
     private ConfigFindAllStepsPanel myConfigFindAllStepsPanel;
     private ConfigProgressPanel myConfigProgressPanel;
     private ConfigTrainigPanel myConfigTrainingPanel;
     private ConfigGeneratorPanel myConfigGeneratorPanel;
+    private ConfigColorkuPanel myConfigColorkuPanel;
 
-    /** Creates new form ConfigDialog */
+    /** Creates new form ConfigDialog
+     * @param parent
+     * @param modal
+     * @param tabIndex  
+     */
     public ConfigDialog(java.awt.Frame parent, boolean modal, int tabIndex) {
         super(parent, modal);
         initComponents();
@@ -54,6 +61,7 @@ public class ConfigDialog extends javax.swing.JDialog {
 
         KeyStroke escapeKeyStroke = KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0, false);
         Action escapeAction = new AbstractAction() {
+            private static final long serialVersionUID = 1L;
             @Override
             public void actionPerformed(ActionEvent e) {
                 setVisible( false );
@@ -67,6 +75,9 @@ public class ConfigDialog extends javax.swing.JDialog {
         
         myGeneralPanel = new ConfigGeneralPanel(parent);
         generalPanel.add(myGeneralPanel, BorderLayout.CENTER);
+        
+        myLevelFontPanel = new ConfigLevelFontPanel(parent);
+        levelFontPanel.add(myLevelFontPanel, BorderLayout.CENTER);
         
         myConfigStepPanel = new ConfigStepPanel();
         stepConfigPanel.add(myConfigStepPanel, BorderLayout.CENTER);
@@ -86,7 +97,10 @@ public class ConfigDialog extends javax.swing.JDialog {
         myConfigGeneratorPanel = new ConfigGeneratorPanel();
         generatorPanel.add(myConfigGeneratorPanel, BorderLayout.CENTER);
         // temporarily remove the pattern tab - not suitable for production use yet
-        tabbedPane.remove(7);
+        tabbedPane.remove(8);
+        
+        myConfigColorkuPanel = new ConfigColorkuPanel(parent);
+        colorKuPanel.add(myConfigColorkuPanel, BorderLayout.CENTER);
         
         if (tabIndex != -1) {
             tabbedPane.setSelectedIndex(tabIndex);
@@ -103,6 +117,7 @@ public class ConfigDialog extends javax.swing.JDialog {
 
         tabbedPane = new javax.swing.JTabbedPane();
         generalPanel = new javax.swing.JPanel();
+        levelFontPanel = new javax.swing.JPanel();
         solverPanel = new javax.swing.JPanel();
         findAllStepsPanel = new javax.swing.JPanel();
         heuristicsPanel = new javax.swing.JPanel();
@@ -110,6 +125,7 @@ public class ConfigDialog extends javax.swing.JDialog {
         trainingPanel = new javax.swing.JPanel();
         colorPanel = new javax.swing.JPanel();
         generatorPanel = new javax.swing.JPanel();
+        colorKuPanel = new javax.swing.JPanel();
         okButton = new javax.swing.JButton();
         cancelButton = new javax.swing.JButton();
 
@@ -124,6 +140,9 @@ public class ConfigDialog extends javax.swing.JDialog {
 
         generalPanel.setLayout(new java.awt.BorderLayout());
         tabbedPane.addTab(bundle.getString("ConfigDialog.generalPanel.TabConstraints.tabTitle"), generalPanel); // NOI18N
+
+        levelFontPanel.setLayout(new java.awt.BorderLayout());
+        tabbedPane.addTab(bundle.getString("ConfigDialog.levelFontPanel.TabConstraints.tabTitle"), levelFontPanel); // NOI18N
 
         solverPanel.setLayout(new java.awt.BorderLayout());
         tabbedPane.addTab(bundle.getString("ConfigDialog.solverPanel.TabConstraints.tabTitle"), solverPanel); // NOI18N
@@ -145,6 +164,9 @@ public class ConfigDialog extends javax.swing.JDialog {
 
         generatorPanel.setLayout(new java.awt.BorderLayout());
         tabbedPane.addTab(bundle.getString("ConfigDialog.generatorPanel.TabConstraints.tabTitle"), generatorPanel); // NOI18N
+
+        colorKuPanel.setLayout(new java.awt.BorderLayout());
+        tabbedPane.addTab(bundle.getString("ConfigDialog.colorKuPanel.TabConstraints.tabTitle"), colorKuPanel); // NOI18N
 
         okButton.setMnemonic(java.util.ResourceBundle.getBundle("intl/ConfigDialog").getString("ConfigDialog.okButton.mnemonic").charAt(0));
         okButton.setText(bundle.getString("ConfigDialog.okButton.text")); // NOI18N
@@ -197,12 +219,14 @@ public class ConfigDialog extends javax.swing.JDialog {
     private void okButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_okButtonActionPerformed
         myConfigSolverPanel.okPressed();
         myGeneralPanel.okPressed();
+        myLevelFontPanel.okPressed();
         myConfigStepPanel.okPressed();
         myConfigColorPanel.okPressed();
         myConfigFindAllStepsPanel.okPressed();
         myConfigProgressPanel.okPressed();
         myConfigTrainingPanel.okPressed();
         myConfigGeneratorPanel.okPressed();
+        myConfigColorkuPanel.okPressed();
         try {
             Options.getInstance().writeOptions();
         } catch (FileNotFoundException ex) {
@@ -254,11 +278,13 @@ public class ConfigDialog extends javax.swing.JDialog {
     
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton cancelButton;
+    private javax.swing.JPanel colorKuPanel;
     private javax.swing.JPanel colorPanel;
     private javax.swing.JPanel findAllStepsPanel;
     private javax.swing.JPanel generalPanel;
     private javax.swing.JPanel generatorPanel;
     private javax.swing.JPanel heuristicsPanel;
+    private javax.swing.JPanel levelFontPanel;
     private javax.swing.JButton okButton;
     private javax.swing.JPanel solverPanel;
     private javax.swing.JPanel stepConfigPanel;
