@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008  Bernhard Hobiger
+ * Copyright (C) 2008/09  Bernhard Hobiger
  *
  * This file is part of HoDoKu.
  *
@@ -40,6 +40,7 @@ public class ColoringSolver extends AbstractSolver {
     private SudokuSet tmpSet1 = new SudokuSet();
     private SudokuSet tmpSet2 = new SudokuSet();
     private SudokuSet tmpSet3 = new SudokuSet();
+    private SudokuSet deleteSet = new SudokuSet();
     private int colorIndex = 0;  // index in onSets/offSets
 
     private List<SolutionStep> steps = new ArrayList<SolutionStep>();
@@ -119,6 +120,7 @@ public class ColoringSolver extends AbstractSolver {
         steps.clear();
         findSimpleColorSteps();
         if (steps.size() > 0) {
+            Collections.sort(steps);
             return steps.get(0);
         }
         return null;
@@ -209,21 +211,30 @@ public class ColoringSolver extends AbstractSolver {
     /**
      * Utility function: All candidates, that can see a cell in set1 and a cell in
      * set2, can be eliminated.
+     * 20090414: Eliminations are recorded more than once, that leads to wrong sorting;
+     *           Collect all eliminations in a set first
      * @param set1 The first set to check
      * @param set2 The second set to check
      * @param cand Candidate to check
      */
     private void checkCandidateToDelete(SudokuSet set1, SudokuSet set2, int cand) {
+        deleteSet.clear();
         for (int i = 0; i < set1.size(); i++) {
             for (int j = 0; j < set2.size(); j++) {
                 tmpSet1.set(Sudoku.buddies[set1.get(i)]);
                 tmpSet1.and(Sudoku.buddies[set2.get(j)]);
                 tmpSet1.and(sudoku.getAllowedPositions()[cand]);
-                if (!tmpSet1.isEmpty()) {
-                    for (int k = 0; k < tmpSet1.size(); k++) {
-                        globalStep.addCandidateToDelete(tmpSet1.get(k), cand);
-                    }
-                }
+                deleteSet.or(tmpSet1);
+//                if (!tmpSet1.isEmpty()) {
+//                    for (int k = 0; k < tmpSet1.size(); k++) {
+//                        globalStep.addCandidateToDelete(tmpSet1.get(k), cand);
+//                    }
+//                }
+            }
+        }
+        if (!deleteSet.isEmpty()) {
+            for (int i = 0; i < deleteSet.size(); i++) {
+                globalStep.addCandidateToDelete(deleteSet.get(i), cand);
             }
         }
     }
@@ -232,6 +243,7 @@ public class ColoringSolver extends AbstractSolver {
         steps.clear();
         findSimpleColorSteps();
         if (steps.size() > 0) {
+            Collections.sort(steps);
             return steps.get(0);
         }
         return null;

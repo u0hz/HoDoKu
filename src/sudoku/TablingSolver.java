@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008  Bernhard Hobiger
+ * Copyright (C) 2008/09  Bernhard Hobiger
  *
  * This file is part of HoDoKu.
  *
@@ -25,8 +25,6 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.SortedMap;
 import java.util.TreeMap;
-import java.util.logging.ConsoleHandler;
-import java.util.logging.Handler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -86,7 +84,7 @@ import java.util.logging.Logger;
  * @author Bernhard Hobiger
  */
 public class TablingSolver extends AbstractSolver {
-
+    private static boolean DEBUG = false;
     private static final int MAX_REC_DEPTH = 50;
     private static TablingComparator tablingComparator = null;
     private List<SolutionStep> steps; // gefundene Lösungsschritte
@@ -185,7 +183,7 @@ public class TablingSolver extends AbstractSolver {
             case GROUPED_DISCONTINUOUS_NICE_LOOP:
             case GROUPED_AIC:
                 withGroupNodes = true;
-                withAlsNodes = true;
+                withAlsNodes = Options.getInstance().allowAlsInTablingChains;
                 allSteps = false;
                 result = getNiceLoops();
                 break;
@@ -193,9 +191,8 @@ public class TablingSolver extends AbstractSolver {
             case FORCING_CHAIN_CONTRADICTION:
             case FORCING_CHAIN_VERITY:
                 steps.clear();
-                //withGroupNodes = false;
                 withGroupNodes = true;
-                withAlsNodes = true;
+                withAlsNodes = Options.getInstance().allowAlsInTablingChains;
                 allSteps = false;
                 getForcingChains();
                 if (steps.size() > 0) {
@@ -208,7 +205,7 @@ public class TablingSolver extends AbstractSolver {
             case FORCING_NET_VERITY:
                 steps.clear();
                 withGroupNodes = true;
-                withAlsNodes = true;
+                withAlsNodes = Options.getInstance().allowAlsInTablingChains;
                 allSteps = false;
                 getForcingNets();
                 if (steps.size() > 0) {
@@ -271,7 +268,7 @@ public class TablingSolver extends AbstractSolver {
         doGetNiceLoops();
         Collections.sort(this.steps);
         ticks = System.currentTimeMillis() - ticks;
-        Logger.getLogger(getClass().getName()).log(Level.FINE, "getAllNiceLoops() gesamt: " + ticks + "ms");
+        if (DEBUG) System.out.println("getAllNiceLoops() gesamt: " + ticks + "ms");
         if (save != null) {
             setSudoku(save);
         }
@@ -284,14 +281,14 @@ public class TablingSolver extends AbstractSolver {
         setSudoku(sudoku);
         steps = new ArrayList<SolutionStep>();
         withGroupNodes = true;
-        withAlsNodes = true;
+        withAlsNodes = Options.getInstance().allowAlsInTablingChains;
         allSteps = true;
         onlyGroupedNiceLoops = true;
         doGetNiceLoops();
         onlyGroupedNiceLoops = false;
         Collections.sort(this.steps);
         ticks = System.currentTimeMillis() - ticks;
-        Logger.getLogger(getClass().getName()).log(Level.FINE, "getAllGroupedNiceLoops() gesamt: " + ticks + "ms");
+        if (DEBUG) System.out.println("getAllGroupedNiceLoops() gesamt: " + ticks + "ms");
         if (save != null) {
             setSudoku(save);
         }
@@ -305,12 +302,12 @@ public class TablingSolver extends AbstractSolver {
         steps = new ArrayList<SolutionStep>();
         long millis1 = System.currentTimeMillis();
         withGroupNodes = true;
-        withAlsNodes = true;
+        withAlsNodes = Options.getInstance().allowAlsInTablingChains;
         allSteps = true;
         getForcingChains();
         Collections.sort(steps, tablingComparator);
         millis1 = System.currentTimeMillis() - millis1;
-        Logger.getLogger(getClass().getName()).log(Level.FINE, "getAllForcingChains() gesamt: " + millis1 + "ms");
+        if (DEBUG) System.out.println("getAllForcingChains() gesamt: " + millis1 + "ms");
         List<SolutionStep> result = steps;
         steps = oldSteps;
         if (save != null) {
@@ -327,12 +324,12 @@ public class TablingSolver extends AbstractSolver {
         long millis1 = System.currentTimeMillis();
         //withGroupNodes = true;
         withGroupNodes = true;
-        withAlsNodes = true;
+        withAlsNodes = Options.getInstance().allowAlsInTablingChains;
         allSteps = true;
         getForcingNets();
         Collections.sort(steps, tablingComparator);
         millis1 = System.currentTimeMillis() - millis1;
-        Logger.getLogger(getClass().getName()).log(Level.FINE, "getAllForcingNets() gesamt: " + millis1 + "ms");
+        if (DEBUG) System.out.println("getAllForcingNets() gesamt: " + millis1 + "ms");
         List<SolutionStep> result = steps;
         steps = oldSteps;
         if (save != null) {
@@ -349,9 +346,11 @@ public class TablingSolver extends AbstractSolver {
         // search for everything
         fillTables();
         fillTablesWithGroupNodes();
-        fillTablesWithAls();
+        if (Options.getInstance().allowAlsInTablingChains) {
+            fillTablesWithAls();
+        }
         ticks = System.currentTimeMillis() - ticks;
-        Logger.getLogger(getClass().getName()).log(Level.FINE, "fillTables(): " + ticks + "ms");
+        if (DEBUG) System.out.println("fillTables(): " + ticks + "ms");
         printTableAnz();
         //printTable("r1c6=6 fill", onTable[56]);
         //printTable("r3c2<>8 fill", offTable[198]);
@@ -361,7 +360,7 @@ public class TablingSolver extends AbstractSolver {
         expandTables(onTable);
         expandTables(offTable);
         ticks = System.currentTimeMillis() - ticks;
-        Logger.getLogger(getClass().getName()).log(Level.FINE, "expandTables(): " + ticks + "ms");
+        if (DEBUG) System.out.println("expandTables(): " + ticks + "ms");
         printTableAnz();
         //printTable("r1c6=6 expand", onTable[56]);
         //printTable("r3c2<>8 expand", offTable[198]);
@@ -448,9 +447,9 @@ public class TablingSolver extends AbstractSolver {
             fillTablesWithAls();
         }
         ticks = System.currentTimeMillis() - ticks;
-        Logger.getLogger(getClass().getName()).log(Level.FINE, "fillTables(): " + ticks + "ms");
+        if (DEBUG) System.out.println("fillTables(): " + ticks + "ms");
         printTableAnz();
-        //printTable("r5c5=1 fill", onTable[471]);
+        //printTable("r5c6=2 fill", onTable[412]);
         //printTable("r8c6<>4 fill", offTable[684]);
 
         // Einträge expandieren
@@ -458,9 +457,9 @@ public class TablingSolver extends AbstractSolver {
         expandTables(onTable);
         expandTables(offTable);
         ticks = System.currentTimeMillis() - ticks;
-        Logger.getLogger(getClass().getName()).log(Level.FINE, "expandTables(): " + ticks + "ms");
+        if (DEBUG) System.out.println("expandTables(): " + ticks + "ms");
         printTableAnz();
-        //printTable("r6c3=1 expand", onTable[471]);
+        //printTable("r5c6=2 expand", onTable[412]);
         //printTable("r8c6<>4 expand", offTable[684]);
 
         // ok, hier beginnt der Spass!
@@ -469,7 +468,7 @@ public class TablingSolver extends AbstractSolver {
         checkNiceLoops(offTable);
         checkAics(offTable);
         ticks = System.currentTimeMillis() - ticks;
-        Logger.getLogger(getClass().getName()).log(Level.FINE, "checkNiceLoops(): " + ticks + "ms");
+        if (DEBUG) System.out.println("checkNiceLoops(): " + ticks + "ms");
 
 //        if (! allSteps && steps.size() > 0) {
 //            // we already have a step, skip the ALS search!
@@ -518,7 +517,7 @@ public class TablingSolver extends AbstractSolver {
             fillTablesWithAls();
         }
         ticks = System.currentTimeMillis() - ticks;
-        Logger.getLogger(getClass().getName()).log(Level.FINE, "fillTables(): " + ticks + "ms");
+        if (DEBUG) System.out.println("fillTables(): " + ticks + "ms");
         printTableAnz();
         //printTable("r6c8=1 fill", onTable[521]);
         //printTable("r6c8<>1 fill", offTable[521]);
@@ -528,7 +527,7 @@ public class TablingSolver extends AbstractSolver {
         expandTables(onTable);
         expandTables(offTable);
         ticks = System.currentTimeMillis() - ticks;
-        Logger.getLogger(getClass().getName()).log(Level.FINE, "expandTables(): " + ticks + "ms");
+        if (DEBUG) System.out.println("expandTables(): " + ticks + "ms");
         printTableAnz();
         //printTable("r6c8=1 expand", onTable[521]);
         //printTable("r6c8<>1 expand", offTable[521]);
@@ -537,7 +536,7 @@ public class TablingSolver extends AbstractSolver {
         ticks = System.currentTimeMillis();
         checkForcingChains();
         ticks = System.currentTimeMillis() - ticks;
-        Logger.getLogger(getClass().getName()).log(Level.FINE, "checkChains(): " + ticks + "ms");
+        if (DEBUG) System.out.println("checkChains(): " + ticks + "ms");
 
         if (! allSteps && steps.size() > 0) {
             // we already have a step, skip the ALS search!
@@ -2585,7 +2584,7 @@ public class TablingSolver extends AbstractSolver {
                 }
             }
         }
-        Logger.getLogger(getClass().getName()).log(Level.FINE, "Tables: " + onAnz + " onTableEntries, " + offAnz + " offTableEntries, " +
+        if (DEBUG) System.out.println("Tables: " + onAnz + " onTableEntries, " + offAnz + " offTableEntries, " +
                 entryAnz + " Implikationen (" + maxEntryAnz + " max)");
     }
 
@@ -2663,15 +2662,8 @@ public class TablingSolver extends AbstractSolver {
     }
 
     public static void main(String[] args) {
-        Logger rootLogger = Logger.getLogger("");
-        Handler[] handlers = rootLogger.getHandlers();
-        for (Handler handler : handlers) {
-            if (handler instanceof ConsoleHandler) {
-                handler.setLevel(Level.ALL);
-            }
-        }
         TablingSolver ts = new TablingSolver(null);
-        Logger.getLogger(TablingSolver.class.getName()).setLevel(Level.FINER);
+        TablingSolver.DEBUG = true;
         Sudoku sudoku = new Sudoku();
         //sudoku.setSudoku(":0100:1:....7.94..7..9...53....5.7..874..1..463.8.........7.8.8..7.....7......28.5.268...:::");
         //sudoku.setSudoku(":0000:x:....7.94..7..9...53....5.7..874..1..463.8.........7.8.8..7.....7......28.5.268...:613 623 233 633 164 165 267 269 973 377 378 379 983 387::");
@@ -2695,11 +2687,12 @@ public class TablingSolver extends AbstractSolver {
         // Beispiel daj
         //sudoku.setSudoku(":0000:x:4..1..8.9....3.54.8....46.1..34.1..8.74....5.98.5.34..749.....5.6..4....3.8..9..4:512 715 735 648 668 378 388 795::");
         // Grouped AIC with 4 eliminations
-        sudoku.setSudoku(":0000:x:....6.+83..36.8..94.2.+3496.....2..5..95.7...8.....+583.......1....65........4..+57.8:164 664 979 286 786 989::");
+        //sudoku.setSudoku(":0000:x:....6.+83..36.8..94.2.+3496.....2..5..95.7...8.....+583.......1....65........4..+57.8:164 664 979 286 786 989::");
         // Grouped AIC that touches the beginning of the loop (-> lasso!)
         // Grouped AIC 5- r6c9 -6- r6c4 =6= r13c4 -6- r2c56 =6= r2c9 -6- r6c9 -5- r5c789 =5= r5c4 -5 => r5c789,r6c456<>5
-        sudoku.setSudoku(":0711:5:4+8..+12.391+953..28......+9+4...+1.4..9.886+4.+9+1....79...1+4..+5123.+8.4..+89........1.8...:248 269 369:557 558 559 564 565 566:");
-
+        //sudoku.setSudoku(":0711:5:4+8..+12.391+953..28......+9+4...+1.4..9.886+4.+9+1....79...1+4..+5123.+8.4..+89........1.8...:248 269 369:557 558 559 564 565 566:");
+        // Continuous Nice Loop 2- r4c4 =2= r5c6 -2- ALS:r156c7(2|78|4) -4- ALS:r3c49(4|7|2) -2 => r2c4 <> 2, r2c789<>4, r1c9<> 4, r3c8<>4, r3c128<>7, r289c7<>7, r28c7<>8
+        sudoku.setSudoku(":0000:x:9...6..2............1.893.......65..41.8...96..24.......352.1..1.........8..1...5:316 716 221 521 621 721 325 725 326 726 741 344 744 944 345 348 748 848 349 749 849 361 861 362 365 366 384 784 985 394 794::");
         ts.setSudoku(sudoku);
         List<SolutionStep> steps = null;
         long ticks = System.currentTimeMillis();

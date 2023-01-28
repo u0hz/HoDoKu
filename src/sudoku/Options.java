@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008  Bernhard Hobiger
+ * Copyright (C) 2008/09  Bernhard Hobiger
  *
  * This file is part of HoDoKu.
  *
@@ -103,7 +103,7 @@ public class Options {
         new StepConfig(5700, SolutionType.ALS_XZ, DifficultyType.UNFAIR.ordinal(), SolutionCategory.ALMOST_LOCKED_SETS, 300, 0, true, true),
         new StepConfig(5800, SolutionType.ALS_XY_WING, DifficultyType.UNFAIR.ordinal(), SolutionCategory.ALMOST_LOCKED_SETS, 320, 0, true, true),
         new StepConfig(5900, SolutionType.ALS_XY_CHAIN, DifficultyType.UNFAIR.ordinal(), SolutionCategory.ALMOST_LOCKED_SETS, 340, 0, true, true),
-        new StepConfig(6000, SolutionType.DEATH_BLOSSOM, DifficultyType.UNFAIR.ordinal(), SolutionCategory.ALMOST_LOCKED_SETS, 360, 0, true, false),
+        new StepConfig(6000, SolutionType.DEATH_BLOSSOM, DifficultyType.UNFAIR.ordinal(), SolutionCategory.ALMOST_LOCKED_SETS, 360, 0, false, true),
         new StepConfig(6100, SolutionType.FRANKEN_X_WING, DifficultyType.UNFAIR.ordinal(), SolutionCategory.FRANKEN_FISH, 300, 0, true, false),
         new StepConfig(6200, SolutionType.FRANKEN_SWORDFISH, DifficultyType.UNFAIR.ordinal(), SolutionCategory.FRANKEN_FISH, 350, 0, true, false),
         new StepConfig(6300, SolutionType.FRANKEN_JELLYFISH, DifficultyType.UNFAIR.ordinal(), SolutionCategory.FRANKEN_FISH, 370, 0, false, false),
@@ -140,7 +140,7 @@ public class Options {
         new StepConfig(4030, SolutionType.AVOIDABLE_RECTANGLE_2, DifficultyType.HARD.ordinal(), SolutionCategory.UNIQUENESS, 100, 0, true, true),
         new StepConfig(5330, SolutionType.SIMPLE_COLORS, DifficultyType.HARD.ordinal(), SolutionCategory.COLORING, 150, 0, true, true),
         new StepConfig(5360, SolutionType.MULTI_COLORS, DifficultyType.HARD.ordinal(), SolutionCategory.COLORING, 200, 0, true, true),
-        new StepConfig(8450, SolutionType.KRAKEN_FISH, DifficultyType.EXTREME.ordinal(), SolutionCategory.LAST_RESORT, 500, 0, true, false),
+        new StepConfig(8450, SolutionType.KRAKEN_FISH, DifficultyType.EXTREME.ordinal(), SolutionCategory.LAST_RESORT, 500, 0, false, false),
         new StepConfig(3120, SolutionType.TURBOT_FISH, DifficultyType.HARD.ordinal(), SolutionCategory.SINGLE_DIGIT_PATTERNS, 120, 0, true, true)
     };
     // nicht sortierte steps mit allen Änderungen -> wird so in *.cfg-File geschrieben
@@ -159,9 +159,22 @@ public class Options {
 //    public static final int MAX_TABLE_ENTRY_LENGTH = 400;
     public static final int ANZ_TABLE_LOOK_AHEAD = 4;
     public static final boolean ONLY_ONE_CHAIN_PER_STEP = true;
+    public static final boolean ALLOW_ALS_IN_TABLING_CHAINS = false;
+    public static final boolean ALL_STEPS_ALLOW_ALS_IN_TABLING_CHAINS = true;
     public int maxTableEntryLength = MAX_TABLE_ENTRY_LENGTH;
     public int anzTableLookAhead = ANZ_TABLE_LOOK_AHEAD;
-    public boolean onlyOneChainPerStep = ONLY_ONE_CHAIN_PER_STEP;    
+    public boolean onlyOneChainPerStep = ONLY_ONE_CHAIN_PER_STEP;
+    public boolean allowAlsInTablingChains = ALLOW_ALS_IN_TABLING_CHAINS;
+    public boolean allStepsAllowAlsInTablingChains = ALL_STEPS_ALLOW_ALS_IN_TABLING_CHAINS;
+    // AlsSolver
+    public static final boolean ONLY_ONE_ALS_PER_STEP = true; // only one step in every ALS elimination
+    public static final boolean ALLOW_ALS_OVERLAP = false;    // allow ALS steps with overlap (runtime!)
+    public static final boolean ALL_STEPS_ONLY_ONE_ALS_PER_STEP = true; // only one step in every ALS elimination
+    public static final boolean ALL_STEPS_ALLOW_ALS_OVERLAP = true;    // allow ALS steps with overlap (runtime!)
+    public boolean onlyOneAlsPerStep = ONLY_ONE_ALS_PER_STEP;
+    public boolean allowAlsOverlap = ALLOW_ALS_OVERLAP;
+    public boolean allStepsOnlyOneAlsPerStep = ALL_STEPS_ONLY_ONE_ALS_PER_STEP;
+    public boolean allStepsAllowAlsOverlap = ALL_STEPS_ALLOW_ALS_OVERLAP;
     // FishSolver
     public static final int MAX_FINS = 5;                 // Maximale Anzahl Fins
     public static final int MAX_ENDO_FINS = 2;            // Maximale Anzahl Endo-Fins
@@ -170,6 +183,7 @@ public class Options {
     public static final int KRAKEN_MAX_FISH_SIZE = 4;     // number of units in base/cover sets
     public static final int MAX_KRAKEN_FINS = 2;          // Maximale Anzahl Fins für Kraken-Suche
     public static final int MAX_KRAKEN_ENDO_FINS = 0;     // Maximale Anzahl Endo-Fins für Kraken-Suche
+    public static final boolean ONLY_ONE_FISH_PER_STEP = true; // only the smallest fish for every elimination
     public int maxFins = MAX_FINS;
     public int maxEndoFins = MAX_ENDO_FINS;
     public boolean checkTemplates = CHECK_TEMPLATES;    
@@ -177,6 +191,7 @@ public class Options {
     public int krakenMaxFishSize = KRAKEN_MAX_FISH_SIZE;
     public int maxKrakenFins = MAX_KRAKEN_FINS;
     public int maxKrakenEndoFins = MAX_KRAKEN_ENDO_FINS;
+    public boolean onlyOneFishPerStep = ONLY_ONE_FISH_PER_STEP;
     // Search all steps
     public static final boolean ALL_STEPS_SEARCH_FISH = true; // search for Fish in "All Steps" panel
     public static final int ALL_STEPS_MAX_FISH_TYPE = 1;     // 0: nur basic, 1: basic+franken, 2: basic+franken+mutant
@@ -190,6 +205,8 @@ public class Options {
     public static final int ALL_STEPS_MAX_KRAKEN_FISH_SIZE = 4;     // number of units in base/cover sets
     public static final int ALL_STEPS_MAX_KRAKEN_FINS = 2;          // Maximale Anzahl Fins für Kraken-Suche
     public static final int ALL_STEPS_MAX_KRAKEN_ENDO_FINS = 0;     // Maximale Anzahl Endo-Fins für Kraken-Suche
+    public static final String ALL_STEPS_FISH_CANDIDATES = "111111111";        // 1 for every candidate that should be searched, 0 otherwise
+    public static final String ALL_STEPS_KRAKEN_FISH_CANDIDATES = "111111111"; // see above
     public boolean allStepsSearchFish = ALL_STEPS_SEARCH_FISH;
     public int allStepsMaxFishType = ALL_STEPS_MAX_FISH_TYPE;
     public int allStepsMinFishSize = ALL_STEPS_MIN_FISH_SIZE;
@@ -202,6 +219,8 @@ public class Options {
     public int allStepsKrakenMaxFishSize = ALL_STEPS_MAX_KRAKEN_FISH_SIZE;
     public int allStepsMaxKrakenFins = ALL_STEPS_MAX_KRAKEN_FINS;
     public int allStepsMaxKrakenEndoFins = ALL_STEPS_MAX_KRAKEN_ENDO_FINS;
+    public String allStepsFishCandidates = ALL_STEPS_FISH_CANDIDATES;
+    public String allStepsKrakenFishCandidates = ALL_STEPS_KRAKEN_FISH_CANDIDATES;
     //SudokuPanel
     // Coloring Solver
     public static final Color[] COLORING_COLORS = {
@@ -230,6 +249,8 @@ public class Options {
     // Single Digit Pattern Solver
     public static final boolean ALLOW_ERS_WITH_ONLY_TWO_CANDIDATES = false; // as it sais...
     public boolean allowErsWithOnlyTwoCandidates = ALLOW_ERS_WITH_ONLY_TWO_CANDIDATES;
+    public static final boolean ALLOW_DUALS_AND_SIAMESE = false; // Dual 2-String-Kites, Dual Skyscrapers && Siamese Fish
+    public boolean allowDualsAndSiamese = ALLOW_DUALS_AND_SIAMESE;
     // Allgemeines
     public static final boolean SHOW_CANDIDATES = true;    // alle Kandidaten anzeigen
     public static final boolean SHOW_WRONG_VALUES = true;  // Ungültige Zellen-/Kandidatenwerte anzeigen (Constraint-Verletzungen)
@@ -1192,5 +1213,85 @@ public class Options {
 
     public void setAllStepsMaxKrakenEndoFins(int allStepsMaxKrakenEndoFins) {
         this.allStepsMaxKrakenEndoFins = allStepsMaxKrakenEndoFins;
+    }
+
+    public boolean isAllowDualsAndSiamese() {
+        return allowDualsAndSiamese;
+    }
+
+    public void setAllowDualsAndSiamese(boolean allowDualsAndSiamese) {
+        this.allowDualsAndSiamese = allowDualsAndSiamese;
+    }
+
+    public boolean isOnlyOneFishPerStep() {
+        return onlyOneFishPerStep;
+    }
+
+    public void setOnlyOneFishPerStep(boolean onlyOneFishPerStep) {
+        this.onlyOneFishPerStep = onlyOneFishPerStep;
+    }
+
+    public boolean isOnlyOneAlsPerStep() {
+        return onlyOneAlsPerStep;
+    }
+
+    public void setOnlyOneAlsPerStep(boolean onlyOneAlsPerStep) {
+        this.onlyOneAlsPerStep = onlyOneAlsPerStep;
+    }
+
+    public boolean isAllowAlsOverlap() {
+        return allowAlsOverlap;
+    }
+
+    public void setAllowAlsOverlap(boolean allowAlsOverlap) {
+        this.allowAlsOverlap = allowAlsOverlap;
+    }
+
+    public boolean isAllStepsOnlyOneAlsPerStep() {
+        return allStepsOnlyOneAlsPerStep;
+    }
+
+    public void setAllStepsOnlyOneAlsPerStep(boolean allStepsOnlyOneAlsPerStep) {
+        this.allStepsOnlyOneAlsPerStep = allStepsOnlyOneAlsPerStep;
+    }
+
+    public boolean isAllStepsAllowAlsOverlap() {
+        return allStepsAllowAlsOverlap;
+    }
+
+    public void setAllStepsAllowAlsOverlap(boolean allStepsAllowAlsOverlap) {
+        this.allStepsAllowAlsOverlap = allStepsAllowAlsOverlap;
+    }
+
+    public String getAllStepsFishCandidates() {
+        return allStepsFishCandidates;
+    }
+
+    public void setAllStepsFishCandidates(String allStepsFishCandidates) {
+        this.allStepsFishCandidates = allStepsFishCandidates;
+    }
+
+    public String getAllStepsKrakenFishCandidates() {
+        return allStepsKrakenFishCandidates;
+    }
+
+    public void setAllStepsKrakenFishCandidates(String allStepsKrakenFishCandidates) {
+        this.allStepsKrakenFishCandidates = allStepsKrakenFishCandidates;
+    }
+
+    public boolean isAllowAlsInTablingChains() {
+        return allowAlsInTablingChains;
+    }
+
+    public void setAllowAlsInTablingChains(boolean allowAlsInTablingChains) {
+        this.allowAlsInTablingChains = allowAlsInTablingChains;
+    }
+
+    public boolean isAllStepsAllowAlsInTablingChains() {
+        return allStepsAllowAlsInTablingChains;
+    }
+
+    public void setAllStepsAllowAlsInTablingChains(boolean allStepsAllowAlsInTablingChains) {
+        this.allStepsAllowAlsInTablingChains = allStepsAllowAlsInTablingChains;
     }
 }

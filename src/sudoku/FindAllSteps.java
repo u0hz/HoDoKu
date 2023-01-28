@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008  Bernhard Hobiger
+ * Copyright (C) 2008/09  Bernhard Hobiger
  *
  * This file is part of HoDoKu.
  *
@@ -29,6 +29,7 @@ import java.util.List;
 public class FindAllSteps implements Runnable {
     private FindAllStepsProgressDialog dlg = null;
     private List<SolutionStep> steps;
+    private List<SolutionType> testTypes = null;
     private Sudoku sudoku;
 //    private int minSize;
 //    private int maxSize;
@@ -50,7 +51,7 @@ public class FindAllSteps implements Runnable {
     private AlsSolver alsSolver;
     private TablingSolver tablingSolver;
     
-    public FindAllSteps(List<SolutionStep> steps, Sudoku sudoku, FindAllStepsProgressDialog dlg) {
+    public FindAllSteps() {
         SudokuSolver solver = SudokuSolver.getInstance();
         simpleSolver = (SimpleSolver) solver.getSpecialisedSolver(SimpleSolver.class);
         singleDigitPatternSolver = (SingleDigitPatternSolver) solver.getSpecialisedSolver(SingleDigitPatternSolver.class);
@@ -63,6 +64,10 @@ public class FindAllSteps implements Runnable {
         templateSolver = (TemplateSolver) solver.getSpecialisedSolver(TemplateSolver.class);
         alsSolver = (AlsSolver) solver.getSpecialisedSolver(AlsSolver.class);
         tablingSolver = (TablingSolver) solver.getSpecialisedSolver(TablingSolver.class);
+    }
+    
+    public FindAllSteps(List<SolutionStep> steps, Sudoku sudoku, FindAllStepsProgressDialog dlg) {
+        this();
         
         this.sudoku = sudoku;
         
@@ -75,15 +80,36 @@ public class FindAllSteps implements Runnable {
             dlg.updateProgress(label, step);
         }
     }
-    
+
+    /**
+     * The class can be called by FindAllStepsProgressDialog in which case the
+     * configuration from Options.solverSteps has to be read. If it is called
+     * from BatchSolveThread only all Steps for testType have to be found
+     * 
+     * @param type 
+     * @return
+     */
     private boolean isAllStepsEnabled(SolutionType type) {
-        StepConfig[] tmpSteps = Options.getInstance().solverSteps;
-        for (int i = 0; i < tmpSteps.length; i++) {
-            if (tmpSteps[i].getType() == type) {
-                return tmpSteps[i].isAllStepsEnabled();
+        if (testTypes == null) {
+            StepConfig[] tmpSteps = Options.getInstance().solverSteps;
+            for (int i = 0; i < tmpSteps.length; i++) {
+                if (tmpSteps[i].getType() == type) {
+                    return tmpSteps[i].isAllStepsEnabled();
+                }
+            }
+            return false;
+        } else {
+            return testTypes.contains(type);
+        }
+    }
+    
+    private boolean isFishTestTypes() {
+        for (int i = 0; i < testTypes.size(); i++) {
+            if (! testTypes.get(i).isFish()) {
+                return false;
             }
         }
-        return false;
+        return true;
     }
     
     private void filterSteps(List<SolutionStep> steps) {
@@ -141,8 +167,11 @@ public class FindAllSteps implements Runnable {
                 case 7:
                 case 8:
                 case 9:
+                    //System.out.println("Fish search cand " + (actStep) + ": " + Options.getInstance().allStepsFishCandidates.charAt(actStep - 1));
                     updateProgress(java.util.ResourceBundle.getBundle("intl/FindAllStepsProgressDialog").getString("FindAllStepsProgressDialog.fish") + " " + actStep, actStep);
-                    if (Options.getInstance().allStepsSearchFish) {
+                    if ((testTypes == null && Options.getInstance().allStepsSearchFish && 
+                            Options.getInstance().allStepsFishCandidates.charAt(actStep - 1) == '1') ||
+                            testTypes != null && isFishTestTypes()) {
                         boolean oldCheckTemplates = Options.getInstance().checkTemplates;
                         Options.getInstance().checkTemplates = Options.getInstance().allStepsCheckTemplates;
                         steps1 = fishSolver.getAllFishes(sudoku, Options.getInstance().allStepsMinFishSize, 
@@ -163,7 +192,9 @@ public class FindAllSteps implements Runnable {
                 case 16:
                 case 17:
                 case 18:
-                    if (isAllStepsEnabled(SolutionType.KRAKEN_FISH)) {
+                    //System.out.println("Kraken Fish search cand " + (actStep - 9) + ": " + Options.getInstance().allStepsFishCandidates.charAt(actStep - 10));
+                    if (isAllStepsEnabled(SolutionType.KRAKEN_FISH) && 
+                            Options.getInstance().allStepsKrakenFishCandidates.charAt(actStep - 10) == '1') {
                         updateProgress(java.util.ResourceBundle.getBundle("intl/FindAllStepsProgressDialog").getString("FindAllStepsProgressDialog.kraken_fish") + " " + (actStep - 9), actStep);
                         steps1 = fishSolver.getAllKrakenFishes(sudoku, Options.getInstance().allStepsKrakenMinFishSize, 
                                 Options.getInstance().allStepsKrakenMaxFishSize, 
@@ -245,6 +276,11 @@ public class FindAllSteps implements Runnable {
                         filterSteps(steps1);
                         steps.addAll(steps1);
                     }
+                    if (isAllStepsEnabled(SolutionType.DEATH_BLOSSOM)) {
+                        steps1 = alsSolver.getAllDeathBlossoms(sudoku);
+                        filterSteps(steps1);
+                        steps.addAll(steps1);
+                    }
                     break;
                 case 25:
                     if (isAllStepsEnabled(SolutionType.FORCING_CHAIN)) {
@@ -261,18 +297,49 @@ public class FindAllSteps implements Runnable {
                     }
                     break;
                 default:
-                    Thread.currentThread().interrupt();
+                    if (testTypes == null) {
+                        Thread.currentThread().interrupt();
+                    } else {
+                        // called directly -> dont interrupt!
+                        return;
+                    }
                     break;
             }
             actStep++;
         }
-        EventQueue.invokeLater(new Runnable() {
-            @Override
-            public void run() {
-                if (dlg != null) {
-                    dlg.setVisible(false);
+        if (dlg != null) {
+            EventQueue.invokeLater(new Runnable() {
+                @Override
+                public void run() {
+                    if (dlg != null) {
+                        dlg.setVisible(false);
+                    }
                 }
-            }
-        });
+            });
+        }
+    }
+
+    public List<SolutionStep> getSteps() {
+        return steps;
+    }
+
+    public void setSteps(List<SolutionStep> steps) {
+        this.steps = steps;
+    }
+
+    public List<SolutionType> getTestType() {
+        return testTypes;
+    }
+
+    public void setTestType(List<SolutionType> testStep) {
+        this.testTypes = testStep;
+    }
+
+    public Sudoku getSudoku() {
+        return sudoku;
+    }
+
+    public void setSudoku(Sudoku sudoku) {
+        this.sudoku = sudoku;
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008  Bernhard Hobiger
+ * Copyright (C) 2008/09  Bernhard Hobiger
  *
  * This file is part of HoDoKu.
  *
@@ -220,6 +220,15 @@ public class SudokuSetBase implements Cloneable {
     public boolean andEquals(SudokuSetBase set) {
         long m1 = mask1 & set.mask1;
         long m2 = mask2 & set.mask2;
+        return (m1 == mask1 && m2 == mask2);
+    }
+
+    /**
+     * gibt ((this & ~set) == this) zurück
+     */
+    public boolean andNotEquals(SudokuSetBase set) {
+        long m1 = mask1 & ~set.mask1;
+        long m2 = mask2 & ~set.mask2;
         return (m1 == mask1 && m2 == mask2);
     }
 

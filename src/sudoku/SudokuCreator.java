@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008  Bernhard Hobiger
+ * Copyright (C) 2008/09  Bernhard Hobiger
  *
  * This file is part of HoDoKu.
  *
@@ -44,7 +44,8 @@ public class SudokuCreator {
     }
     
     public Sudoku generateSudoku(DifficultyLevel level, boolean symmetric) {
-        sudoku = new Sudoku(false);
+        //sudoku = new Sudoku(false);
+        sudoku = new Sudoku();
         generateFullSudoku(0);
         generateInitPos(level, symmetric);
         // all cells are givens!

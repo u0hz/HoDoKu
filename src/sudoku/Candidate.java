@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008  Bernhard Hobiger
+ * Copyright (C) 2008/09  Bernhard Hobiger
  *
  * This file is part of HoDoKu.
  *
@@ -68,5 +68,10 @@ public class Candidate implements Cloneable, Comparable<Candidate> {
     
     public void setIndex(int index) {
         this.index = index;
+    }
+    
+    @Override
+    public String toString() {
+        return index + "/" + value;
     }
 }

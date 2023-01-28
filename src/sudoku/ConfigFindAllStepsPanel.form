@@ -16,11 +16,11 @@
   <Layout>
     <DimensionLayout dim="0">
       <Group type="103" groupAlignment="0" attributes="0">
-          <Group type="102" alignment="1" attributes="0">
+          <Group type="102" attributes="0">
               <EmptySpace max="-2" attributes="0"/>
-              <Group type="103" groupAlignment="1" attributes="0">
-                  <Component id="jPanel1" alignment="1" max="32767" attributes="0"/>
+              <Group type="103" groupAlignment="0" attributes="0">
                   <Component id="resetButton" alignment="1" min="-2" max="-2" attributes="0"/>
+                  <Component id="jPanel1" alignment="0" max="32767" attributes="0"/>
               </Group>
               <EmptySpace max="-2" attributes="0"/>
           </Group>
@@ -29,9 +29,9 @@
     <DimensionLayout dim="1">
       <Group type="103" groupAlignment="0" attributes="0">
           <Group type="102" alignment="1" attributes="0">
-              <EmptySpace min="-2" max="-2" attributes="0"/>
+              <EmptySpace max="-2" attributes="0"/>
               <Component id="jPanel1" max="32767" attributes="0"/>
-              <EmptySpace type="unrelated" min="-2" max="-2" attributes="0"/>
+              <EmptySpace type="unrelated" max="-2" attributes="0"/>
               <Component id="resetButton" min="-2" max="-2" attributes="0"/>
               <EmptySpace min="-2" max="-2" attributes="0"/>
           </Group>
@@ -59,11 +59,12 @@
           <Group type="103" groupAlignment="0" attributes="0">
               <Group type="102" alignment="0" attributes="0">
                   <Component id="jScrollPane1" min="-2" pref="211" max="-2" attributes="0"/>
-                  <EmptySpace max="-2" attributes="0"/>
+                  <EmptySpace min="-2" max="-2" attributes="0"/>
                   <Group type="103" groupAlignment="0" attributes="0">
-                      <Component id="krakenFishPanel" max="32767" attributes="0"/>
-                      <Component id="fishPanel" alignment="0" max="32767" attributes="0"/>
+                      <Component id="krakenFishPanel" max="32767" attributes="2"/>
+                      <Component id="fishPanel" alignment="0" max="32767" attributes="2"/>
                   </Group>
+                  <EmptySpace min="0" pref="0" max="0" attributes="0"/>
               </Group>
           </Group>
         </DimensionLayout>
@@ -73,9 +74,9 @@
                   <Component id="fishPanel" min="-2" max="-2" attributes="0"/>
                   <EmptySpace max="-2" attributes="0"/>
                   <Component id="krakenFishPanel" min="-2" max="-2" attributes="0"/>
-                  <EmptySpace min="-2" pref="69" max="-2" attributes="0"/>
+                  <EmptySpace min="-2" pref="33" max="-2" attributes="0"/>
               </Group>
-              <Component id="jScrollPane1" alignment="0" pref="392" max="32767" attributes="0"/>
+              <Component id="jScrollPane1" alignment="0" pref="410" max="32767" attributes="0"/>
           </Group>
         </DimensionLayout>
       </Layout>
@@ -111,39 +112,48 @@
                   <Group type="102" attributes="0">
                       <Group type="103" groupAlignment="0" attributes="0">
                           <Group type="102" attributes="0">
-                              <EmptySpace max="-2" attributes="0"/>
+                              <EmptySpace min="-2" max="-2" attributes="0"/>
                               <Group type="103" groupAlignment="0" attributes="0">
                                   <Component id="fishTypeLabel" alignment="0" min="-2" max="-2" attributes="0"/>
                                   <Component id="fishFromLabel" alignment="0" min="-2" max="-2" attributes="0"/>
                                   <Component id="fishMaxFinsLabel" alignment="0" min="-2" max="-2" attributes="0"/>
                                   <Component id="fishMaxEndoFinsLabel" alignment="0" min="-2" max="-2" attributes="0"/>
                               </Group>
-                              <EmptySpace max="-2" attributes="0"/>
+                              <EmptySpace min="-2" max="-2" attributes="0"/>
                               <Group type="103" groupAlignment="0" attributes="0">
                                   <Group type="102" attributes="0">
                                       <Group type="103" groupAlignment="0" attributes="0">
-                                          <Component id="fishFromComboBox" linkSize="1" alignment="0" min="-2" max="-2" attributes="0"/>
+                                          <Component id="fishFromComboBox" alignment="0" max="32767" attributes="0"/>
                                           <Component id="fishMaxFinsComboBox" linkSize="1" alignment="0" min="-2" max="-2" attributes="0"/>
                                           <Component id="fishMaxEndoFinsComboBox" linkSize="1" alignment="0" min="-2" max="-2" attributes="0"/>
                                       </Group>
-                                      <EmptySpace max="-2" attributes="0"/>
+                                      <EmptySpace min="-2" max="-2" attributes="0"/>
                                       <Component id="fishToLabel" min="-2" max="-2" attributes="0"/>
-                                      <EmptySpace max="-2" attributes="0"/>
-                                      <Component id="fishToComboBox" linkSize="1" min="-2" max="-2" attributes="0"/>
+                                      <EmptySpace min="-2" max="-2" attributes="0"/>
+                                      <Component id="fishToComboBox" pref="54" max="32767" attributes="0"/>
                                   </Group>
-                                  <Component id="fishTypeComboBox" pref="137" max="32767" attributes="1"/>
+                                  <Component id="fishTypeComboBox" pref="132" max="32767" attributes="2"/>
                               </Group>
                           </Group>
                           <Group type="102" alignment="0" attributes="0">
                               <EmptySpace min="10" pref="10" max="10" attributes="0"/>
                               <Component id="fishCheckBox" min="-2" max="-2" attributes="0"/>
                           </Group>
-                          <Group type="102" alignment="0" attributes="0">
+                          <Group type="102" attributes="0">
                               <EmptySpace max="-2" attributes="0"/>
-                              <Component id="fishCheckTemplatesCheckBox" min="-2" max="-2" attributes="0"/>
+                              <Group type="103" groupAlignment="0" attributes="0">
+                                  <Component id="fishCheckTemplatesCheckBox" alignment="0" min="-2" max="-2" attributes="0"/>
+                                  <Group type="102" alignment="0" attributes="0">
+                                      <Component id="fishCandidatesLabel" min="-2" max="-2" attributes="0"/>
+                                      <EmptySpace max="-2" attributes="0"/>
+                                      <Component id="fishCandidatesResultLabel" min="-2" max="-2" attributes="0"/>
+                                      <EmptySpace type="unrelated" max="-2" attributes="0"/>
+                                      <Component id="fishCandidatesButton" min="-2" max="-2" attributes="0"/>
+                                  </Group>
+                              </Group>
                           </Group>
                       </Group>
-                      <EmptySpace max="-2" attributes="0"/>
+                      <EmptySpace min="-2" max="-2" attributes="0"/>
                   </Group>
               </Group>
             </DimensionLayout>
@@ -175,6 +185,12 @@
                       </Group>
                       <EmptySpace max="-2" attributes="0"/>
                       <Component id="fishCheckTemplatesCheckBox" min="-2" max="-2" attributes="0"/>
+                      <EmptySpace max="-2" attributes="0"/>
+                      <Group type="103" groupAlignment="3" attributes="0">
+                          <Component id="fishCandidatesLabel" alignment="3" min="-2" max="-2" attributes="0"/>
+                          <Component id="fishCandidatesResultLabel" alignment="3" min="-2" max="-2" attributes="0"/>
+                          <Component id="fishCandidatesButton" alignment="3" min="-2" max="-2" attributes="0"/>
+                      </Group>
                   </Group>
               </Group>
             </DimensionLayout>
@@ -325,6 +341,30 @@
                 </Property>
               </Properties>
             </Component>
+            <Component class="javax.swing.JLabel" name="fishCandidatesLabel">
+              <Properties>
+                <Property name="text" type="java.lang.String" editor="org.netbeans.modules.i18n.form.FormI18nStringEditor">
+                  <ResourceString bundle="intl/ConfigFindAllStepsPanel.properties" key="ConfigFindAllStepsPanel.fishCandidatesLabel.text" replaceFormat="java.util.ResourceBundle.getBundle(&quot;{bundleNameSlashes}&quot;).getString(&quot;{key}&quot;)"/>
+                </Property>
+              </Properties>
+            </Component>
+            <Component class="javax.swing.JLabel" name="fishCandidatesResultLabel">
+              <Properties>
+                <Property name="text" type="java.lang.String" editor="org.netbeans.modules.i18n.form.FormI18nStringEditor">
+                  <ResourceString bundle="intl/ConfigFindAllStepsPanel.properties" key="ConfigFindAllStepsPanel.fishCandidatesResultLabel.text" replaceFormat="java.util.ResourceBundle.getBundle(&quot;{bundleNameSlashes}&quot;).getString(&quot;{key}&quot;)"/>
+                </Property>
+              </Properties>
+            </Component>
+            <Component class="javax.swing.JButton" name="fishCandidatesButton">
+              <Properties>
+                <Property name="text" type="java.lang.String" editor="org.netbeans.modules.i18n.form.FormI18nStringEditor">
+                  <ResourceString bundle="intl/ConfigFindAllStepsPanel.properties" key="ConfigFindAllStepsPanel.fishCandidatesButton.text" replaceFormat="java.util.ResourceBundle.getBundle(&quot;{bundleNameSlashes}&quot;).getString(&quot;{key}&quot;)"/>
+                </Property>
+              </Properties>
+              <Events>
+                <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="fishCandidatesButtonActionPerformed"/>
+              </Events>
+            </Component>
           </SubComponents>
         </Container>
         <Container class="javax.swing.JPanel" name="krakenFishPanel">
@@ -341,30 +381,41 @@
           <Layout>
             <DimensionLayout dim="0">
               <Group type="103" groupAlignment="0" attributes="0">
-                  <Group type="102" alignment="0" attributes="0">
-                      <EmptySpace max="-2" attributes="0"/>
-                      <Group type="103" groupAlignment="0" attributes="0">
-                          <Component id="krakenFishTypeLabel" alignment="0" min="-2" max="-2" attributes="0"/>
-                          <Component id="krakenFishFromLabel" alignment="0" min="-2" max="-2" attributes="0"/>
-                          <Component id="krakenFishMaxFinsLabel" alignment="0" min="-2" max="-2" attributes="0"/>
-                          <Component id="krakenFishMaxEndoFinsLabel" alignment="0" min="-2" max="-2" attributes="0"/>
-                      </Group>
-                      <EmptySpace max="-2" attributes="0"/>
+                  <Group type="102" attributes="0">
+                      <EmptySpace min="-2" max="-2" attributes="0"/>
                       <Group type="103" groupAlignment="0" attributes="0">
                           <Group type="102" alignment="0" attributes="0">
                               <Group type="103" groupAlignment="0" attributes="0">
-                                  <Component id="krakenFishFromComboBox" linkSize="2" alignment="0" min="-2" max="-2" attributes="0"/>
-                                  <Component id="krakenFishMaxFinsComboBox" linkSize="2" alignment="0" min="-2" max="-2" attributes="0"/>
-                                  <Component id="krakenFishMaxEndoFinsComboBox" linkSize="2" alignment="0" min="-2" max="-2" attributes="0"/>
+                                  <Component id="krakenFishTypeLabel" alignment="0" min="-2" max="-2" attributes="0"/>
+                                  <Component id="krakenFishFromLabel" alignment="0" min="-2" max="-2" attributes="0"/>
+                                  <Component id="krakenFishMaxFinsLabel" alignment="0" min="-2" max="-2" attributes="0"/>
+                                  <Component id="krakenFishMaxEndoFinsLabel" alignment="0" min="-2" max="-2" attributes="0"/>
                               </Group>
-                              <EmptySpace max="-2" attributes="0"/>
-                              <Component id="krakenFishToLabel" min="-2" max="-2" attributes="0"/>
-                              <EmptySpace max="-2" attributes="0"/>
-                              <Component id="krakenFishToComboBox" linkSize="2" min="-2" max="-2" attributes="0"/>
+                              <EmptySpace min="-2" max="-2" attributes="0"/>
+                              <Group type="103" groupAlignment="0" attributes="0">
+                                  <Group type="102" attributes="0">
+                                      <Group type="103" groupAlignment="0" attributes="0">
+                                          <Component id="krakenFishFromComboBox" alignment="0" max="32767" attributes="0"/>
+                                          <Component id="krakenFishMaxFinsComboBox" linkSize="2" alignment="0" min="-2" max="-2" attributes="0"/>
+                                          <Component id="krakenFishMaxEndoFinsComboBox" linkSize="2" alignment="0" min="-2" max="-2" attributes="0"/>
+                                      </Group>
+                                      <EmptySpace min="-2" max="-2" attributes="0"/>
+                                      <Component id="krakenFishToLabel" min="-2" max="-2" attributes="0"/>
+                                      <EmptySpace min="-2" max="-2" attributes="0"/>
+                                      <Component id="krakenFishToComboBox" pref="54" max="32767" attributes="0"/>
+                                  </Group>
+                                  <Component id="krakenFishTypeComboBox" pref="132" max="32767" attributes="2"/>
+                              </Group>
                           </Group>
-                          <Component id="krakenFishTypeComboBox" alignment="0" pref="137" max="32767" attributes="1"/>
+                          <Group type="102" alignment="0" attributes="0">
+                              <Component id="krakenFishCandidatesLabel" min="-2" max="-2" attributes="0"/>
+                              <EmptySpace max="-2" attributes="0"/>
+                              <Component id="krakenFishCandidatesResultLabel" min="-2" max="-2" attributes="0"/>
+                              <EmptySpace type="unrelated" max="-2" attributes="0"/>
+                              <Component id="krakenFishCandidatesButton" min="-2" max="-2" attributes="0"/>
+                          </Group>
                       </Group>
-                      <EmptySpace max="-2" attributes="0"/>
+                      <EmptySpace min="-2" max="-2" attributes="0"/>
                   </Group>
               </Group>
             </DimensionLayout>
@@ -391,6 +442,12 @@
                       <Group type="103" groupAlignment="3" attributes="0">
                           <Component id="krakenFishMaxEndoFinsLabel" alignment="3" min="-2" max="-2" attributes="0"/>
                           <Component id="krakenFishMaxEndoFinsComboBox" alignment="3" min="-2" max="-2" attributes="0"/>
+                      </Group>
+                      <EmptySpace max="-2" attributes="0"/>
+                      <Group type="103" groupAlignment="3" attributes="0">
+                          <Component id="krakenFishCandidatesLabel" alignment="3" min="-2" max="-2" attributes="0"/>
+                          <Component id="krakenFishCandidatesResultLabel" alignment="3" min="-2" max="-2" attributes="0"/>
+                          <Component id="krakenFishCandidatesButton" alignment="3" min="-2" max="-2" attributes="0"/>
                       </Group>
                       <EmptySpace max="32767" attributes="0"/>
                   </Group>
@@ -519,6 +576,30 @@
                   <ResourceString bundle="intl/ConfigFindAllStepsPanel.properties" key="ConfigFindAllStepsPanel.krakenFishTypeLabel.text" replaceFormat="java.util.ResourceBundle.getBundle(&quot;{bundleNameSlashes}&quot;).getString(&quot;{key}&quot;)"/>
                 </Property>
               </Properties>
+            </Component>
+            <Component class="javax.swing.JLabel" name="krakenFishCandidatesLabel">
+              <Properties>
+                <Property name="text" type="java.lang.String" editor="org.netbeans.modules.i18n.form.FormI18nStringEditor">
+                  <ResourceString bundle="intl/ConfigFindAllStepsPanel.properties" key="ConfigFindAllStepsPanel.krakenFishCandidatesLabel.text" replaceFormat="java.util.ResourceBundle.getBundle(&quot;{bundleNameSlashes}&quot;).getString(&quot;{key}&quot;)"/>
+                </Property>
+              </Properties>
+            </Component>
+            <Component class="javax.swing.JLabel" name="krakenFishCandidatesResultLabel">
+              <Properties>
+                <Property name="text" type="java.lang.String" editor="org.netbeans.modules.i18n.form.FormI18nStringEditor">
+                  <ResourceString bundle="intl/ConfigFindAllStepsPanel.properties" key="ConfigFindAllStepsPanel.krakenFishCandidatesResultLabel.text" replaceFormat="java.util.ResourceBundle.getBundle(&quot;{bundleNameSlashes}&quot;).getString(&quot;{key}&quot;)"/>
+                </Property>
+              </Properties>
+            </Component>
+            <Component class="javax.swing.JButton" name="krakenFishCandidatesButton">
+              <Properties>
+                <Property name="text" type="java.lang.String" editor="org.netbeans.modules.i18n.form.FormI18nStringEditor">
+                  <ResourceString bundle="intl/ConfigFindAllStepsPanel.properties" key="ConfigFindAllStepsPanel.krakenFishCandidatesButton.text" replaceFormat="java.util.ResourceBundle.getBundle(&quot;{bundleNameSlashes}&quot;).getString(&quot;{key}&quot;)"/>
+                </Property>
+              </Properties>
+              <Events>
+                <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="krakenFishCandidatesButtonActionPerformed"/>
+              </Events>
             </Component>
           </SubComponents>
         </Container>

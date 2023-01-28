@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008  Bernhard Hobiger
+ * Copyright (C) 2008/09  Bernhard Hobiger
  *
  * This file is part of HoDoKu.
  *
@@ -19,8 +19,13 @@
 
 package sudoku;
 
+import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Component;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
+import java.awt.Insets;
+import java.awt.Stroke;
 import java.text.MessageFormat;
 import java.util.Enumeration;
 import javax.swing.DefaultListModel;
@@ -40,9 +45,14 @@ import javax.swing.tree.TreeSelectionModel;
  *
  * @author  Bernhard Hobiger
  */
-public class ConfigSolverPanel extends javax.swing.JPanel {
+public class ConfigSolverPanel extends javax.swing.JPanel
+implements ListDragAndDropChange {
     private StepConfig[] steps;
     private DefaultListModel model;
+    private int dropIndex = -1;
+    private StepConfig dropObject;
+    private Color dndColor;
+    private Stroke dndStroke;
     
     // wird true gesetzt, nachdem ein Eintrag selektiert wurde; beim
     // nächsten Klick wird dann getoggelt
@@ -54,10 +64,15 @@ public class ConfigSolverPanel extends javax.swing.JPanel {
     public ConfigSolverPanel() {
         initComponents();
         
+        Color tmpColor = UIManager.getColor("List.foreground");
+        dndColor = new Color(tmpColor.getRed(), tmpColor.getGreen(), tmpColor.getBlue(), 100);
+        dndStroke = new BasicStroke(2, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND);
+        
         stepList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         stepList.setCellRenderer(new CheckBoxRenderer());
         model = new DefaultListModel();
         stepList.setModel(model);
+        new ListDragAndDrop(stepList, this, this);
         
         stepTree.setCellRenderer(new CheckRenderer());
         stepTree.getSelectionModel().setSelectionMode(TreeSelectionModel.SINGLE_TREE_SELECTION);
@@ -194,12 +209,10 @@ public class ConfigSolverPanel extends javax.swing.JPanel {
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(jPanel1Layout.createSequentialGroup()
                         .addComponent(downButton)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addGap(105, 105, 105)
                         .addComponent(resetButton))
-                    .addComponent(upButton))
-                .addGap(101, 101, 101))
-            .addGroup(jPanel1Layout.createSequentialGroup()
-                .addComponent(jPanel3, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(upButton)
+                    .addComponent(jPanel3, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                 .addContainerGap())
         );
 
@@ -306,34 +319,36 @@ public class ConfigSolverPanel extends javax.swing.JPanel {
     private void downButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_downButtonActionPerformed
         int index = stepList.getSelectedIndex();
         if (index < steps.length - 1) {
-            StepConfig dummy = steps[index];
-            steps[index] = steps[index + 1];
-            steps[index + 1] = dummy;
-            int dummyIndex = steps[index].getIndex();
-            steps[index].setIndex(steps[index + 1].getIndex());
-            steps[index + 1].setIndex(dummyIndex);
-            model.remove(index);
-            model.add(index + 1, steps[index + 1]);
-            stepList.setSelectedIndex(index + 1);
-            stepList.ensureIndexIsVisible(index + 1);
-            stepList.repaint();
+            moveOneStep(index, true);
+//            StepConfig dummy = steps[index];
+//            steps[index] = steps[index + 1];
+//            steps[index + 1] = dummy;
+//            int dummyIndex = steps[index].getIndex();
+//            steps[index].setIndex(steps[index + 1].getIndex());
+//            steps[index + 1].setIndex(dummyIndex);
+//            model.remove(index);
+//            model.add(index + 1, steps[index + 1]);
+//            stepList.setSelectedIndex(index + 1);
+//            stepList.ensureIndexIsVisible(index + 1);
+//            stepList.repaint();
         }
     }//GEN-LAST:event_downButtonActionPerformed
     
     private void upButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_upButtonActionPerformed
         int index = stepList.getSelectedIndex();
         if (index > 0) {
-            StepConfig dummy = steps[index];
-            steps[index] = steps[index - 1];
-            steps[index - 1] = dummy;
-            int dummyIndex = steps[index].getIndex();
-            steps[index].setIndex(steps[index - 1].getIndex());
-            steps[index - 1].setIndex(dummyIndex);
-            model.remove(index);
-            model.add(index - 1, steps[index - 1]);
-            stepList.setSelectedIndex(index - 1);
-            stepList.ensureIndexIsVisible(index - 1);
-            stepList.repaint();
+            moveOneStep(index, false);
+//            StepConfig dummy = steps[index];
+//            steps[index] = steps[index - 1];
+//            steps[index - 1] = dummy;
+//            int dummyIndex = steps[index].getIndex();
+//            steps[index].setIndex(steps[index - 1].getIndex());
+//            steps[index - 1].setIndex(dummyIndex);
+//            model.remove(index);
+//            model.add(index - 1, steps[index - 1]);
+//            stepList.setSelectedIndex(index - 1);
+//            stepList.ensureIndexIsVisible(index - 1);
+//            stepList.repaint();
         }
     }//GEN-LAST:event_upButtonActionPerformed
     
@@ -380,6 +395,53 @@ public class ConfigSolverPanel extends javax.swing.JPanel {
             }
         }
     }//GEN-LAST:event_stepListMouseClicked
+    
+    private void moveOneStep(int index, boolean up) {
+        //System.out.println("move one step: " + index + "/" + up);
+        int toIndex = up ? index + 1 : index - 1;
+        StepConfig dummy = steps[index];
+        steps[index] = steps[toIndex];
+        steps[toIndex] = dummy;
+        int dummyIndex = steps[index].getIndex();
+        steps[index].setIndex(steps[toIndex].getIndex());
+        steps[toIndex].setIndex(dummyIndex);
+        model.remove(index);
+        model.add(toIndex, steps[toIndex]);
+        stepList.setSelectedIndex(toIndex);
+        stepList.ensureIndexIsVisible(toIndex);
+        stepList.repaint();
+    }
+    
+    @Override
+    public void moveStep(int fromIndex, int toIndex) {
+        //System.out.println("moving: " + fromIndex + "/" + toIndex);
+        boolean up = fromIndex < toIndex ? true : false;
+        int anz = Math.abs(fromIndex - toIndex);
+        if (up) {
+            anz--;
+        }
+        for (int i = 0; i < anz; i++) {
+            moveOneStep(fromIndex, up);
+            if (up) {
+                fromIndex++;
+            } else {
+                fromIndex--;
+            }
+        }
+    }
+
+    @Override
+    public void setDropLocation(int index, StepConfig object) {
+        dropIndex = index;
+        dropObject = object;
+        if (index != -1) {
+            if (index <= stepList.getFirstVisibleIndex() + 1) {
+                stepList.ensureIndexIsVisible(index - 1);
+            } else if (index >= stepList.getLastVisibleIndex() - 1) {
+                stepList.ensureIndexIsVisible(index + 1);
+            }
+        }
+    }
     
     public void okPressed() {
         // Alle Werte übernehmen
@@ -476,6 +538,8 @@ public class ConfigSolverPanel extends javax.swing.JPanel {
     }
     
     class CheckBoxRenderer extends JCheckBox implements ListCellRenderer {
+        private boolean isTargetCell;
+        private int index;
         
         public CheckBoxRenderer() {
         }
@@ -504,9 +568,28 @@ public class ConfigSolverPanel extends javax.swing.JPanel {
             }
             setText(((StepConfig)obj).toString());
             setSelected(((StepConfig)obj).isEnabled());
+
+            isTargetCell = false;
+            this.index = index;
+            if (index == dropIndex) {
+                isTargetCell = true;
+            }
             return this;
         }
         
+        @Override
+        public void paintComponent(Graphics g) {
+            super.paintComponent(g);
+            Graphics2D g2 = (Graphics2D) g;
+            if (isTargetCell) {
+                Insets insets = getInsets();
+                g2.setColor(dndColor);
+                g2.setStroke(dndStroke);
+                //g2.drawLine(insets.left, 1, insets.right, 1);
+                g2.drawLine(insets.left - 2, 0, insets.left - 2, 3);
+                g2.drawLine(insets.left - 1, 2, getSize().width, 2);
+            }
+        }
         
     }
     

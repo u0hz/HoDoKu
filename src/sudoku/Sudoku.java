@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008  Bernhard Hobiger
+ * Copyright (C) 2008/09  Bernhard Hobiger
  *
  * This file is part of HoDoKu.
  *
@@ -19,9 +19,8 @@
 
 package sudoku;
 
+import java.math.BigInteger;
 import java.util.Arrays;
-import java.util.LinkedList;
-import java.util.List;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.logging.Level;
@@ -84,6 +83,8 @@ public class Sudoku implements Cloneable {
     protected static SudokuSetBase[] templates = new SudokuSetBase[46656];
     // Ein Template mit allen möglichen Buddies für jede Zelle im Grid
     protected static SudokuSet[] buddies = new SudokuSet[81];
+    // For every group of 8 cells (denoted by a byte in a SudokuSetBase) all possible buddies
+    protected static SudokuSetBase[][] groupedBuddies = new SudokuSetBase[11][256];
     // Ein Template mit allen Zellen für jedes Haus
     protected static SudokuSet[] lineTemplates = new SudokuSet[9];
     protected static SudokuSet[] colTemplates = new SudokuSet[9];
@@ -99,12 +100,29 @@ public class Sudoku implements Cloneable {
     private int score;    // Ausgangspunkt für dieses Sudoku (für reset)
     private String initialState = null;
 
+    static {
+        // Buddies und Unit-Sets initialisieren
+        long ticks = System.currentTimeMillis();
+        //System.out.println("Init...");
+        initBuddies();
+        ticks = System.currentTimeMillis() - ticks;
+        //System.out.println("Init buddies: " + ticks + "ms");
+
+        // Templates initialisieren
+        ticks = System.currentTimeMillis();
+        initTemplates();
+        ticks = System.currentTimeMillis() - ticks;
+        //System.out.println("Init templates: " + ticks + "ms");
+        
+        // Grouped buddies
+        ticks = System.currentTimeMillis();
+        initGroupedBuddies();
+        ticks = System.currentTimeMillis() - ticks;
+        //System.out.println("Init grouped buddies: " + ticks + "ms");
+    }
+    
     /** Creates a new instance of Sudoku */
     public Sudoku() {
-        this(true);
-    }
-
-    public Sudoku(boolean initTemplates) {
         // allowed positions
         for (int i = 0; i <= 9; i++) {
             allowedPositions[i] = new SudokuSet(true);
@@ -114,17 +132,9 @@ public class Sudoku implements Cloneable {
             positions[i] = new SudokuSet();
         }
 
-        // Buddies und Unit-Sets initialisieren
-        initBuddies();
-
-        // Templates initialisieren
-        if (initTemplates && templates[0] == null) {
-            initTemplates();
-        }
-
         setSudoku(null);
     }
-    //public Object clone() throws CloneNotSupportedException {
+    
     @Override
     public Sudoku clone() {
         Sudoku newSudoku = null;
@@ -1151,7 +1161,7 @@ public class Sudoku implements Cloneable {
         return cells;
     }
 
-    protected void initBuddies() {
+    private static void initBuddies() {
         if (buddies[0] != null) {
             // ist schon initialisiert
             return;
@@ -1187,9 +1197,90 @@ public class Sudoku implements Cloneable {
         }
     }
 
-    protected void initTemplates() {
+    /**
+     * Optimization: For every group of 8 cells all possible buddies -> 11 * 256 combinations.
+     * These group buddies are used by SudokuSetBase: might speed up the search for
+     * all possible buddies of multiple units (mainly in fish and ALS search)
+     */
+    private static void initGroupedBuddies() {
+        for (int i = 0; i < 11; i++) {
+            initGroupForGroupedBuddies(i * 8, groupedBuddies[i]);
+        }
+    }
+
+    /**
+     * First compute all possible combinations of 8 cells starting with
+     * groupOffset, then get a set with all budies for every combination.
+     * 
+     * @param groupOffset The first index in the group of 8 cells
+     * @param groupArray The array that stores all possible buddy sets
+     */
+    private static void initGroupForGroupedBuddies(int groupOffset, SudokuSetBase[] groupArray) {
+        SudokuSet groupSet = new SudokuSet();
+        for (int i = 0; i < 256; i++) {
+            groupSet.clear();
+            int mask = 0x01;
+            for (int j = 0; j < 8; j++) {
+                //System.out.print("i: " + i + ", j: " + j + " (mask: " + Integer.toHexString(mask) + ") ");
+                if ((i & mask) != 0 && (groupOffset + j + 1) <= 81) {
+                    groupSet.add(groupOffset + j);
+                    //System.out.print("  ADD: " + (groupOffset + j + 1));
+                }
+                //System.out.println();
+                mask <<= 1;
+            }
+            SudokuSetBase buddiesSet = new SudokuSetBase(true);
+            for (int j = 0; j < groupSet.size(); j++) {
+                buddiesSet.and(buddies[groupSet.get(j)]);
+            }
+            groupArray[i] = buddiesSet;
+            //System.out.println("Grouped Buddies " + groupOffset + "/" + i + ": " + groupSet + ", " + buddiesSet);
+        }
+    }
+
+    /**
+     * Calculates all common buddies of all cells in <code>cells</code> and
+     * returns them in <code>buddies</code>. groupedBuddies is used
+     * for calculations.
+     * 
+     * @param cells The cells for which the buddies should be calculated
+     * @param buddiesOut The resulting buddies
+     */
+    public static void getBuddies(SudokuSetBase cells, SudokuSetBase buddiesOut) {
+        buddiesOut.setAll();
+        if (cells.mask1 != 0) {
+            for (int i = 0, j = 0; i < 8; i++, j += 8) {
+                int mIndex = (int) ((cells.mask1 >> j) & 0xFF);
+                buddiesOut.and(groupedBuddies[i][mIndex]);
+            }
+        }
+        if (cells.mask2 != 0) {
+            for (int i = 8, j = 0; i < 11; i++, j += 8) {
+                int mIndex = (int) ((cells.mask2 >> j) & 0xFF);
+                buddiesOut.and(groupedBuddies[i][mIndex]);
+            }
+        }
+    }
+    
+    /**
+     * Calculates all common buddies of all cells in <code>cells</code> and
+     * returns them in <code>buddies</code>. Calculations are done the
+     * traditional way.
+     * 
+     * @param cells The cells for which the buddies should be calculated
+     * @param buddiesOut The resulting buddies
+     */
+    public static void getBuddiesWG(SudokuSet cells, SudokuSetBase buddiesOut) {
+        buddiesOut.setAll();
+        for (int i = 0; i < cells.size(); i++) {
+            buddiesOut.and(buddies[cells.get(i)]);
+        }
+    }
+    
+    private static void initTemplates() {
         // alle 46656 möglichen Templates anlegen
-        Sudoku sudoku = new Sudoku(false);
+        //Sudoku sudoku = new Sudoku(false);
+        Sudoku sudoku = new Sudoku();
         SudokuSetBase set = new SudokuSetBase();
         initTemplatesRecursive(sudoku, 0, 0, 1, set);
 
@@ -1203,7 +1294,7 @@ public class Sudoku implements Cloneable {
         }
     }
 
-    private int initTemplatesRecursive(Sudoku sudoku, int line, int index, int cand, SudokuSetBase set) {
+    private static int initTemplatesRecursive(Sudoku sudoku, int line, int index, int cand, SudokuSetBase set) {
         if (line >= Sudoku.LINES.length) {
             templates[index++] = set.clone();
             return index;
@@ -1244,26 +1335,80 @@ public class Sudoku implements Cloneable {
     }
 
     public static void main(String[] args) {
+//        long ticks = System.currentTimeMillis();
+//        //Sudoku newSudoku = new Sudoku(true);
+//        Sudoku newSudoku = new Sudoku();
+//        ticks = System.currentTimeMillis() - ticks;
+//        System.out.println("Templates angelegt: " + ticks + "ms");
+//        for (int i = 0; i < templates.length; i += 10000) {
+//            if (templates[i] != null) {
+//                System.out.println(templates[i].toString());
+//            }
+//        }
+//
+//        ticks = System.currentTimeMillis();
+//        List<SudokuSetBase> testList = new LinkedList<SudokuSetBase>();
+//        for (int i = 0; i < templates.length; i++) {
+//            if (templates[i] != null) {
+//                testList.add(templates[i]);
+//            }
+//        }
+//        ticks = System.currentTimeMillis() - ticks;
+//        System.out.println("Liste angelegt: " + ticks + "ms");
+//        System.out.println("size: " + testList.size());
+        // test grouped buddies
+        SudokuSet cells = new SudokuSet();
+        BigInteger count = new BigInteger("0");
+        BigInteger zero = new BigInteger("0");
+        BigInteger one = new BigInteger("1");
+        BigInteger mill = new BigInteger("1000000");
+        SudokuSet buddies1 = new SudokuSet();
+        SudokuSetBase buddies2 = new SudokuSetBase();
+        boolean b1 = true;
+        boolean b2 = true;
         long ticks = System.currentTimeMillis();
-        Sudoku newSudoku = new Sudoku(true);
-        ticks = System.currentTimeMillis() - ticks;
-        System.out.println("Templates angelegt: " + ticks + "ms");
-        for (int i = 0; i < templates.length; i += 10000) {
-            if (templates[i] != null) {
-                System.out.println(templates[i].toString());
-            }
-        }
+        for (long m1 = 0xfff45678fffl; m1 <= Long.MAX_VALUE; m1++) {
+            for (long m2 = 0; m2 <= 0x3ffffl; m2++) {
+                cells.clear();
+                long mask = 0x1;
+                for (int i = 0; i < 63; i++) {
+                    if ((m1 & mask) != 0) {
+                        cells.add(i);
+                    }
+                    mask <<= 1;
+                }
+                mask = 0x1;
+                for (int i = 0; i < 18; i++) {
+                    if ((m2 & mask) != 0) {
+                        cells.add(i + 63);
+                    }
+                    mask <<= 1;
+                }
+                
+                if (b1) {
+                    getBuddiesWG(cells, buddies1);
+                }
+                if (b2) {
+                    getBuddies(cells, buddies2);
+                }
+                if (b1 && b2) {
+                    if (!buddies1.equals(buddies2)) {
+                        System.out.println("Error! cells: " + cells + ", buddies1: " + buddies1 + ", buddies2: " + buddies2);
+                        return;
+//                    } else {
+//                        System.out.println("Ok! cells: " + cells + ", buddies1: " + buddies1 + ", buddies2: " + buddies2);
+                    }
+                }
 
-        ticks = System.currentTimeMillis();
-        List<SudokuSetBase> testList = new LinkedList<SudokuSetBase>();
-        for (int i = 0; i < templates.length; i++) {
-            if (templates[i] != null) {
-                testList.add(templates[i]);
+                count = count.add(one);
+                if (count.mod(mill).equals(zero)) {
+                    double t2 = System.currentTimeMillis() - ticks;
+                    double d = t2 / (count.doubleValue() / mill.doubleValue());
+                    System.out.println(count + ": " + ((long)d) + "ms per " + mill + " buddies");
+                }
             }
         }
-        ticks = System.currentTimeMillis() - ticks;
-        System.out.println("Liste angelegt: " + ticks + "ms");
-        System.out.println("size: " + testList.size());
+        System.out.println("Grouped buddies: " + count + " combinations!");
     }
 
     public DifficultyLevel getLevel() {

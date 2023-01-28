@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008  Bernhard Hobiger
+ * Copyright (C) 2008/09  Bernhard Hobiger
  *
  * This file is part of HoDoKu.
  *
@@ -298,11 +298,11 @@ public class SolutionPanel extends javax.swing.JPanel {
             return;
         }
         while (actSelectedIndex < actSteps.size() - 1 &&
-                solver.getStepConfig(actSteps.get(actSelectedIndex).getType().ordinal()).getLevel() == DifficultyType.EASY.ordinal()) {
+                SolutionType.getStepConfig(actSteps.get(actSelectedIndex).getType()).getLevel() == DifficultyType.EASY.ordinal()) {
             weiterButtonActionPerformed(null);
         }
         if (actSelectedIndex < actSteps.size() &&
-                solver.getStepConfig(actSteps.get(actSelectedIndex).getType().ordinal()).getLevel() == DifficultyType.EASY.ordinal()) {
+                SolutionType.getStepConfig(actSteps.get(actSelectedIndex).getType()).getLevel() == DifficultyType.EASY.ordinal()) {
             weiterButtonActionPerformed(null);
         }
         mainFrame.fixFocus();
@@ -497,8 +497,8 @@ private void solutionTabbedPaneStateChanged(javax.swing.event.ChangeEvent evt) {
         for (int i = 0; i < actSteps.size(); i++) {
             //data[i] = steps.get(i).toString(1);
             data[i] = actSteps.get(i).toString(2);
-            actStepBackgroundColors[i] = Options.getInstance().getDifficultyLevels()[solver.getStepConfig(actSteps.get(i).getType().ordinal()).getLevel()].getBackgroundColor();
-            actStepForegroundColors[i] = Options.getInstance().getDifficultyLevels()[solver.getStepConfig(actSteps.get(i).getType().ordinal()).getLevel()].getForegroundColor();
+            actStepBackgroundColors[i] = Options.getInstance().getDifficultyLevels()[SolutionType.getStepConfig(actSteps.get(i).getType()).getLevel()].getBackgroundColor();
+            actStepForegroundColors[i] = Options.getInstance().getDifficultyLevels()[SolutionType.getStepConfig(actSteps.get(i).getType()).getLevel()].getForegroundColor();
         }
         actList.setListData(data);
     }

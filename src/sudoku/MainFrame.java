@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008  Bernhard Hobiger
+ * Copyright (C) 2008/09  Bernhard Hobiger
  *
  * This file is part of HoDoKu.
  *
@@ -71,7 +71,7 @@ import javax.swing.filechooser.FileFilter;
  */
 public class MainFrame extends javax.swing.JFrame implements FlavorListener {
 
-    public static final String VERSION = "HoDoKu - v1.1";
+    public static final String VERSION = "HoDoKu - v1.2.4";
     private SudokuPanel sudokuPanel;
     private DifficultyLevel level = Options.getInstance().getDifficultyLevels()[DifficultyType.EASY.ordinal()];
     private Cursor[] numberCursors = new Cursor[10];
@@ -110,6 +110,8 @@ public class MainFrame extends javax.swing.JFrame implements FlavorListener {
     public MainFrame() {
         initComponents();
         setTitle(VERSION);
+        outerSplitPane.getActionMap().getParent().remove("startResize");
+        outerSplitPane.getActionMap().getParent().remove("toggleFocus");
 
         Color lafMenuBackColor = UIManager.getColor("textHighlight");
         Color lafMenuColor = UIManager.getColor("textHighlightText");
@@ -279,7 +281,6 @@ public class MainFrame extends javax.swing.JFrame implements FlavorListener {
     private void initComponents() {
 
         levelButtonGroup = new javax.swing.ButtonGroup();
-        eingebenSpielenButtonGroup = new javax.swing.ButtonGroup();
         viewButtonGroup = new javax.swing.ButtonGroup();
         statusLinePanel = new javax.swing.JPanel();
         statusLabel1 = new javax.swing.JLabel();
@@ -332,8 +333,9 @@ public class MainFrame extends javax.swing.JFrame implements FlavorListener {
         druckenMenuItem = new javax.swing.JMenuItem();
         speichernAlsBildMenuItem = new javax.swing.JMenuItem();
         jSeparator15 = new javax.swing.JSeparator();
-        spielEingebenMenuItem = new javax.swing.JRadioButtonMenuItem();
-        spielenMenuItem = new javax.swing.JRadioButtonMenuItem();
+        spielEingebenMenuItem = new javax.swing.JMenuItem();
+        spielEditierenMenuItem = new javax.swing.JMenuItem();
+        spielSpielenMenuItem = new javax.swing.JMenuItem();
         jSeparator16 = new javax.swing.JSeparator();
         beendenMenuItem = new javax.swing.JMenuItem();
         bearbeitenMenu = new javax.swing.JMenu();
@@ -347,6 +349,7 @@ public class MainFrame extends javax.swing.JFrame implements FlavorListener {
         copyLibraryMenuItem = new javax.swing.JMenuItem();
         pasteMenuItem = new javax.swing.JMenuItem();
         jSeparator17 = new javax.swing.JSeparator();
+        restartSpielMenuItem = new javax.swing.JMenuItem();
         resetSpielMenuItem = new javax.swing.JMenuItem();
         jSeparator2 = new javax.swing.JSeparator();
         configMenuItem = new javax.swing.JMenuItem();
@@ -791,7 +794,6 @@ public class MainFrame extends javax.swing.JFrame implements FlavorListener {
         dateiMenu.add(speichernAlsBildMenuItem);
         dateiMenu.add(jSeparator15);
 
-        eingebenSpielenButtonGroup.add(spielEingebenMenuItem);
         spielEingebenMenuItem.setMnemonic(java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.spielEingebenMenuItemMnemonic").charAt(0));
         spielEingebenMenuItem.setText(bundle.getString("MainFrame.spielEingebenMenuItem.text")); // NOI18N
         spielEingebenMenuItem.addActionListener(new java.awt.event.ActionListener() {
@@ -801,16 +803,24 @@ public class MainFrame extends javax.swing.JFrame implements FlavorListener {
         });
         dateiMenu.add(spielEingebenMenuItem);
 
-        eingebenSpielenButtonGroup.add(spielenMenuItem);
-        spielenMenuItem.setMnemonic(java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.spielenMenuItemMnemonic").charAt(0));
-        spielenMenuItem.setSelected(true);
-        spielenMenuItem.setText(bundle.getString("MainFrame.spielenMenuItem.text")); // NOI18N
-        spielenMenuItem.addActionListener(new java.awt.event.ActionListener() {
+        spielEditierenMenuItem.setMnemonic(java.util.ResourceBundle.getBundle("intl/MainFrame").getString("spielEditierenMenuItemMnemonic").charAt(0));
+        spielEditierenMenuItem.setText(bundle.getString("MainFrame.spielEditierenMenuItem.text")); // NOI18N
+        spielEditierenMenuItem.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                spielenMenuItemActionPerformed(evt);
+                spielEditierenMenuItemActionPerformed(evt);
             }
         });
-        dateiMenu.add(spielenMenuItem);
+        dateiMenu.add(spielEditierenMenuItem);
+
+        spielSpielenMenuItem.setMnemonic(java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.spielenMenuItemMnemonic").charAt(0));
+        spielSpielenMenuItem.setText(bundle.getString("MainFrame.spielSpielenMenuItem.text")); // NOI18N
+        spielSpielenMenuItem.setEnabled(false);
+        spielSpielenMenuItem.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                spielSpielenMenuItemActionPerformed(evt);
+            }
+        });
+        dateiMenu.add(spielSpielenMenuItem);
         dateiMenu.add(jSeparator16);
 
         beendenMenuItem.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_X, java.awt.event.InputEvent.ALT_MASK));
@@ -909,7 +919,16 @@ public class MainFrame extends javax.swing.JFrame implements FlavorListener {
         bearbeitenMenu.add(pasteMenuItem);
         bearbeitenMenu.add(jSeparator17);
 
-        resetSpielMenuItem.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_R, java.awt.event.InputEvent.CTRL_MASK));
+        restartSpielMenuItem.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_R, java.awt.event.InputEvent.CTRL_MASK));
+        restartSpielMenuItem.setMnemonic(java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.restartSpielMenuItemMnemonic").charAt(0));
+        restartSpielMenuItem.setText(bundle.getString("MainFrame.restartSpielMenuItem.text")); // NOI18N
+        restartSpielMenuItem.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                restartSpielMenuItemActionPerformed(evt);
+            }
+        });
+        bearbeitenMenu.add(restartSpielMenuItem);
+
         resetSpielMenuItem.setMnemonic(java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.resetSpielMenuItemMnemonic").charAt(0));
         resetSpielMenuItem.setText(bundle.getString("MainFrame.resetSpielMenuItem.text")); // NOI18N
         resetSpielMenuItem.addActionListener(new java.awt.event.ActionListener() {
@@ -1414,40 +1433,19 @@ public class MainFrame extends javax.swing.JFrame implements FlavorListener {
         pageFormat = job.pageDialog(pageFormat);
     }//GEN-LAST:event_seiteEinrichtenMenuItemActionPerformed
 
-    private void resetSpielMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_resetSpielMenuItemActionPerformed
+    private void restartSpielMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_restartSpielMenuItemActionPerformed
         if (JOptionPane.showConfirmDialog(this, java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.start_new_game"),
                 java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.start_new"),
                 JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION) {
             sudokuPanel.setSudoku(sudokuPanel.getSudokuString(ClipboardMode.CLUES_ONLY));
-        //initializeResultPanels();
-        }
-    }//GEN-LAST:event_resetSpielMenuItemActionPerformed
-
-    private void spielenMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_spielenMenuItemActionPerformed
-        if (sudokuPanel.getAnzFilled() > 0) {
-            sudokuPanel.setSudoku(sudokuPanel.getSudokuString(ClipboardMode.VALUES_ONLY));
             allStepsPanel.setSudoku(sudokuPanel.getSudoku());
             initializeResultPanels();
+            repaint();
+            setSpielen(true);
+            check();
+            fixFocus();        
         }
-        setSpielen(true);
-    }//GEN-LAST:event_spielenMenuItemActionPerformed
-
-    private void spielEingebenMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_spielEingebenMenuItemActionPerformed
-        // bestehendes Sudoku kann gelöscht werden, muss aber nicht
-        if (sudokuPanel.getAnzFilled() != 0) {
-            int antwort = JOptionPane.showConfirmDialog(this, java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.delete_sudoku"),
-                    java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.new_input"),
-                    JOptionPane.YES_NO_OPTION);
-            if (antwort == JOptionPane.YES_OPTION) {
-                sudokuPanel.setSudoku((String) null);
-                allStepsPanel.setSudoku(sudokuPanel.getSudoku());
-                resetResultPanels();
-            }
-        }
-        sudokuPanel.setNoClues();
-        hinweisAbbrechenButtonActionPerformed(null);
-        setSpielen(false);
-    }//GEN-LAST:event_spielEingebenMenuItemActionPerformed
+}//GEN-LAST:event_restartSpielMenuItemActionPerformed
 
     private void beendenMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_beendenMenuItemActionPerformed
         formWindowClosed(null);
@@ -1770,6 +1768,55 @@ private void hintPanelPropertyChange(java.beans.PropertyChangeEvent evt) {//GEN-
     //System.out.println("hintPanelPropertyChanged!");
     outerSplitPanePropertyChange(null);
 }//GEN-LAST:event_hintPanelPropertyChange
+
+private void spielEingebenMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_spielEingebenMenuItemActionPerformed
+        // bestehendes Sudoku kann gelöscht werden, muss aber nicht
+        if (sudokuPanel.getAnzFilled() != 0) {
+            int antwort = JOptionPane.showConfirmDialog(this, java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.delete_sudoku"),
+                    java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.new_input"),
+                    JOptionPane.YES_NO_OPTION);
+            if (antwort != JOptionPane.YES_OPTION) {
+                // do nothing!
+                return;
+            }
+        }
+        sudokuPanel.setSudoku((String) null);
+        allStepsPanel.setSudoku(sudokuPanel.getSudoku());
+        resetResultPanels();
+        sudokuPanel.setNoClues();
+        hinweisAbbrechenButtonActionPerformed(null);
+        setSpielen(false);
+}//GEN-LAST:event_spielEingebenMenuItemActionPerformed
+
+private void spielEditierenMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_spielEditierenMenuItemActionPerformed
+        resetResultPanels();
+        sudokuPanel.setNoClues();
+        hinweisAbbrechenButtonActionPerformed(null);
+        setSpielen(false);
+}//GEN-LAST:event_spielEditierenMenuItemActionPerformed
+
+private void spielSpielenMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_spielSpielenMenuItemActionPerformed
+        if (sudokuPanel.getAnzFilled() > 0) {
+            sudokuPanel.setSudoku(sudokuPanel.getSudokuString(ClipboardMode.VALUES_ONLY));
+            allStepsPanel.setSudoku(sudokuPanel.getSudoku());
+            initializeResultPanels();
+        }
+        setSpielen(true);
+}//GEN-LAST:event_spielSpielenMenuItemActionPerformed
+
+private void resetSpielMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_resetSpielMenuItemActionPerformed
+        if (JOptionPane.showConfirmDialog(this, java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.reset_game"),
+                java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.reset"),
+                JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION) {
+            sudokuPanel.setSudoku(sudokuPanel.getSudokuString(ClipboardMode.CLUES_ONLY));
+            allStepsPanel.setSudoku(sudokuPanel.getSudoku());
+            allStepsPanel.resetPanel();
+            repaint();
+            setSpielen(true);
+            check();
+            fixFocus();        
+        }
+}//GEN-LAST:event_resetSpielMenuItemActionPerformed
     
     private void tabPaneMouseClicked(java.awt.event.MouseEvent evt) {
         if (evt.getButton() == MouseEvent.BUTTON1) {
@@ -1909,6 +1956,9 @@ private void hintPanelPropertyChange(java.beans.PropertyChangeEvent evt) {//GEN-
         lösungsSchrittMenuItem.setEnabled(isSpielen);
         alleHiddenSinglesSetzenMenuItem.setEnabled(isSpielen);
         showDeviationsMenuItem.setEnabled(isSpielen);
+        
+        spielSpielenMenuItem.setEnabled(! isSpielen);
+        spielEditierenMenuItem.setEnabled(isSpielen);
     }
     
     public void setSolutionStep(SolutionStep step, boolean setInSudokuPanel) {
@@ -2213,7 +2263,6 @@ private void hintPanelPropertyChange(java.beans.PropertyChangeEvent evt) {//GEN-
     private javax.swing.JMenuItem copyPmGridWithStepMenuItem;
     private javax.swing.JMenu dateiMenu;
     private javax.swing.JMenuItem druckenMenuItem;
-    private javax.swing.ButtonGroup eingebenSpielenButtonGroup;
     private javax.swing.JToggleButton f1ToggleButton;
     private javax.swing.JToggleButton f2ToggleButton;
     private javax.swing.JToggleButton f3ToggleButton;
@@ -2272,6 +2321,7 @@ private void hintPanelPropertyChange(java.beans.PropertyChangeEvent evt) {//GEN-
     private javax.swing.JButton redoToolButton;
     private javax.swing.JMenuItem resetSpielMenuItem;
     private javax.swing.JMenuItem resetViewMenuItem;
+    private javax.swing.JMenuItem restartSpielMenuItem;
     private javax.swing.JMenu rätselMenu;
     private javax.swing.JMenuItem saveAsMenuItem;
     private javax.swing.JMenuItem seiteEinrichtenMenuItem;
@@ -2280,8 +2330,9 @@ private void hintPanelPropertyChange(java.beans.PropertyChangeEvent evt) {//GEN-
     private javax.swing.JCheckBoxMenuItem showWrongValuesMenuItem;
     private javax.swing.JRadioButtonMenuItem solutionMenuItem;
     private javax.swing.JMenuItem speichernAlsBildMenuItem;
-    private javax.swing.JRadioButtonMenuItem spielEingebenMenuItem;
-    private javax.swing.JRadioButtonMenuItem spielenMenuItem;
+    private javax.swing.JMenuItem spielEditierenMenuItem;
+    private javax.swing.JMenuItem spielEingebenMenuItem;
+    private javax.swing.JMenuItem spielSpielenMenuItem;
     private javax.swing.JLabel statusLabel1;
     private javax.swing.JLabel statusLabel2;
     private javax.swing.JLabel statusLabel3;

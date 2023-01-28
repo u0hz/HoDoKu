@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008  Bernhard Hobiger
+ * Copyright (C) 2008/09  Bernhard Hobiger
  *
  * This file is part of HoDoKu.
  *
@@ -15,6 +15,23 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with HoDoKu. If not, see <http://www.gnu.org/licenses/>.
+ */
+
+/**********
+ Dual Skyscraper?
+ |-----------+-----------+-----------|
+ |  .  .  .  |  .  .  .  |  3  .  3  |
+ |  .  .  3  |  .  .  .  |  .  .  .  |
+ |  .  .  .  |  .  3  .  |  .  .  .  |
+ |-----------+-----------+-----------|
+ |  .  .  .  |  .  .  .  |  .  3  .  |
+ |  .  3@ .  |  3@ .  .  |  .  .  .  |
+ |  3  .  .  |  .  .  3# |  .  .  .  |
+ |-----------+-----------+-----------|
+ |  3  .  .  |  3# .  .  |  .  .  3  |
+ |  3  .  .  |  .  .  .  |  3  .  3  |
+ |  3  3@ .  |  .  .  3# |  3  .  .  |
+ +-----------------------------------+ 
  */
 
 package sudoku;
@@ -154,7 +171,9 @@ public class SingleDigitPatternSolver extends AbstractSolver {
         switch (step.getType()) {
             case SKYSCRAPER:
             case TWO_STRING_KITE:
+            case DUAL_TWO_STRING_KITE:
             case EMPTY_RECTANGLE:
+            case DUAL_EMPTY_RECTANGLE:
                 for (Candidate cand : step.getCandidatesToDelete()) {
                     sudoku.delCandidate(cand.getIndex(), candType, cand.getValue());
 //                    SudokuCell cell = sudoku.getCell(cand.index);
@@ -175,6 +194,7 @@ public class SingleDigitPatternSolver extends AbstractSolver {
         steps = newList;
         long ticks = System.currentTimeMillis();
         findEmptyRectangles();
+        findDualEmptyRectangles(steps);
         ticks = System.currentTimeMillis() - ticks;
         Logger.getLogger(getClass().getName()).log(Level.FINE, "end of findAllEmptyRectangles() (" + ticks + "ms)");
         Collections.sort(steps);
@@ -189,6 +209,8 @@ public class SingleDigitPatternSolver extends AbstractSolver {
         steps.clear();
         findEmptyRectangles();
         if (steps.size() > 0) {
+            findDualEmptyRectangles(steps);
+            Collections.sort(steps);
             return steps.get(0);
         }
         return null;
@@ -366,6 +388,70 @@ public class SingleDigitPatternSolver extends AbstractSolver {
         }
     }
 
+    /**
+     * A dual Empty Rectangle consists of two ERs, that have the same candidates
+     * in the ER box but lead to different eliminations.
+     * 
+     * Try all combinations of steps:
+     *   - entity and entityNumber have to be the same
+     *   - box candidiates have to be the same (fins!)
+     *   - elimination has to be different
+     * Create new step with indices/eliminations from both, fins from first, add to ers
+     * 
+     * @param kites All available 2-String-Kites
+     */
+    private void findDualEmptyRectangles(List<SolutionStep> ers) {
+        if (! Options.getInstance().allowDualsAndSiamese) {
+            // do nothing
+            return;
+        }
+        // read current size (list can be changed by DUALS)
+        int maxIndex = ers.size();
+        for (int i = 0; i < maxIndex - 1; i++) {
+            for (int j = i + 1; j < maxIndex; j++) {
+                SolutionStep step1 = ers.get(i);
+                SolutionStep step2 = ers.get(j);
+                if (step1.getEntity() != step2.getEntity() ||
+                        step1.getEntityNumber() != step2.getEntityNumber()) {
+                    // different boxes -> cant be a dual
+                    continue;
+                }
+                if (step1.getFins().size() != step2.getFins().size()) {
+                    // different number of candidates in box -> cant be a dual
+                    continue;
+                }
+                boolean finsEqual = true;
+                for (int k = 0; k < step1.getFins().size(); k++) {
+                    if (! step1.getFins().get(k).equals(step2.getFins().get(k))) {
+                        System.out.println("  " + step1.getFins().get(k) + " - " + step2.getFins().get(k));
+                        finsEqual = false;
+                        break;
+                    }
+                }
+                if (! finsEqual) {
+                    // not the same ER -> cant be a dual
+                    continue;
+                }
+                // possible dual ER; different eliminations?
+                if (step1.getCandidatesToDelete().get(0).equals(step2.getCandidatesToDelete().get(0))) {
+                    // same step twice -> no dual
+                    continue;
+                }
+                // ok: dual!
+                try {
+                    SolutionStep dual = (SolutionStep) step1.clone();
+                    dual.setType(SolutionType.DUAL_EMPTY_RECTANGLE);
+                    dual.addIndex(step2.getIndices().get(0));
+                    dual.addIndex(step2.getIndices().get(1));
+                    dual.addCandidateToDelete(step2.getCandidatesToDelete().get(0));
+                    ers.add(dual);
+                } catch (CloneNotSupportedException ex) {
+                    Logger.getLogger(getClass().getName()).log(Level.SEVERE, "Error while cloning", ex);
+                }
+            }
+        }
+    }
+    
     public List<SolutionStep> findAllSkyScrapers(Sudoku sudoku) {
         Sudoku oldSudoku = getSudoku();
         setSudoku(sudoku);
@@ -477,6 +563,7 @@ public class SingleDigitPatternSolver extends AbstractSolver {
         steps = newList;
         findTwoStringKite(Sudoku.LINES, Sudoku.COLS);
         findTwoStringKite(Sudoku.COLS, Sudoku.LINES);
+        findDualTwoStringKites(steps);
         Collections.sort(steps);
         steps = oldList;
         if (oldSudoku != null) {
@@ -487,11 +574,18 @@ public class SingleDigitPatternSolver extends AbstractSolver {
 
     protected SolutionStep findTwoStringKite() {
         steps.clear();
-        SolutionStep step = findTwoStringKite(Sudoku.LINES, Sudoku.COLS);
-        if (step != null) {
-            return step;
+//        SolutionStep step = findTwoStringKite(Sudoku.LINES, Sudoku.COLS);
+//        if (step != null && ! Options.getInstance().allowDualsAndSiamese) {
+//            return step;
+//        }
+        findTwoStringKite(Sudoku.COLS, Sudoku.LINES);
+        findDualTwoStringKites(steps);
+        if (steps.size() > 0) {
+            Collections.sort(steps);
+            return steps.get(0);
+        } else {
+            return null;
         }
-        return findTwoStringKite(Sudoku.COLS, Sudoku.LINES);
     }
 
     private SolutionStep findTwoStringKite(int[][] entityIndices1, int[][] entityIndices2) {
@@ -500,7 +594,7 @@ public class SingleDigitPatternSolver extends AbstractSolver {
         initTempArray(tmpArr2, entityIndices2);
 
         // ok: wir suchen für jeden Kandidaten zwei Entities1, die genau zwei Vorkommen des Kandidatens besitzen und
-        // deren Kandidaten in zwei verschiedenen Blöcken liegen. Dasselbe machen wir für die Entites2.
+        // deren Kandidaten in zwei verschiedenen Blöcken liegen. Dasselbe machen wir für die Entities2.
         // Für jede mögliche Kombination von 2er-Entities wird geprüft, ob sich die Entites überschneiden
         // (ob jeweils ein Kandidat aus jeder Entity im selben Block liegt).
         // wenn ja, wird für die beiden anderen Kandidaten jeweils die komplementäre Entity gesucht (für
@@ -547,7 +641,7 @@ public class SingleDigitPatternSolver extends AbstractSolver {
                             }
                             // jetzt dürfen noch die beiden Indizes, die die Verbindung erzeugen, nicht gleich sein!
                             if (tmpArr[i][j][2] == tmpArr2[i][k][2]) {
-                                // doch kein 2-Strinh Kite, sorry
+                                // doch kein 2-String Kite, sorry
                                 continue;
                             }
                             // ok, zwei verbundene Conjugate Pairs -> Zeilen bzw. Spalten suchen und
@@ -603,6 +697,56 @@ public class SingleDigitPatternSolver extends AbstractSolver {
         return null;
     }
 
+    /**
+     * A dual 2-String-Kite consists of two kites, that have the same candidates
+     * in the connecting box but lead to different eliminations.
+     * 
+     * Try all combinations of steps:
+     *   - box canddiates have to be the same (fins!)
+     *   - elimination has to be different
+     * Create new step with indices/eliminations from both, fins from first, add to kites
+     * 
+     * @param kites All available 2-String-Kites
+     */
+    private void findDualTwoStringKites(List<SolutionStep> kites) {
+        if (! Options.getInstance().allowDualsAndSiamese) {
+            // do nothing
+            return;
+        }
+        // read current size (list can be changed by DUALS)
+        int maxIndex = kites.size();
+        for (int i = 0; i < maxIndex - 1; i++) {
+            for (int j = i + 1; j < maxIndex; j++) {
+                SolutionStep step1 = kites.get(i);
+                SolutionStep step2 = kites.get(j);
+                int b11 = step1.getIndices().get(2);
+                int b12 = step1.getIndices().get(3);
+                int b21 = step2.getIndices().get(2);
+                int b22 = step2.getIndices().get(3);
+                if ((b11 == b21 && b12 == b22) || (b12 == b21 && b11 == b22)) {
+                    // possible dual kite; different eliminations?
+                    if (step1.getCandidatesToDelete().get(0).equals(step2.getCandidatesToDelete().get(0))) {
+                        // same step twice -> no dual
+                        continue;
+                    }
+                    // ok: dual!
+                    try {
+                        SolutionStep dual = (SolutionStep) step1.clone();
+                        dual.setType(SolutionType.DUAL_TWO_STRING_KITE);
+                        dual.addIndex(step2.getIndices().get(0));
+                        dual.addIndex(step2.getIndices().get(1));
+                        dual.addIndex(step2.getIndices().get(2));
+                        dual.addIndex(step2.getIndices().get(3));
+                        dual.addCandidateToDelete(step2.getCandidatesToDelete().get(0));
+                        kites.add(dual);
+                    } catch (CloneNotSupportedException ex) {
+                        Logger.getLogger(getClass().getName()).log(Level.SEVERE, "Error while cloning", ex);
+                    }
+                }
+            }
+        }
+    }
+    
     private void initTempArray(int[][][] arr, int[][] entityIndices) {
         // Initialisieren
         for (int i = 0; i < arr.length; i++) {

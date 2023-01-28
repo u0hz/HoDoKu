@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008  Bernhard Hobiger
+ * Copyright (C) 2008/09  Bernhard Hobiger
  *
  * This file is part of HoDoKu.
  *
@@ -34,6 +34,15 @@ public class Entity implements Cloneable {
     public Entity(int name, int number) {
         entityName = name;
         entityNumber = number;
+    }
+    
+    @Override
+    public boolean equals(Object o) {
+        Entity c = (Entity) o;
+        if (entityName == c.entityName && entityNumber == c.entityNumber) {
+            return true;
+        }
+        return false;
     }
     
     public int getEntityName() {

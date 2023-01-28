@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008  Bernhard Hobiger
+ * Copyright (C) 2008/09  Bernhard Hobiger
  *
  * This file is part of HoDoKu.
  *
@@ -175,7 +175,8 @@ public class TemplateSolver extends AbstractSolver {
     }
     
     public static void main(String[] args) {
-        Sudoku sudoku = new Sudoku(true);
+        //Sudoku sudoku = new Sudoku(true);
+        Sudoku sudoku = new Sudoku();
         //sudoku.setSudoku(":0361:4:..5.132673268..14917...2835..8..1.262.1.96758.6..283...12....83693184572..723.6..:434 441 442 461 961 464 974:411:r7c39 r6c1b9 fr3c3");
         sudoku.setSudoku(":0000:x:7.2.34.8.........2.8..51.74.......51..63.27..29.......14.76..2.8.........2.51.8.7:::");
 //        for (int i = 1; i <= 9; i++) {

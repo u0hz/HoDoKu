@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008  Bernhard Hobiger
+ * Copyright (C) 2008/09  Bernhard Hobiger
  *
  * This file is part of HoDoKu.
  *
@@ -19,7 +19,6 @@
 
 package sudoku;
 
-import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;
@@ -355,33 +354,6 @@ public class SudokuSolver {
             return null;
         }
         return cat.getCategoryName();
-    }
-
-    public StepConfig getStepConfig(int intType) {
-        SolutionType type = SolutionType.values()[intType];
-        if (type == SolutionType.LOCKED_CANDIDATES_1 || type == SolutionType.LOCKED_CANDIDATES_2) {
-            type = SolutionType.LOCKED_CANDIDATES;
-        }
-        if (type == SolutionType.CONTINUOUS_NICE_LOOP || type == SolutionType.DISCONTINUOUS_NICE_LOOP ||
-                type == SolutionType.AIC) {
-            type = SolutionType.NICE_LOOP;
-        }
-        if (type == SolutionType.GROUPED_CONTINUOUS_NICE_LOOP || type == SolutionType.GROUPED_DISCONTINUOUS_NICE_LOOP ||
-                type == SolutionType.GROUPED_AIC) {
-            type = SolutionType.GROUPED_NICE_LOOP;
-        }
-        if (type == SolutionType.FORCING_CHAIN_CONTRADICTION || type == SolutionType.FORCING_CHAIN_VERITY) {
-            type = SolutionType.FORCING_CHAIN;
-        }
-        if (type == SolutionType.FORCING_NET_CONTRADICTION || type == SolutionType.FORCING_NET_VERITY) {
-            type = SolutionType.FORCING_NET;
-        }
-        for (int i = 0; i < Options.getInstance().solverSteps.length; i++) {
-            if (Options.getInstance().solverSteps[i].getType() == type) {
-                return Options.getInstance().solverSteps[i];
-            }
-        }
-        return null;
     }
 
     public int getCandType() {

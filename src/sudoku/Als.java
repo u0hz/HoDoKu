@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008  Bernhard Hobiger
+ * Copyright (C) 2008/09  Bernhard Hobiger
  *
  * This file is part of HoDoKu.
  *
@@ -59,7 +59,7 @@ public class Als {
     }
 
     public static int getChainPenalty(int candSize) {
-//        return 0;
+        //return 0;
         if (candSize == 0 || candSize == 1) {
             return 0;
         } else if (candSize == 2) {

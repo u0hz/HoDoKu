@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008  Bernhard Hobiger
+ * Copyright (C) 2008/09  Bernhard Hobiger
  *
  * This file is part of HoDoKu.
  *
@@ -908,7 +908,8 @@ public class ChainSolver extends AbstractSolver {
     }
 
     public static void main(String[] args) {
-        Sudoku sudoku = new Sudoku(true);
+        //Sudoku sudoku = new Sudoku(true);
+        Sudoku sudoku = new Sudoku();
         //sudoku.setSudoku("000002540009080000004006071000000234200070006846000000680900300000050100037600000");
         //sudoku.setSudoku(":0702:x:..2..85.4571643.....45.27..25.361.4..164..2..94.2851.67698543..4..12.6..125.364.8:918 332 838 938 939 758 958 759 959:318 338 359:");
         // ACHTUNG: Fehlhafte Candidaten: 9 muss in r1c3 gesetzt werden!
