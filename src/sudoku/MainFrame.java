@@ -70,8 +70,8 @@ import javax.swing.filechooser.FileFilter;
  * @author  Bernhard Hobiger
  */
 public class MainFrame extends javax.swing.JFrame implements FlavorListener {
-    public static final String VERSION = "HoDoKu - v2.0";
-    public static final String BUILD = "Build 26";
+    public static final String VERSION = "HoDoKu - v2.0.1";
+    public static final String BUILD = "Build 1";
     private SudokuPanel sudokuPanel;
     private DifficultyLevel level = Options.getInstance().getDifficultyLevels()[DifficultyType.EASY.ordinal()];
     private JToggleButton[] toggleButtons = new JToggleButton[9];
@@ -396,6 +396,8 @@ public class MainFrame extends javax.swing.JFrame implements FlavorListener {
         createSavePointMenuItem = new javax.swing.JMenuItem();
         restoreSavePointMenuItem = new javax.swing.JMenuItem();
         jSeparator5 = new javax.swing.JSeparator();
+        setGivensMenuItem = new javax.swing.JMenuItem();
+        jSeparator22 = new javax.swing.JSeparator();
         alleHiddenSinglesSetzenMenuItem = new javax.swing.JMenuItem();
         ansichtMenu = new javax.swing.JMenu();
         sudokuOnlyMenuItem = new javax.swing.JRadioButtonMenuItem();
@@ -1299,6 +1301,16 @@ public class MainFrame extends javax.swing.JFrame implements FlavorListener {
         rätselMenu.add(restoreSavePointMenuItem);
         rätselMenu.add(jSeparator5);
 
+        setGivensMenuItem.setMnemonic(java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.setGivensMenuItem.mnemonic").charAt(0));
+        setGivensMenuItem.setText(bundle.getString("MainFrame.setGivensMenuItem.text")); // NOI18N
+        setGivensMenuItem.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                setGivensMenuItemActionPerformed(evt);
+            }
+        });
+        rätselMenu.add(setGivensMenuItem);
+        rätselMenu.add(jSeparator22);
+
         alleHiddenSinglesSetzenMenuItem.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_F11, 0));
         alleHiddenSinglesSetzenMenuItem.setMnemonic(java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.alleHiddenSinglesSetzenMenuItemMnemonic").charAt(0));
         alleHiddenSinglesSetzenMenuItem.setText(bundle.getString("MainFrame.alleHiddenSinglesSetzenMenuItem.text")); // NOI18N
@@ -2085,6 +2097,15 @@ private void practisingMenuItemActionPerformed(java.awt.event.ActionEvent evt) {
 private void backdoorSearchMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_backdoorSearchMenuItemActionPerformed
     new BackdoorSearchDialog(this, true, sudokuPanel).setVisible(true);
 }//GEN-LAST:event_backdoorSearchMenuItemActionPerformed
+
+private void setGivensMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_setGivensMenuItemActionPerformed
+    SetGivensDialog dlg = new SetGivensDialog(this, true);
+    dlg.setVisible(true);
+    if (dlg.isOkPressed()) {
+        String givens = dlg.getGivens();
+        sudokuPanel.setGivens(givens);
+    }
+}//GEN-LAST:event_setGivensMenuItemActionPerformed
 
     /**
      * Sets a new mode ({@link GameMode#LEARNING}, {@link GameMode#PLAYING} or
@@ -2875,6 +2896,7 @@ private void backdoorSearchMenuItemActionPerformed(java.awt.event.ActionEvent ev
     private javax.swing.JSeparator jSeparator2;
     private javax.swing.JSeparator jSeparator20;
     private javax.swing.JSeparator jSeparator21;
+    private javax.swing.JSeparator jSeparator22;
     private javax.swing.JSeparator jSeparator3;
     private javax.swing.JSeparator jSeparator4;
     private javax.swing.JSeparator jSeparator5;
@@ -2919,6 +2941,7 @@ private void backdoorSearchMenuItemActionPerformed(java.awt.event.ActionEvent ev
     private javax.swing.JMenuItem saveConfigAsMenuItem;
     private javax.swing.JMenuItem savePuzzleAsMenuItem;
     private javax.swing.JMenuItem seiteEinrichtenMenuItem;
+    private javax.swing.JMenuItem setGivensMenuItem;
     private javax.swing.JCheckBoxMenuItem showCandidatesMenuItem;
     private javax.swing.JCheckBoxMenuItem showDeviationsMenuItem;
     private javax.swing.JCheckBoxMenuItem showWrongValuesMenuItem;

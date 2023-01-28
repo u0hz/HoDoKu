@@ -237,15 +237,15 @@ public class ChainSolver extends AbstractSolver {
         anzAufrufe = 0;
         deletesMap.clear();
         //checkLoopSetsIndex = 0;
-        boolean onlyOne = true; // zum testen: nur für einen Kandidaten in einer Zelle
+//        boolean onlyOne = true; // zum testen: nur für einen Kandidaten in einer Zelle
         for (int i = 0; i < sudoku.getCells().length; i++) {
-            if (onlyOne && i != 48) {
-                continue;
-            }
+//            if (onlyOne && i != 48) {
+//                continue;
+//            }
             for (int j = 1; j <= 9; j++) {
-                if (onlyOne && j != 8) {
-                    continue;
-                }
+//                if (onlyOne && j != 8) {
+//                    continue;
+//                }
                 int tmp = i * 10 + j;
                 // zuerst die Strong Links, dann die weak links
                 for (int l = 0; l < 2; l++) {

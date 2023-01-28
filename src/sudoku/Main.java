@@ -386,7 +386,7 @@ public class Main {
                 consoleFrame.setVisible(true);
             }
             // copyright notice
-            System.out.println(MainFrame.VERSION);
+            System.out.println(MainFrame.VERSION + " (" + MainFrame.BUILD + ")");
             System.out.println("Copyright (C) 2009  Bernhard Hobiger\r\n" +
                     "\r\n" +
                     "HoDoKu is free software: you can redistribute it and/or modify\r\n" +

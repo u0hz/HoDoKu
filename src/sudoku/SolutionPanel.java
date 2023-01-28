@@ -88,6 +88,8 @@ public class SolutionPanel extends javax.swing.JPanel {
         jSeparator2 = new javax.swing.JSeparator();
         tabNewNameMenuItem = new javax.swing.JMenuItem();
         tabDeleteMenuItem = new javax.swing.JMenuItem();
+        jSeparator3 = new javax.swing.JSeparator();
+        tabPrintMenuItem = new javax.swing.JMenuItem();
         titleLabel = new javax.swing.JLabel();
         southPanel = new javax.swing.JPanel();
         weiterButton = new javax.swing.JButton();
@@ -159,11 +161,21 @@ public class SolutionPanel extends javax.swing.JPanel {
             }
         });
         tabPopupMenu.add(tabDeleteMenuItem);
+        tabPopupMenu.add(jSeparator3);
+
+        tabPrintMenuItem.setMnemonic(java.util.ResourceBundle.getBundle("intl/SolutionPanel").getString("SolutionPanel.tabPrintMenuItem.mnemonic").charAt(0));
+        tabPrintMenuItem.setText(bundle.getString("SolutionPanel.tabPrintMenuItem.text")); // NOI18N
+        tabPrintMenuItem.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                tabPrintMenuItemActionPerformed(evt);
+            }
+        });
+        tabPopupMenu.add(tabPrintMenuItem);
 
         setLayout(new java.awt.BorderLayout());
 
         titleLabel.setBackground(new java.awt.Color(0, 51, 255));
-        titleLabel.setFont(new java.awt.Font("Tahoma", 1, 12)); // NOI18N
+        titleLabel.setFont(new java.awt.Font("Tahoma", 1, 12));
         titleLabel.setForeground(new java.awt.Color(255, 255, 255));
         titleLabel.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
         titleLabel.setText(bundle.getString("SolutionPanel.titleLabel.text")); // NOI18N
@@ -389,6 +401,13 @@ private void solutionTabbedPaneStateChanged(javax.swing.event.ChangeEvent evt) {
         }
     }
 }//GEN-LAST:event_solutionTabbedPaneStateChanged
+
+private void tabPrintMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_tabPrintMenuItemActionPerformed
+    if (actSteps != null) {
+        new PrintSolutionDialog(mainFrame, true, actSteps, mainFrame.getSudokuPanel().getSudoku().getSudoku(ClipboardMode.LIBRARY)).setVisible(true);
+        mainFrame.fixFocus();
+    }
+}//GEN-LAST:event_tabPrintMenuItemActionPerformed
 
     public void setTitleLabelColors(Color fore, Color back) {
         titleLabel.setBackground(back);
@@ -723,6 +742,7 @@ private void solutionTabbedPaneStateChanged(javax.swing.event.ChangeEvent evt) {
     private javax.swing.JMenuItem deleteFromHereMenuItem;
     private javax.swing.JSeparator jSeparator1;
     private javax.swing.JSeparator jSeparator2;
+    private javax.swing.JSeparator jSeparator3;
     private javax.swing.JList solutionList;
     private javax.swing.JPopupMenu solutionPopupMenu;
     private javax.swing.JScrollPane solutionScrollPane;
@@ -733,6 +753,7 @@ private void solutionTabbedPaneStateChanged(javax.swing.event.ChangeEvent evt) {
     private javax.swing.JMenuItem tabNewMenuItem;
     private javax.swing.JMenuItem tabNewNameMenuItem;
     private javax.swing.JPopupMenu tabPopupMenu;
+    private javax.swing.JMenuItem tabPrintMenuItem;
     private javax.swing.JLabel titleLabel;
     private javax.swing.JMenuItem toStepMenuItem;
     private javax.swing.JButton weiterButton;

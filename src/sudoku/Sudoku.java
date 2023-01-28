@@ -601,6 +601,23 @@ public class Sudoku implements Cloneable {
         }
     }
 
+    /**
+     * Gets a 81 character string. For every digit in that string, the corresponding cell is set
+     * as a given.
+     * 
+     * @param givens
+     */
+    public void setGivens(String givens) {
+        for (int i = 0; i < givens.length(); i++) {
+            char ch = givens.charAt(i);
+            if (Character.isDigit(ch) && ch != '0') {
+                getCell(i).setIsFixed(true);
+            } else {
+                getCell(i).setIsFixed(false);
+            }
+        }
+    }
+
     private int getAnzPatternInString(String str, String pattern) {
         int anzPattern = 0;
         int index = -1;
@@ -821,7 +838,7 @@ public class Sudoku implements Cloneable {
             writeLine(out, 9, fieldLengths, null, true);
 
             if (mode == ClipboardMode.PM_GRID_WITH_STEP && step != null) {
-                out.append("\r\n");
+                //out.append("\r\n");
                 out.append(step.toString(2));
             }
         }

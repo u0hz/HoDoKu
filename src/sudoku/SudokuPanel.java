@@ -1441,19 +1441,32 @@ public class SudokuPanel extends javax.swing.JPanel implements Printable {
     }
 
     /**
-     * Speichert die aktuelle Ansicht des Baums in eine PNG-Datei. Dabei wird
-     * die Auflösung des Bildes auf 300dpi erhöht. Auf Systemen mit 96dpi
-     * sollte die entstehende PNG-Datei exakt gleich groß dargestellt werden
-     * wie der Panel am Bildschirm.
-     * @param fileName Pfad und Name der neuen Bilddatei.
+     * Creates an image of the current sudoku in the given size.
+     * 
+     * @param size
+     * @return
      */
-    public void saveSudokuAsPNG(File file, int size, int dpi) {
+    public BufferedImage getSudokuImage(int size) {
         BufferedImage fileImage = new BufferedImage(size, size, BufferedImage.TYPE_3BYTE_BGR);
         Graphics2D g = fileImage.createGraphics();
         this.g2 = g;
         g2.setColor(Color.WHITE);
         g2.fillRect(0, 0, size, size);
         drawPage(size, size, true, false);
+        return fileImage;
+    }
+
+    /**
+     * Writes an image of the current sudoku as png into a file. The image
+     * is <code>size</code> pixels wide and high, the resolution in the png
+     * file is set to <code>dpi</code>.
+     * 
+     * @param file
+     * @param size
+     * @param dpi
+     */
+    public void saveSudokuAsPNG(File file, int size, int dpi) {
+        BufferedImage fileImage = getSudokuImage(size);
         writePNG(fileImage, dpi, file);
     }
 
@@ -2424,14 +2437,20 @@ public class SudokuPanel extends javax.swing.JPanel implements Printable {
                 getSolver().setSudoku(tmpSudoku);
             }
             solvedSudoku = sudoku.clone();
-            boolean unique = creator.validSolution(solvedSudoku);
+            boolean unique = true;
+            boolean sudokuCompleted = solvedSudoku.isSolved();
+            if (! sudokuCompleted) {
+                unique = creator.validSolution(solvedSudoku);
+            }
             if (!unique) {
                 JOptionPane.showMessageDialog(this,
                         java.util.ResourceBundle.getBundle("intl/SudokuPanel").getString("SudokuPanel.multiple_solutions"),
                         java.util.ResourceBundle.getBundle("intl/SudokuPanel").getString("SudokuPanel.invalid_puzzle"),
                         JOptionPane.ERROR_MESSAGE);
             } else {
-                solvedSudoku = creator.getSolvedSudoku().clone();
+                if (! sudokuCompleted) {
+                    solvedSudoku = creator.getSolvedSudoku().clone();
+                }
                 if (!sudoku.checkSudoku(solvedSudoku)) {
                     JOptionPane.showMessageDialog(this,
                             java.util.ResourceBundle.getBundle("intl/SudokuPanel").getString("SudokuPanel.wrong_values"),
@@ -2451,7 +2470,9 @@ public class SudokuPanel extends javax.swing.JPanel implements Printable {
             }
         }
         updateCellZoomPanel();
-        mainFrame.check();
+        if (mainFrame != null) {
+            mainFrame.check();
+        }
         repaint();
     }
 
@@ -3015,5 +3036,19 @@ public class SudokuPanel extends javax.swing.JPanel implements Printable {
                 }
             }
         }
+    }
+
+    /**
+     * Gets a 81 character string. For every digit in that string, the corresponding cell is set
+     * as a given.
+     *
+     * @param givens
+     */
+    public void setGivens(String givens) {
+        undoStack.push(sudoku.clone());
+        sudoku.setGivens(givens);
+        updateCellZoomPanel();
+        repaint();
+        mainFrame.check();
     }
 }

@@ -38,6 +38,8 @@ public class SudokuCreator {
     private int anzCalls = 0;
     private int recDepth = 0;
     private int maxRecDepth = 0;
+    private int anzTries = 0;
+    private int anzClues = 0;
     
     /** Creates a new instance of SudokuCreator */
     public SudokuCreator() {
@@ -53,6 +55,7 @@ public class SudokuCreator {
             SudokuCell cell = sudoku.getCell(i);
             if (cell.getValue() != 0) {
                 cell.setIsFixed(true);
+                anzClues++;
             }
         }
         return sudoku;
@@ -129,6 +132,7 @@ public class SudokuCreator {
             }
             BacktrackingSolver bs = BacktrackingSolver.getInstance();
             bs.solve(sudoku.getSudoku(ClipboardMode.VALUES_ONLY));
+            anzTries++;
             int solutions = bs.getSolutionCount();
             if (solutions > 1) {
                 sudoku.setCell(i, solvedBoard.getCell(i).getValue());
@@ -232,24 +236,33 @@ public class SudokuCreator {
     public static void main(String[] args) {
         SudokuCreator cr = new SudokuCreator();
         
-        cr.sudoku = new Sudoku();
-        //  45 Easter Monster 
-        //  35 cr.sudoku.setSudoku("1.......2.9.4...5...6...7...5.9.3.......7.......85..4.7.....6...3...9.8...2.....1");
-        // 211 cr.sudoku.setSudoku("..............3.85..1.2.......5.7.....4...1...9.......5......73..2.1........4...9");
-        //1189 cr.sudoku.setSudoku(".1.....2....8..6.......3........43....2.1....8......9.4...7.5.3...2...........4..");
-        // 151 cr.sudoku.setSudoku("...87..3.52.......4..........3.9..7......54...8.......2.....5.....3....9...1.....");
-        //2198 cr.sudoku.setSudoku("..15............32...............2.9.5...3......7..8..27.....4.3...9.......6..5..");
-        //   9 cr.sudoku.setSudoku("7.....4...2..7..8...3..8..9...5..3...6..2..9...1..7..6...3..9...3..4..6...9..1..5");
-        //  17 cr.sudoku.setSudoku("...7..8......4..3......9..16..5......1..3..4...5..1..75..2..6...3..8..9...7.....2");
-        // 176 cr.sudoku.setSudoku("96...5......3...1.8.......2.....46..75.........1.........21..........57.....3....");
-        //System.out.println(cr.sudoku.getSudoku(ClipboardMode.PM_GRID));
+//        cr.sudoku = new Sudoku();
+//        //  45 Easter Monster
+//        //  35 cr.sudoku.setSudoku("1.......2.9.4...5...6...7...5.9.3.......7.......85..4.7.....6...3...9.8...2.....1");
+//        // 211 cr.sudoku.setSudoku("..............3.85..1.2.......5.7.....4...1...9.......5......73..2.1........4...9");
+//        //1189 cr.sudoku.setSudoku(".1.....2....8..6.......3........43....2.1....8......9.4...7.5.3...2...........4..");
+//        // 151 cr.sudoku.setSudoku("...87..3.52.......4..........3.9..7......54...8.......2.....5.....3....9...1.....");
+//        //2198 cr.sudoku.setSudoku("..15............32...............2.9.5...3......7..8..27.....4.3...9.......6..5..");
+//        //   9 cr.sudoku.setSudoku("7.....4...2..7..8...3..8..9...5..3...6..2..9...1..7..6...3..9...3..4..6...9..1..5");
+//        //  17 cr.sudoku.setSudoku("...7..8......4..3......9..16..5......1..3..4...5..1..75..2..6...3..8..9...7.....2");
+//        // 176 cr.sudoku.setSudoku("96...5......3...1.8.......2.....46..75.........1.........21..........57.....3....");
+//        //System.out.println(cr.sudoku.getSudoku(ClipboardMode.PM_GRID));
+//        long ticks = System.currentTimeMillis();
+//        int i = 0;
+//        for (i = 0; i < 10; i++) {
+//            cr.findAllSolutions(-1, true, false, cr.sudoku);
+//        }
+//        ticks = System.currentTimeMillis() - ticks;
+//        System.out.println("findAllSolutions(): " + (ticks / i) + "ms");
+//        System.out.println("(anzCalls=" + (cr.anzCalls / 10) + ", maxRecDepth=" + cr.maxRecDepth + "/" + cr.recDepth + ")");
+        int anzRuns = 10000;
         long ticks = System.currentTimeMillis();
-        int i = 0;
-        for (i = 0; i < 10; i++) {
-            cr.findAllSolutions(-1, true, false, cr.sudoku);
+        for (int i = 0; i < anzRuns; i++) {
+            cr.generateSudoku(null, true);
+//            cr.sudoku = new Sudoku();
+//            cr.generateFullSudoku(0);
         }
         ticks = System.currentTimeMillis() - ticks;
-        System.out.println("findAllSolutions(): " + (ticks / i) + "ms");
-        System.out.println("(anzCalls=" + (cr.anzCalls / 10) + ", maxRecDepth=" + cr.maxRecDepth + "/" + cr.recDepth + ")");
+        System.out.println("Time: " + ((double) ticks / anzRuns) + "ms " + (cr.anzTries / anzRuns) + "/" + (cr.anzClues / anzRuns));
     }
 }
