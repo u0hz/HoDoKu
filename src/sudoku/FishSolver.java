@@ -22,6 +22,8 @@ package sudoku;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.SortedMap;
+import java.util.TreeMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -31,15 +33,37 @@ import java.util.logging.Logger;
  * Zusätze:
  *   - Ein Base-Candidate ist eine Potential Elimination, wenn er in mindestens zwei Cover-Units enthalten ist
  *   - Ein Basic-Fish ist Sashimi, wenn die Base-unit, die die Fins enthält, ohne Fins nur noch einen
- *     Kandidaten hat.
+ *     Kandidaten hat. -- stimmt nicht mehr!
  *
- * ToDo:
- *
- *   - Endo-Fins
- *   - Elimination von Base-Kandidaten
- *   - Neue Sashimi-Definition
- *   - Optimieren! Sehr langsam für größere Franken- und Mutant-Fische
- *
+ * Kraken Fish:
+ * 
+ * In a finned fish either there is a fish or one of the fins is true. This gives the easiest way
+ * to find a Kraken Fish (Type 1):
+ * 
+ *   - If a candidate that would be eliminated by the unfinned fish can be linked to all fins
+ *     (fin set -> candidate not set) than that candidate can be eliminated
+ *   - In a Type 1 KF the eliminated candidate is the same candidate as the fish candidate
+ * 
+ * The other way is a bit more complicated: In an unfinned fish in every cover set
+ * exactly one of the base candidates has to be true. In a finned fish either this is true or
+ * one of the fins is true. That leads to the second type of Kraken Fish (Type 2):
+ * 
+ *   - If chains can be found that link all base candidates of one cover set to a specific candidate (CEC)
+ *     (base candidate set -> CEC candidate not set) than that candidate can be eliminated.
+ *   - If the fish has fins, additional chains have to be found for every fin
+ *   - In a Type 2 KF the deleted candidate can be an arbitrary candidate
+ * 
+ * Endo fins: Have to be treated like normal fins. In Type 2 KF nothing is changed
+ * Cannibalism: In Type 1 KF they count as normal possible elimination. In Type 2 KF
+ *   no chain from the cannibalistic candidate to the CEC has to be found.
+ * 
+ * Implementation:
+ *   - Type 1: For every possible elimination look after a chain to all the fins
+ *   - Type 2: For every intersection of a cover set with all base candidates look for
+ *     possible eliminations; if they exist, try to link them to the fins
+ * 
+ * Caution: Since the Template optimization cannot be applied, KF search can be very slow!
+ * 
  * @author zhobigbe
  */
 public class FishSolver extends AbstractSolver {
@@ -60,6 +84,7 @@ public class FishSolver extends AbstractSolver {
     private int[][] baseUnits = null;
     private int[][] coverUnits = null;
     private SudokuSet[] cInt = new SudokuSet[7]; // die Cover-Sets für den Vergleich
+    private SudokuSet[] cInt1 = new SudokuSet[7]; // for calculating possible cannibalistic candidates
     private SudokuSet fins = new SudokuSet();
     private SudokuSet endoFins = new SudokuSet();
     private SudokuSet endoFinCheck = new SudokuSet(); // nur für Optimierung
@@ -70,6 +95,10 @@ public class FishSolver extends AbstractSolver {
     private SolutionStep globalStep = new SolutionStep(SolutionType.HIDDEN_SINGLE);
     private List<Candidate> candidatesToDelete = new ArrayList<Candidate>();
     private List<Candidate> cannibalistic = new ArrayList<Candidate>();
+    private SudokuSet baseUnitsIncluded = new SudokuSet();
+    private SudokuSet baseCandSet = null; // all base candidates for one cover set search
+    private SudokuSet endoFinSet = null;  // all endo fins for one cover set search
+    private SudokuSet cannibalisticSet = new SudokuSet(); // all base candidates that are in more than one cover set
     private SudokuSet possibleCoverUnits = new SudokuSet();  // Set mit allen Cover-Units, die für den aktuellen Versuch gültig sind
     private SudokuSet coverUnitsIncluded = new SudokuSet(); // Indexe aller aktuellen Cover-Units
     private SudokuSet coverCandSet = new SudokuSet(); // alle aktuellen Cover-Candidates
@@ -77,12 +106,18 @@ public class FishSolver extends AbstractSolver {
     private SudokuSet deleteCandSet = new SudokuSet(); // Set mit allen Kandidaten, die gelöscht werden können
     private SudokuSet finBuddies = new SudokuSet();    // Set mit allen Kandidaten, die von allen fins gesehen werden können (exkl. Base-Kandidaten)
     private SudokuSet checkSashimiSet = new SudokuSet(); // für Sashimi-Check
+    private SudokuSet tmpSet = new SudokuSet(); // for various checks
+    private SudokuSet tmpSet1 = new SudokuSet(); // for various checks
+    private SudokuSet tmpSet2 = new SudokuSet(); // for various checks
     private boolean withoutFins; // true, wenn finnless Fische gesucht werden sollen
     private boolean withFins; // true, wenn Finned-Fische gesucht werden sollen
     private boolean withEndoFins; // Auch Fische mit EndoFins
     private boolean sashimi; // true, wenn Sashimi-Fische gesucht werden sollen (withFins muss ebenfalls true sein)
-    private int minSize;     // minimale Anzahl Base-Units für Suche
-    private int maxSize;     // maximale Anzahl Base-Units für Suche
+    private boolean kraken;  // true, wenn nach Kraken Fish gesucht werden soll
+    private boolean searchAll; // true, if all fishes should be found (searches for inverse in Kraken Fish)
+    private int minSize;      // minimale Anzahl Base-Units für Suche
+    private int maxSize;      // maximale Anzahl Base-Units für Suche
+    private int anzBaseUnits; // Anzahl der Base-Units für eine Cover-Set-Suche
     private int maxBaseCombinations = 0; // Anzahl möglicher Kombinationen aus base-units
     private FindAllStepsProgressDialog dlg = null;
     private SudokuSet templateSet = new SudokuSet();
@@ -92,11 +127,17 @@ public class FishSolver extends AbstractSolver {
     private int versucheFisch = 0;
     private int versucheFins = 0;
     private int[] anzFins = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+    private TablingSolver tablingSolver = null; // for kraken fish search
+    private SortedMap<String, Integer> deletesMap = new TreeMap<String, Integer>();  // alle bisher gefundenen Chains: Eliminierungen und Index in steps
 
     /** Creates a new instance of FishSolver */
-    public FishSolver() {
+    public FishSolver(SudokuSolver solver) {
+        super(solver);
         for (int i = 0; i < coverCandidatesMasks.length; i++) {
             coverCandidatesMasks[i] = new SudokuSet();
+        }
+        for (int i = 0; i < cInt1.length; i++) {
+            cInt1[i] = new SudokuSet();
         }
     }
 
@@ -116,6 +157,7 @@ public class FishSolver extends AbstractSolver {
             case SWORDFISH:
                 size++;
             case X_WING:
+                searchAll = false;
                 result = getAnyFish(size, lineUnits, colUnits, true, false, false, false);
                 break;
             case FINNED_LEVIATHAN:
@@ -129,6 +171,7 @@ public class FishSolver extends AbstractSolver {
             case FINNED_SWORDFISH:
                 size++;
             case FINNED_X_WING:
+                searchAll = false;
                 result = getAnyFish(size, lineUnits, colUnits, false, true, false, false);
                 break;
             case SASHIMI_LEVIATHAN:
@@ -142,6 +185,7 @@ public class FishSolver extends AbstractSolver {
             case SASHIMI_SWORDFISH:
                 size++;
             case SASHIMI_X_WING:
+                searchAll = false;
                 result = getAnyFish(size, lineUnits, colUnits, false, true, true, false);
                 break;
             case FRANKEN_LEVIATHAN:
@@ -155,6 +199,7 @@ public class FishSolver extends AbstractSolver {
             case FRANKEN_SWORDFISH:
                 size++;
             case FRANKEN_X_WING:
+                searchAll = false;
                 result = getAnyFish(size, lineBlockUnits, colBlockUnits, true, false, false, true);
                 break;
             case FINNED_FRANKEN_LEVIATHAN:
@@ -168,6 +213,7 @@ public class FishSolver extends AbstractSolver {
             case FINNED_FRANKEN_SWORDFISH:
                 size++;
             case FINNED_FRANKEN_X_WING:
+                searchAll = false;
                 result = getAnyFish(size, lineBlockUnits, colBlockUnits, false, true, false, true);
                 break;
             case MUTANT_LEVIATHAN:
@@ -195,6 +241,9 @@ public class FishSolver extends AbstractSolver {
                 size++;
             case FINNED_MUTANT_X_WING:
                 result = getAnyFish(size, allUnits, allUnits, false, true, false, true);
+                break;
+            case KRAKEN_FISH:
+                result = getKrakenFish();
                 break;
         }
         return result;
@@ -247,6 +296,7 @@ public class FishSolver extends AbstractSolver {
             case FINNED_MUTANT_SQUIRMBAG:
             case FINNED_MUTANT_WHALE:
             case FINNED_MUTANT_LEVIATHAN:
+            case KRAKEN_FISH:
                 for (Candidate cand : step.getCandidatesToDelete()) {
                     sudoku.delCandidate(cand.getIndex(), candType, cand.getValue());
                 }
@@ -258,7 +308,7 @@ public class FishSolver extends AbstractSolver {
     }
 
     public List<SolutionStep> getAllFishes(Sudoku sudoku, int minSize, int maxSize,
-            int maxFins, int maxEndoFins, FindAllStepsProgressDialog dlg, int forCandidate) {
+            int maxFins, int maxEndoFins, FindAllStepsProgressDialog dlg, int forCandidate, int type) {
         this.dlg = dlg;
         Sudoku save = getSudoku();
         setSudoku(sudoku);
@@ -268,6 +318,18 @@ public class FishSolver extends AbstractSolver {
         Options.getInstance().maxEndoFins = maxEndoFins;
         List<SolutionStep> oldSteps = steps;
         steps = new ArrayList<SolutionStep>();
+        kraken = false;
+        searchAll = true;
+        int[][] units1 = lineUnits;
+        int[][] units2 = colUnits;
+        if (type == 1) {
+            units1 = lineBlockUnits;
+            units2 = colBlockUnits;
+        }
+        if (type == 2) {
+            units1 = allUnits;
+            units2 = allUnits;
+        }
         long millis1 = System.currentTimeMillis();
         // Templates initialisieren (für Optimierung)
         initCandTemplates();
@@ -280,7 +342,7 @@ public class FishSolver extends AbstractSolver {
             long millis = System.currentTimeMillis();
             baseGesamt = 0;
             baseShowGesamt = 0;
-            getFishes(i, minSize, maxSize, allUnits, allUnits, true, true, false, true);
+            getFishes(i, minSize, maxSize, units1, units2, true, true, false, true);
             millis = System.currentTimeMillis() - millis;
             Logger.getLogger(getClass().getName()).log(Level.FINE, "getAllFishes(" + i + "): " + millis + "ms");
             Logger.getLogger(getClass().getName()).log(Level.FINE, steps.size() + " fishes found!");
@@ -314,11 +376,12 @@ public class FishSolver extends AbstractSolver {
         baseGesamt = 0;
         baseShowGesamt = 0;
         steps = new ArrayList<SolutionStep>();
+        kraken = false;
         // Templates initialisieren (für Optimierung)
         initCandTemplates();
         for (int i = 1; i <= 9; i++) {
             getFishes(i, size, size, units1, units2, withoutFins, withFins, sashimi, withEndoFins);
-            if (steps.size() > 0) {
+            if (!searchAll && steps.size() > 0) {
                 break;
             }
             if (units1 != allUnits && units2 != allUnits) {
@@ -328,6 +391,134 @@ public class FishSolver extends AbstractSolver {
                 }
             }
         }
+        if (steps.size() > 0) {
+            Collections.sort(steps);
+            return steps.get(0);
+        }
+        return null;
+    }
+
+    public List<SolutionStep> getAllKrakenFishes(Sudoku sudoku, int minSize, int maxSize,
+            int maxFins, int maxEndoFins, FindAllStepsProgressDialog dlg, int forCandidate, int type) {
+        //System.out.println("getAllKrakenFishes: " + minSize + "/" + maxSize + "/" + forCandidate);
+        this.dlg = dlg;
+        Sudoku save = getSudoku();
+        setSudoku(sudoku);
+        boolean oldCheckTemplates = Options.getInstance().checkTemplates;
+        Options.getInstance().checkTemplates = false;
+        int oldMaxFins = Options.getInstance().maxFins;
+        int oldEndoFins = Options.getInstance().maxEndoFins;
+        Options.getInstance().maxFins = maxFins;
+        Options.getInstance().maxEndoFins = maxEndoFins;
+        List<SolutionStep> oldSteps = steps;
+        steps = new ArrayList<SolutionStep>();
+        kraken = true;
+        searchAll = true;
+        int[][] units1 = lineUnits;
+        int[][] units2 = colUnits;
+        if (type == 1) {
+            units1 = lineBlockUnits;
+            units2 = colBlockUnits;
+        }
+        if (type == 2) {
+            units1 = allUnits;
+            units2 = allUnits;
+        }
+        getTablingSolver();
+        tablingSolver.setSudoku(sudoku);
+        tablingSolver.initForKrakenSearch();
+        long millis1 = System.currentTimeMillis();
+        for (int i = 1; i <= 9; i++) {
+            if (forCandidate != -1 && forCandidate != i) {
+                // not now
+                continue;
+            }
+            Logger.getLogger(getClass().getName()).log(Level.FINE, "getAllKrakenFishes() for Candidate " + i);
+            long millis = System.currentTimeMillis();
+            baseGesamt = 0;
+            baseShowGesamt = 0;
+            //getFishes(i, minSize, maxSize, lineUnits, colUnits, true, true, false, true);
+            getFishes(i, minSize, maxSize, units1, units2, true, true, false, true);
+            millis = System.currentTimeMillis() - millis;
+            Logger.getLogger(getClass().getName()).log(Level.FINE, "getAllKrakenFishes(" + i + "): " + millis + "ms");
+            Logger.getLogger(getClass().getName()).log(Level.FINE, steps.size() + " kraken fishes found!");
+        }
+        millis1 = System.currentTimeMillis() - millis1;
+        Logger.getLogger(getClass().getName()).log(Level.FINE, "getAllKrakenFishes() gesamt: " + millis1 + "ms");
+        Logger.getLogger(getClass().getName()).log(Level.FINER, "baseAnz: " + baseGesamt + "(" + baseShowGesamt + "), coverAnz: " + coverGesamt + ", Fische: " + versucheFisch + ", Fins: " + versucheFins);
+        StringBuffer tmpBuffer = new StringBuffer();
+        for (int i = 0; i < anzFins.length; i++) {
+            tmpBuffer.append(" " + anzFins[i]);
+        }
+        Logger.getLogger(getClass().getName()).log(Level.FINER, tmpBuffer.toString());
+        List<SolutionStep> result = steps;
+        if (result != null) {
+            Collections.sort(result);
+        }
+        steps = oldSteps;
+        if (save != null) {
+            setSudoku(save);
+        }
+        Options.getInstance().checkTemplates = oldCheckTemplates;
+        Options.getInstance().maxFins = oldMaxFins;
+        Options.getInstance().maxEndoFins = oldEndoFins;
+        kraken = false;
+        this.dlg = null;
+        //System.out.println("   " + result.size() + " steps!");
+        return result;
+    }
+
+    private SolutionStep getKrakenFish() {
+        anzCheckBaseUnitsRecursive = 0;
+        anzCheckCoverUnitsRecursive = 0;
+        baseGesamt = 0;
+        baseShowGesamt = 0;
+        steps = new ArrayList<SolutionStep>();
+        boolean oldCheckTemplates = Options.getInstance().checkTemplates;
+        Options.getInstance().checkTemplates = false;
+        int oldMaxFins = Options.getInstance().maxFins;
+        int oldEndoFins = Options.getInstance().maxEndoFins;
+        Options.getInstance().maxFins = Options.getInstance().maxKrakenFins;
+        Options.getInstance().maxEndoFins = Options.getInstance().maxKrakenEndoFins;
+        kraken = true;
+        getTablingSolver();
+        tablingSolver.setSudoku(sudoku);
+        tablingSolver.initForKrakenSearch();
+        // Endo fins are only searched if the fish type is other than basic and if the max endo fin size > 0
+        withEndoFins = Options.getInstance().maxKrakenEndoFins != 0 && Options.getInstance().krakenMaxFishType > 0;
+        int[][] units1 = null;
+        int[][] units2 = null;
+        switch (Options.getInstance().krakenMaxFishType) {
+            case 1:
+                units1 = lineBlockUnits;
+                units2 = colBlockUnits;
+                break;
+            case 2:
+                units1 = allUnits;
+                units2 = allUnits;
+                break;
+            default:
+                units1 = lineUnits;
+                units2 = colUnits;
+                break;
+        }
+        int size = Options.getInstance().krakenMaxFishSize;
+        for (int i = 1; i <= 9; i++) {
+            getFishes(i, 2, size, units1, units2, false, true, true, withEndoFins);
+            if (steps.size() > 0) {
+                break;
+            }
+            if (units1 != allUnits && units2 != allUnits) {
+                getFishes(i, 2, size, units2, units1, false, true, true, withEndoFins);
+                if (steps.size() > 0) {
+                    break;
+                }
+            }
+        }
+        kraken = false;
+        Options.getInstance().checkTemplates = oldCheckTemplates;
+        Options.getInstance().maxFins = oldMaxFins;
+        Options.getInstance().maxEndoFins = oldEndoFins;
         if (steps.size() > 0) {
             Collections.sort(steps);
             return steps.get(0);
@@ -363,6 +554,7 @@ public class FishSolver extends AbstractSolver {
                 return steps;
             }
         }
+        deletesMap.clear();
         for (int i = 0; i < cInt.length; i++) {
             cInt[i] = SudokuSet.EMPTY_SET;
         }
@@ -376,16 +568,17 @@ public class FishSolver extends AbstractSolver {
         this.sashimi = sashimi;
         this.minSize = minSize;
         this.maxSize = maxSize;
+        // fills baseCandidates and coverCandidates from baseUnits/coverUnits
         initForCandidat(candidate, baseUnits, coverUnits);
 
         // Set mit den Indexen der im aktuellen Versuch inkludierten Base-Units (Index in baseUnits)
-        SudokuSet baseUnitsIncluded = new SudokuSet();
+        baseUnitsIncluded.clear();
         for (int i = 0; i < baseUnits.length; i++) {
             if (!baseCandidates[i].isEmpty()) {
                 // aktuelle Base-Unit enthält mindestens einen Kandidaten -> versuchen
                 baseUnitsIncluded.add(i);
                 endoFins.clear();
-                getFishesRecursive(maxSize, 1, baseCandidates[i], i + 1, baseUnitsIncluded, endoFins);
+                getFishesRecursive(1, baseCandidates[i], i + 1, endoFins);
                 baseUnitsIncluded.remove(i);
             }
         }
@@ -398,17 +591,18 @@ public class FishSolver extends AbstractSolver {
      * bearbeitet wurden. Für jede Kombination wird ein Set mit allen von der aktuellen Kombination an
      * Base-Units abgedeckten Kandidaten erstellt, dann werden alle in Betracht kommenden Cover-Units
      * ermittelt (nur Cover-Units, die einen der aktuellen Kandidaten enthalten und mit einer der
-     * aktuellen Base-Units eine nicht leer Schnittmenge haben) und alle Kombinationen werden durchprobiert.
+     * aktuellen Base-Units eine nicht leere Schnittmenge haben) und alle Kombinationen werden durchprobiert.
      *
-     * @param maxSize Maximale Anzahl an Base-Units pro Kombination.
+     * Aus Performancegründen Eigenschaften der Klasse:
+     *   baseUnitsIncluded: Set mit den Indexen der aktuell verwendeten Base-Units.
+     * 
      * @param aktSize Derzeitige Anzahl Base-Units
-     * @param baseCandSet Alle Kandidaten der bisher aufgenommenen Base-Units.
+     * @param fishBaseCandSet Alle Kandidaten der bisher aufgenommenen Base-Units.
      * @param startIndex Index in <code>baseUnits</code>, ab dem neue Units hinzugefügt werden sollen.
-     * @param baseUnitsIncluded Set mit den Indexen der aktuell verwendeten Base-Units.
-     * @param endoFinSet Set mit allen Endo-Fins der aktuellen BaseUnits
+     * @param fishEndoFinSet Set mit allen Endo-Fins der aktuellen BaseUnits
      */
-    private void getFishesRecursive(int maxSize, int aktSize, SudokuSet baseCandSet, int startIndex,
-            SudokuSet baseUnitsIncluded, SudokuSet endoFinSet) {
+    private void getFishesRecursive(int aktSize, SudokuSet fishBaseCandSet, int startIndex,
+            SudokuSet fishEndoFinSet) {
         anzCheckBaseUnitsRecursive++;
         aktSize++;
         if (aktSize > maxSize) {
@@ -426,12 +620,12 @@ public class FishSolver extends AbstractSolver {
             if (dlg != null && baseShowGesamt % 100 == 0) {
                 dlg.updateFishProgressBar(baseShowGesamt);
             }
-            // die neue Unit darf nur probiert werden, wenn sie keine gemeinsamen Kandidaten mit dem
-            // bestehenden Base-Set hat
-            // VORSICHT: Spezialfall Fin als Kandidat in zwei Base-Units wird ignoriert -- FEHLT NOCH!
+            // if the new unit has common candidates with the current base set, those candidates
+            // have to be treated as fin cells (endo fins).
             endoFinCheck.clear();
-            if (baseCandSet.intersects(baseCandidates[i], endoFinCheck)) {
-                if (!withFins || !withEndoFins || (endoFinSet.size() + endoFinCheck.size()) > Options.getInstance().maxEndoFins) {
+            if (fishBaseCandSet.intersects(baseCandidates[i], endoFinCheck)) {
+                // intersects() == true means: there are endoFins!
+                if (!withFins || !withEndoFins || (fishEndoFinSet.size() + endoFinCheck.size()) > Options.getInstance().maxEndoFins) {
                     // every invalid combination eliminates a lot of possibilities:
                     // (all non-zero baseUnits greater than i) over (maxSize - aktSize)
                     if (dlg != null) {
@@ -449,72 +643,68 @@ public class FishSolver extends AbstractSolver {
                     continue;
                 }
             }
-            // Vereinigung der bisherigen Sets mit der neuen Base-Units bilden (Kopie!)
-            // und die Base-Unit speichern
-            SudokuSet aktBaseCandSet = baseCandSet.clone();
-            SudokuSet aktEndoFinSet = endoFinSet.clone();
-            aktBaseCandSet.merge(baseCandidates[i]);
-            aktEndoFinSet.merge(endoFinCheck);
+            // calculate union of existing sets with new base unit (make copy - recursion!)
+            // and store the new base unit in baseUnitsIncluded
+            baseCandSet = fishBaseCandSet.clone();
+            endoFinSet = fishEndoFinSet.clone();
+            baseCandSet.or(baseCandidates[i]);
+            endoFinSet.or(endoFinCheck);
             baseUnitsIncluded.add(i);
-            // prüfen, ob es mit diesen Endofins überhaupt Eliminierungen geben kann (zahlt sich hier aus,
-            // weil man sich die gesamte Prüfung auf Cover-Sets sparen kann
+            // check if this set of endo fins can even give eliminations (pays off because
+            // the whole cover set check can be skipped)
             finBuddies.setAll();
-            if (Options.getInstance().isCheckTemplates()) {
-                // alle Kandidaten, die die Endofins sehen können
-                for (int j = 0; j < aktEndoFinSet.size(); j++) {
-                    finBuddies.and(Sudoku.buddies[aktEndoFinSet.get(j)]);
+            if (Options.getInstance().isCheckTemplates() && ! endoFinSet.isEmpty()) {
+                // all cells that can see all the endo fins
+                for (int j = 0; j < endoFinSet.size(); j++) {
+                    finBuddies.and(Sudoku.buddies[endoFinSet.get(j)]);
                 }
-                // jetzt nur noch die, die es auch wirklich gibt
+                // now only those cells that have the candidate we are searching for
                 finBuddies.andNot(sudoku.getAllowedPositions()[candidate]);
-                // und von denen nur die, die eliminiert werden können
+                // and from those only the ones that can actually be eliminated
                 finBuddies.and(delCandTemplates[candidate]);
             }
-            // wenn aktSize im Bereich von this.minSize bis this.maxSize liegt, Cover-Units prüfen
-            if (aktSize >= this.minSize && aktSize <= this.maxSize && !finBuddies.isEmpty()) {
-                // prüfen, ob ein Fisch vorliegt: Ein Set mit allen Cover-Units erstellen,
-                // die eine Schnittmenge mit einer der Base-Units bilden und mindestens
-                // einen Kandidaten aus aktBaseCandSet enthalten
-                possibleCoverUnits = getPossibleCoverUnits(aktBaseCandSet, baseUnitsIncluded);
+            // if aktSize lies between minSize and maxSize -> check cover units
+            if (aktSize >= minSize && aktSize <= maxSize && !finBuddies.isEmpty()) {
+                // check for fish: build a set with all cover units that contain at least on 
+                // candidate from aktBaseCandSet and are not identical to a base set
+                possibleCoverUnits = getPossibleCoverUnits(baseCandSet, baseUnitsIncluded);
                 coverUnitsIncluded.clear();
                 for (int j = 0; j < possibleCoverUnits.size(); j++) {
                     coverUnitsIncluded.add(possibleCoverUnits.get(j));
-                    // hier brauchen wir noch nicht mit Masken zu arbeiten
+                    // all candidates in the current cover set
                     coverCandSet.set(coverCandidates[possibleCoverUnits.get(j)]);
                     cInt[0] = coverCandidates[possibleCoverUnits.get(j)];
-                    // Für die Suche ist aktuelle Anzahl Base-Units wichtig, die Cover-Sets beginnen wieder bei 1
-                    checkCoverUnitsRecursive(aktSize, 1, aktBaseCandSet, baseUnitsIncluded,
-                            coverUnitsIncluded, j + 1, possibleCoverUnits, aktEndoFinSet);
+                    // we need the current number of base units, the cover sets start with 1
+                    anzBaseUnits = aktSize;
+                    checkCoverUnitsRecursive(1, j + 1);
                     coverUnitsIncluded.remove(possibleCoverUnits.get(j));
                     cInt[0] = SudokuSet.EMPTY_SET;
                 }
             }
-            // Eine Base-Unit mehr
-            getFishesRecursive(maxSize, aktSize, aktBaseCandSet, i + 1, baseUnitsIncluded, aktEndoFinSet);
+            // one more base unit
+            getFishesRecursive(aktSize, baseCandSet, i + 1, endoFinSet);
             baseUnitsIncluded.remove(i);
         }
     }
 
     /**
      * Bildet rekursiv alle möglichen Kombinationen aus möglichen Cover-Sets. Wenn die Anzahl der
-     * aktuell betrachteten Cover-Sets gleich oder bis maximal 2 größer ist als die Anzahl der aktuell
+     * aktuell betrachteten Cover-Sets gleich ist wie die Anzahl der aktuell
      * enthaltenen Base-Sets, kann geprüft werden, ob ein Fisch vorliegt.
      *
-     * Die im aktuellen Versuch enthaltenen Cover-Candidaten stehen in <code>coverCandSet</code>
-     * (aus Performancegründen Eigenschaft der Klasse)
+     * Aus Performancegründen sind folgende Variablen Eigenschaft der Klasse:
+     *   coverCandSet: Die im aktuellen Versuch enthaltenen Cover-Candidaten
+     *   anzBaseUnits: Anzahl der Base-Units in diesem Versuch.
+     *   baseCandSet: Alle Kandidaten der aktuellen Base-Units.
+     *   baseUnitsIncluded: Alle Indexe der Base-Units, die im derzeitigen Versuch enthalten sind.
+     *   coverUnitsIncluded: Alle Indexe der Cover-Units, die im derzeitigen Versuch enthalten sind.
+     *   possibleCoverUnits: Set mit allen Cover-Units, die prinzipiell in Frage kommen (Indexe in coverUnits)
+     *   endoFinSet: Set mit allen Endo-Fins der aktuellen Base-Units
      *
-     * @param steps Liste mit allen gefundenen Fischen, neue Fische werden hier hinzugefügt.
-     * @param anzBaseUnits Anzahl der Base-Units in diesem Versuch.
-     * @param aktSize Anzahl der Cover-units in diesem Versuch.
-     * @param baseCandSet Alle Kandidaten der aktuellen Base-Units.
-     * @param baseUnitsIncluded Alle Indexe der Base-Units, die im derzeitigen Versuch enthalten sind.
-     * @param coverUnitsIncluded Alle Indexe der Cover-Units, die im derzeitigen Versuch enthalten sind.
+     * @param aktSize Anzahl der Cover-Units in diesem Versuch.
      * @param startIndex Index in possibleCoverUnits, ab dem neue Units hinzugefügt werden sollen.
-     * @param possibleCoverUnits Set mit allen Cover-Units, die prinzipiell in Frage kommen (Indexe in coverUnits)
-     * @param endoFinSet Set mit allen Endo-Fins der aktuellen Base-Units
      */
-    private void checkCoverUnitsRecursive(int anzBaseUnits, int aktSize,
-            SudokuSet baseCandSet, SudokuSet baseUnitsIncluded, SudokuSet coverUnitsIncluded, int startIndex,
-            SudokuSet possibleCoverUnits, SudokuSet endoFinSet) {
+    private void checkCoverUnitsRecursive(int aktSize, int startIndex) {
         anzCheckCoverUnitsRecursive++;
         aktSize++;
         if (aktSize > anzBaseUnits) {
@@ -530,14 +720,15 @@ public class FishSolver extends AbstractSolver {
             coverCandSet.or(coverCandidatesMasks[aktSize]);
             coverGesamt++;
             if (aktSize == anzBaseUnits) {
-                if (!endoFinSet.isEmpty() && !withFins) {
+                if (!endoFinSet.isEmpty() && !withFins) { // should be redundant...
                     continue;
                 }
                 versucheFisch++;
                 // jetzt kann es ein Fisch sein (mit oder ohne Flossen) -> prüfen
                 fins.clear();
                 boolean isCovered = baseCandSet.isCovered(coverCandSet, fins);
-                fins.merge(endoFinSet);
+                fins.or(endoFinSet);
+                // for kraken search withoutFins must be false!
                 if (isCovered && withoutFins && fins.isEmpty()) {
                     anzFins[0]++;
                     // ********* FINNLESS FISCH ****************
@@ -617,25 +808,34 @@ public class FishSolver extends AbstractSolver {
 
                         // jetzt noch Kannibalismus: es kommen natürlich auch nur Base-Kandidaten in Frage,
                         // die alle Fins sehen können
-                        deleteCandSet.set(baseCandSet);
+                        calculateCannibalisticSet();
+                        deleteCandSet.set(cannibalisticSet);
                         deleteCandSet.and(finBuddies);
-                        for (int j = 0; j < deleteCandSet.size(); j++) {
-                            int aktCand = deleteCandSet.get(j);
-                            int anz = 0;
-                            for (int k = 0; k < cInt.length; k++) {
-                                if (cInt[k].contains(aktCand)) {
-                                    anz++;
-                                }
-                            }
-                            if (anz >= 2) {
+                        if (! deleteCandSet.isEmpty()) {
+                            for (int j = 0; j < deleteCandSet.size(); j++) {
                                 // kann gelöscht werden
-                                addCandidateToDelete(aktCand, candidate);
-                                addCannibalistic(aktCand, candidate);
+                                addCandidateToDelete(deleteCandSet.get(j), candidate);
+                                addCannibalistic(deleteCandSet.get(j), candidate);
                             }
                         }
+//                        deleteCandSet.set(baseCandSet);
+//                        for (int j = 0; j < deleteCandSet.size(); j++) {
+//                            int aktCand = deleteCandSet.get(j);
+//                            int anz = 0;
+//                            for (int k = 0; k < cInt.length; k++) {
+//                                if (cInt[k].contains(aktCand)) {
+//                                    anz++;
+//                                }
+//                            }
+//                            if (anz >= 2) {
+//                                // kann gelöscht werden
+//                                addCandidateToDelete(aktCand, candidate);
+//                                addCannibalistic(aktCand, candidate);
+//                            }
+//                        }
                     }
                     // Wenn es zu löschende Kandidaten gibt, wird der SolutionStep in steps aufgenommen
-                    if (candidatesToDelete.size() > 0) {
+                    if (! kraken && candidatesToDelete.size() > 0) {
                         boolean isSashimi = checkSashimi(baseCandSet, baseUnitsIncluded, coverUnitsIncluded);
                         if (!sashimi || isSashimi) {
                             initSolutionStep(globalStep, aktSize, candidate, baseCandSet,
@@ -647,12 +847,94 @@ public class FishSolver extends AbstractSolver {
                                 Logger.getLogger(getClass().getName()).log(Level.SEVERE, "Error while cloning", ex);
                             }
                         }
+                    } else if (kraken && candidatesToDelete.isEmpty() && ! finBuddies.isEmpty()) {
+                        // search for possible kraken fishes
+                        // Type 1: We have fins but nothing to delete -> check all
+                        // cover candidates that are not base candidates wether they can be linked
+                        // to every fin (if fin set -> cover candidate is not set)
+                        // only one candidate at a time!
+                        // cannibalistic candidates can be deleted to
+                        deleteCandSet.set(coverCandSet);
+                        deleteCandSet.andNot(baseCandSet);
+                        deleteCandSet.or(cannibalisticSet);
+                        if (! deleteCandSet.isEmpty()) {
+                            //System.out.println("Possible Kraken: " + baseUnitsIncluded + "/" + coverUnitsIncluded);
+                            for (int j = 0; j < deleteCandSet.size(); j++) {
+                                int endIndex = deleteCandSet.get(j);
+                                if (tablingSolver.checkKrakenTypeOne(fins, endIndex, candidate)) {
+                                    // kraken fish found -> add!
+                                    if (cannibalisticSet.contains(endIndex)) {
+                                        addCannibalistic(endIndex, candidate);
+                                    }
+                                    boolean isSashimi = checkSashimi(baseCandSet, baseUnitsIncluded, coverUnitsIncluded);
+                                    initSolutionStep(globalStep, aktSize, candidate, baseCandSet,
+                                            baseUnitsIncluded, coverUnitsIncluded, withFins, isSashimi, fins, endoFinSet,
+                                            candidatesToDelete, cannibalistic);
+                                    globalStep.setSubType(globalStep.getType());
+                                    globalStep.setType(SolutionType.KRAKEN_FISH);
+                                    globalStep.addCandidateToDelete(deleteCandSet.get(j), candidate);
+                                    try {
+                                        // now the chains
+                                        for (int k = 0; k < fins.size(); k++) {
+                                            Chain tmpChain = tablingSolver.getKrakenChain(fins.get(k), candidate, endIndex, candidate);
+                                            globalStep.addChain((Chain) tmpChain.clone());
+                                        }
+                                        tablingSolver.adjustChains(globalStep);
+                                        addKrakenStep();
+                                    } catch (CloneNotSupportedException ex) {
+                                        Logger.getLogger(getClass().getName()).log(Level.SEVERE, "Error while cloning", ex);
+                                    }
+                                }
+                            }
+                        }
+                        // Type 2: For every cover set find chains from all base candidates and all fins to
+                        // a single candidate
+                        // a check is only necessary if the cover unit doesnt only contain base candidates
+                        // for cannibalistic candidates no chain is needed
+                        cannibalistic.clear();
+                        for (int coverIndex = 0; coverIndex < aktSize; coverIndex++) {
+                            // get all base candidates for that cover unit that are not cannibalistic
+                            tmpSet.set(cInt[coverIndex]);
+                            tmpSet.and(baseCandSet);
+                            tmpSet.andNot(cannibalisticSet);
+                            if (cInt[coverIndex].equals(tmpSet)) {
+                                // would be a normal Forcing Chain -> skip it
+                                continue;
+                            }
+                            // now add the fins and check all candidates
+                            tmpSet.or(fins);
+                            for (int endCandidate = 1; endCandidate <= 9; endCandidate++) {
+                                if (tablingSolver.checkKrakenTypeTwo(tmpSet, tmpSet1, candidate, endCandidate)) {
+                                    // kraken fishes found -> add!
+                                    for (int j = 0; j < tmpSet1.size(); j++) {
+                                        int endIndex = tmpSet1.get(j);
+                                        boolean isSashimi = checkSashimi(baseCandSet, baseUnitsIncluded, coverUnitsIncluded);
+                                        initSolutionStep(globalStep, aktSize, candidate, baseCandSet,
+                                                baseUnitsIncluded, coverUnitsIncluded, withFins, isSashimi, fins, endoFinSet,
+                                                candidatesToDelete, cannibalistic);
+                                        globalStep.setSubType(globalStep.getType());
+                                        globalStep.setType(SolutionType.KRAKEN_FISH);
+                                        globalStep.addCandidateToDelete(endIndex, endCandidate);
+                                        try {
+                                            // now the chains
+                                            for (int k = 0; k < tmpSet.size(); k++) {
+                                                Chain tmpChain = tablingSolver.getKrakenChain(tmpSet.get(k), candidate, endIndex, endCandidate);
+                                                globalStep.addChain((Chain) tmpChain.clone());
+                                            }
+                                            tablingSolver.adjustChains(globalStep);
+                                            addKrakenStep();
+                                        } catch (CloneNotSupportedException ex) {
+                                            Logger.getLogger(getClass().getName()).log(Level.SEVERE, "Error while cloning", ex);
+                                        }
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             }
             // eine neue Unit hinzufügen und wieder probieren.
-            checkCoverUnitsRecursive(anzBaseUnits, aktSize, baseCandSet, baseUnitsIncluded,
-                    coverUnitsIncluded, i + 1, possibleCoverUnits, endoFinSet);
+            checkCoverUnitsRecursive(aktSize, i + 1);
             cInt[aktSize - 1] = SudokuSet.EMPTY_SET;
             // in diesem Schritt dazugefügte Kandidaten wieder entfernen
             coverCandSet.andNot(coverCandidatesMasks[aktSize]);
@@ -660,6 +942,64 @@ public class FishSolver extends AbstractSolver {
         }
     }
 
+    private void addKrakenStep() throws CloneNotSupportedException {
+        String del = globalStep.getCandidateString() + " " + globalStep.getValues().get(0);
+        Integer oldIndex = deletesMap.get(del);
+        SolutionStep tmpStep = null;
+        if (oldIndex != null) {
+            tmpStep = steps.get(oldIndex);
+        }
+        if (tmpStep == null || globalStep.getSubType().compare(tmpStep.getSubType()) < 0 ||
+                (globalStep.getSubType().compare(tmpStep.getSubType()) == 0 &&
+                globalStep.getChainLength() < tmpStep.getChainLength())) {
+//            if (candidate != 1) {
+//                System.out.println(globalStep.toString(2));
+//            }
+            steps.add((SolutionStep) globalStep.clone());
+            deletesMap.put(del, steps.size() - 1);
+        }
+    }
+    
+    /**
+     * Gets all candidates that are in more than one cover set and writes them to
+     * cannibalisticSet. All necessary data is available in attributes:
+     *   - baseCandSet: all base candidates
+     *   - cInt[]: the cover candidates for all cover units (empty if unused)
+     * 
+     * Implementation:
+     *   - Get only the base candidates for all cover sets (in cInt1)
+     *   - AND all combinations of those reduced cover sets; every one
+     *     in an ANDed set is a base candidate that is a member of at least
+     *     two cover sets and thus a possible cannibalistic elimination 
+     *   - OR all results of the ANDs
+     */
+    private void calculateCannibalisticSet() {
+        cannibalisticSet.clear();
+        int maxCoverIndex = 0;
+        for (int i = 0; i < cInt.length; i++) {
+            if (cInt[i].isEmpty()) {
+                cInt1[i].clear();
+            } else {
+                cInt1[i].set(cInt[i]);
+                cInt1[i].and(baseCandSet);
+                if (!cInt1[i].isEmpty()) {
+                    maxCoverIndex = i;
+                }
+            }
+        }
+        for (int i = 0; i < maxCoverIndex; i++) {
+            if (cInt1[i].isEmpty()) {
+                // cant produce a canibalistic candidate
+                continue;
+            }
+            for (int j = i + 1; j <= maxCoverIndex; j++) {
+                tmpSet.set(cInt1[i]);
+                tmpSet.and(cInt1[j]);
+                cannibalisticSet.or(tmpSet);
+            }
+        }
+    }
+    
     private void addCandidateToDelete(int index, int candidate) {
         candidatesToDelete.add(new Candidate(index, candidate));
     }
@@ -790,8 +1130,7 @@ public class FishSolver extends AbstractSolver {
 
     /**
      * Alle Cover-Units durchgehen und prüfen, ob sie einen Kandidaten aus baseCandSet enthalten; wenn ja,
-     * prüfen, ob sie mit keiner der baseUnits identisch ist; wenn beides zutrifft,
-     * dem neuen Set hinzufügen.
+     * prüfen, ob sie mit keiner der baseUnits identisch sind; wenn beides zutrifft, dem neuen Set hinzufügen.
      *
      * @param baseCandSet Indexe aller von den Base-Units in baseUnitsIncluded abgedeckten Kandidaten.
      * @param baseUnitsIncluded Indexe aller Base-Units, die für den aktuellen Versuch verwendet werden.
@@ -846,24 +1185,10 @@ public class FishSolver extends AbstractSolver {
                 anzBaseUnits++;
             }
         }
-//        double fakAnzBaseUnits = 1;
-//        for (int i = 2; i <= anzBaseUnits; i++) {
-//            fakAnzBaseUnits *= i;
-//        }
         maxBaseCombinations = 0;
         // we have only maxSize combinations (the smaller fishes are automatically
         // included
-        //for (int i = minSize; i <= maxSize; i++) {
         for (int i = 1; i <= maxSize; i++) {
-//            double fakNMinusK = 1;
-//            for (int j = 2; j <= anzBaseUnits - i; j++) {
-//                fakNMinusK *= j;
-//            }
-//            double fakK = 1;
-//            for (int j = 2; j <= i; j++) {
-//                fakK *= j;
-//            }
-            //maxBaseCombinations += (int) (fakAnzBaseUnits / (fakNMinusK * fakK));
             maxBaseCombinations += combinations((int) anzBaseUnits, i);
         }
         if (dlg != null) {
@@ -895,10 +1220,10 @@ public class FishSolver extends AbstractSolver {
     }
 
     /**
-     * Führt die tatsächlichen Berechnungen für {@link initForCandidat(int,int[][],int[][])} durch.
-     * @param candidate Kandidat, für den der Fisch gesucht werden soll.
-     * @param sets Array vom Typ <CODE>SudokuSet</CODE>, in dem die Indexpositionen des Kandidatens abgelegt werden sollen.
-     * @param units Arrays mit den Indexpositionen der entsprechenden Units.
+     * Does the actual calculations for {@link initForCandidat(int,int[][],int[][])}.
+     * @param candidate Candidate, for that the search is made.
+     * @param sets Array of <CODE>SudokuSet</CODE> in which the indices of candidate shall be stored.
+     * @param units Arrays with the inidces of the corresponding units.
      */
     private void doInitForCandidates(int candidate, SudokuSet[] sets, int[][] units) {
         for (int i = 0; i < sets.length; i++) {
@@ -932,6 +1257,17 @@ public class FishSolver extends AbstractSolver {
         }
         return null;
     }
+    
+    private void getTablingSolver() {
+        if (tablingSolver != null) {
+            return;
+        }
+        if (solver != null) {
+            tablingSolver = (TablingSolver) solver.getSpecialisedSolver(TablingSolver.class);
+        } else {
+            tablingSolver = new TablingSolver(null);
+        }
+    }
 
     public static void main(String[] args) {
         Sudoku sudoku = new Sudoku(true);
@@ -944,9 +1280,11 @@ public class FishSolver extends AbstractSolver {
         // 7, 7, 20, 20: 327.453 / 457.859
         // 4, 4, 20, 20: 3328    / 3672
         //sudoku.setSudoku(":0000:x:9.7..5...1..7..9..86..9.57..8...61.9316.59..72.91..65.....2..96.9...4..8...9..3.5:214 314 414 315 615 815 217 118 218 222 325 228 328 428 234 339 439 448 854 458 772 473 374 384 185 493 795::");
-        FishSolver fs = new FishSolver();
+        sudoku.setSudoku(":0000:x:..53..6...23.7..4.....1..383584....1.64251.8.21..38..443..2.....72.4..9...1..34..:811 916 536 636 936 678 891 894 698::");
+        FishSolver fs = new FishSolver(null);
         long millis = System.currentTimeMillis();
-        List<SolutionStep> steps = fs.getAllFishes(sudoku, 7, 7, 20, 20, null, -1);
+        //List<SolutionStep> steps = fs.getAllFishes(sudoku, 7, 7, 20, 20, null, -1);
+        List<SolutionStep> steps = fs.getAllKrakenFishes(sudoku, 3, 3, 2, 0, null, -1, 2);
         millis = System.currentTimeMillis() - millis;
         System.out.println("Zeit: " + millis + "ms");
     }

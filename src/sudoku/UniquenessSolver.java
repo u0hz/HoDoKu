@@ -48,7 +48,8 @@ public class UniquenessSolver extends AbstractSolver {
     private SudokuSet tmpSet = new SudokuSet(); // for various checks
 
     /** Creates a new instance of SimpleSolver */
-    public UniquenessSolver() {
+    public UniquenessSolver(SudokuSolver solver) {
+        super(solver);
     }
 
     @Override
@@ -904,7 +905,7 @@ public class UniquenessSolver extends AbstractSolver {
     }
 
     public static void main(String[] args) {
-        UniquenessSolver ts = new UniquenessSolver();
+        UniquenessSolver ts = new UniquenessSolver(null);
         Sudoku sudoku = new Sudoku();
         //sudoku.setSudoku(":0000:x:2.7.86.5.8169..2.79.572.8.6..4..7.....2.3.56....5..7..6.3.19475.....43924.9.7.6..:141 342 844 348 149 949 854 362 368 892 894 896::");
         //sudoku.setSudoku(":0000:x:837159246.426837.96.9742.38.2..169..37..95.62.96.27...9..2683..28357469176.93182.:443 449 453 469::");

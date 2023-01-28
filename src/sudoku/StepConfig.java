@@ -31,13 +31,14 @@ public class StepConfig implements Cloneable, Comparable<StepConfig> {
     private int baseScore;
     private int adminScore;
     private boolean enabled;
+    private boolean allStepsEnabled;
     
     /** Creates a new instance of StepConfig */
     public StepConfig() {
     }
     
     public StepConfig(int index, SolutionType type, int level, SolutionCategory category,
-            int baseScore, int adminScore, boolean enabled) {
+            int baseScore, int adminScore, boolean enabled, boolean allStepsEnabled) {
         setIndex(index);
         setType(type);
         setLevel(level);
@@ -45,6 +46,7 @@ public class StepConfig implements Cloneable, Comparable<StepConfig> {
         setBaseScore(baseScore);
         setAdminScore(adminScore);
         setEnabled(enabled);
+        setAllStepsEnabled(allStepsEnabled);
     }
 
     @Override
@@ -124,5 +126,13 @@ public class StepConfig implements Cloneable, Comparable<StepConfig> {
     @Override
     public int compareTo(StepConfig o) {
         return index - o.getIndex();
+    }
+
+    public boolean isAllStepsEnabled() {
+        return allStepsEnabled;
+    }
+
+    public void setAllStepsEnabled(boolean allStepsEnabled) {
+        this.allStepsEnabled = allStepsEnabled;
     }
 }

@@ -55,7 +55,7 @@ import java.util.logging.Logger;
  * within the row/col (with two candidates the basic ER move degenerates into an 
  * X-Chain, with all three candidates only in a row/col it doesn't work at all).
  * 
- * For easy comparison SudokuSets with all posiible combinations of empty cells
+ * For easy comparison SudokuSets with all possible combinations of empty cells
  * for all blocks are created at startup.
  *
  * @author Bernhard Hobiger
@@ -96,7 +96,8 @@ public class SingleDigitPatternSolver extends AbstractSolver {
     private SolutionStep globalStep = new SolutionStep();
 
     /** Creates a new instance of SimpleSolver */
-    public SingleDigitPatternSolver() {
+    public SingleDigitPatternSolver(SudokuSolver solver) {
+        super(solver);
     }
     
 
@@ -258,8 +259,8 @@ public class SingleDigitPatternSolver extends AbstractSolver {
                     continue;
                 }
                 erCol = erCols[i][j];
-                if (notEnoughCandidates) {
-                    // both row and colhave only one candidate -> invalid
+                if (notEnoughCandidates && Options.getInstance().allowErsWithOnlyTwoCandidates == false) {
+                    // both row and col have only one candidate -> invalid
                     continue;
                 }
                 // empty rectangle found: erLine and erCol hold the lineNumbers

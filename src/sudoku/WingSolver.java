@@ -40,7 +40,8 @@ public class WingSolver extends AbstractSolver {
     private int wIndex2 = -1; // für W-Wing
     
     /** Creates a new instance of WingSolver */
-    public WingSolver() {
+    public WingSolver(SudokuSolver solver) {
+        super(solver);
     }
     
     @Override
@@ -332,8 +333,8 @@ public class WingSolver extends AbstractSolver {
         if (getLink(cand2, cI1, cI2, entities)) {
             // Alle Peers ermitteln
             SudokuSet buddies = new SudokuSet();
-            buddies.set(sudoku.buddies[cI1]);
-            buddies.and(sudoku.buddies[cI2]);
+            buddies.set(Sudoku.buddies[cI1]);
+            buddies.and(Sudoku.buddies[cI2]);
             if (! buddies.isEmpty()) {
                 globalStep.reset();
                 for (int i = 0; i < buddies.size(); i++) {

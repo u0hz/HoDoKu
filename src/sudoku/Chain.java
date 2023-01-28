@@ -16,10 +16,12 @@
  * You should have received a copy of the GNU General Public License
  * along with HoDoKu. If not, see <http://www.gnu.org/licenses/>.
  */
-
 package sudoku;
 
 import java.util.Arrays;
+import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * A chain consists of links, every link can be weak or strong, it can be a candidat in a cell,
@@ -70,7 +72,6 @@ public class Chain implements Cloneable {
     private static final int ALS_INDEX_MASK = 0x3fff000;
     private static final int ALS_INDEX_OFFSET = 12;
     private static final int NO_INDEX = 0x7f; // all bits set: index not used (only valid for third index in grouped node)
-
     private static final int MODE_MASK = 0x3c000000;
     private static final int MODE_DEL_MASK = 0xc3ffffff;
     private static final int MODE_OFFSET = 26;
@@ -80,10 +81,10 @@ public class Chain implements Cloneable {
     public static final int NORMAL_NODE = 0;
     public static final int GROUP_NODE = 1;
     public static final int ALS_NODE = 2;
-    public static final String[] TYPE_NAMES = new String[]{"NORMALE_NODE", "GROUP_NODE", "ALS_NODE"};
+    public static final String[] TYPE_NAMES = new String[]{"NORMAL_NODE", "GROUP_NODE", "ALS_NODE"};
     public int start;
     public int end;
-    public int length;
+    private int length;
     public int[] chain;
 
     public Chain() {
@@ -93,7 +94,7 @@ public class Chain implements Cloneable {
         this.start = start;
         this.end = end;
         this.chain = chain;
-        this.length = calculateLength();
+        this.length = -1;
     }
 
     @Override
@@ -107,18 +108,51 @@ public class Chain implements Cloneable {
         return newChain;
     }
 
-    private int calculateLength() {
-        double tmpLength = 0;
-        for (int i = start; i <= end; i++) {
-            if (getSNodeType(chain[i]) == Chain.ALS_NODE) {
-                tmpLength += 2.5;
-            } else {
-                tmpLength++;
-            }
-        }
-        return (int)tmpLength;
+    public void reset() {
+        start = 0;
+        end = 0;
+        length = -1;
     }
     
+    public void resetLength() {
+        length = -1;
+    }
+    
+    public int getLength() {
+        return getLength(null);
+    }
+
+    public int getLength(List<AlsInSolutionStep> alses) {
+        if (length == -1) {
+            length = calculateLength(alses);
+        }
+        return length;
+    }
+
+    private int calculateLength() {
+        return calculateLength(null);
+    }
+
+    private int calculateLength(List<AlsInSolutionStep> alses) {
+        double tmpLength = 0;
+        for (int i = start; i <= end; i++) {
+            tmpLength++;
+            if (getSNodeType(chain[i]) == Chain.ALS_NODE) {
+                if (alses != null) {
+                    int alsIndex = getSAlsIndex(chain[i]);
+                    if (alses.size() > alsIndex) {
+                        tmpLength += alses.get(alsIndex).getChainPenalty();
+                    } else {
+                        tmpLength += 5;
+                    }
+                } else {
+                    tmpLength += 2.5;
+                }
+            }
+        }
+        return (int) tmpLength;
+    }
+
     public int getStart() {
         return start;
     }
@@ -313,6 +347,40 @@ public class Chain implements Cloneable {
         return entry;
     }
 
+    public void getNodeBuddies(int index, SudokuSetBase set, List<Als> alses) {
+        getSNodeBuddies(chain[index], getCandidate(index), alses, set);
+    }
+
+    /**
+     * - for normal nodes just takes the buddies of the node
+     * - for group nodes takes the anded buddies of all node cells
+     * - for ALS takes the anded buddies of all ALS cells, that contain that candidate
+     * 
+     * @param entry The entry
+     * @param candidate Only valid for als entries: the candidate for which the buddies should be
+     *        calculated
+     * @param alses A list with all alses for that chain (only valid for ALS nodes)
+     * @param set The set containing the buddies
+     */
+    public static void getSNodeBuddies(int entry, int candidate, List<Als> alses, SudokuSetBase set) {
+        if (getSNodeType(entry) == NORMAL_NODE) {
+            set.set(Sudoku.buddies[getSCellIndex(entry)]);
+        } else if (getSNodeType(entry) == Chain.GROUP_NODE) {
+            set.set(Sudoku.buddies[getSCellIndex(entry)]);
+            set.and(Sudoku.buddies[getSCellIndex2(entry)]);
+            if (getSCellIndex3(entry) != -1) {
+                set.and(Sudoku.buddies[getSCellIndex3(entry)]);
+            }
+        } else if (getSNodeType(entry) == Chain.ALS_NODE) {
+            Als als = alses.get(getSAlsIndex(entry));
+            set.set(als.buddiesPerCandidat[candidate]);
+        } else {
+            set.clear();
+            Logger.getLogger(Chain.class.getName()).log(Level.SEVERE, "getSNodeBuddies() gesamt: invalid node type (" + 
+                    getSNodeType(entry) + ")");
+        }
+    }
+
     public static boolean equalsIndexCandidate(int entry1, int entry2) {
         return (entry1 & EQUALS_MASK) == (entry2 & EQUALS_MASK);
     }
@@ -320,13 +388,22 @@ public class Chain implements Cloneable {
     public static String toString(int entry) {
         if (getSNodeType(entry) == ALS_NODE) {
             return TYPE_NAMES[getSNodeType(entry)] + " - " +
-                    getSAlsIndex(entry) + " - " + 
+                    getSAlsIndex(entry) + " - " +
                     getSCellIndex(entry) + " - " + isSStrong(entry) + " - " + getSCandidate(entry);
         } else {
             return TYPE_NAMES[getSNodeType(entry)] + " - " +
                     getSCellIndex3(entry) + " - " + getSCellIndex2(entry) + " - " +
                     getSCellIndex(entry) + " - " + isSStrong(entry) + " - " + getSCandidate(entry);
         }
+    }
+    
+    @Override
+    public String toString() {
+        StringBuffer tmp = new StringBuffer();
+        for (int i = start; i <= end; i++) {
+            tmp.append(toString(chain[i]) + " ");
+        }
+        return tmp.toString();
     }
 
     public static void main(String[] args) {

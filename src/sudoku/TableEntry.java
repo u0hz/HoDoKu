@@ -100,6 +100,10 @@ public class TableEntry {
         }
     }
     
+    void addEntry(int cellIndex, int cand, int penalty, boolean set) {
+        addEntry(cellIndex, -1, -1, Chain.NORMAL_NODE, cand, set, 0, 0, 0, 0, 0, penalty);
+    }
+    
     void addEntry(int cellIndex, int cand, boolean set) {
         addEntry(cellIndex, cand, set, 0, 0, 0, 0, 0);
     }
@@ -113,16 +117,27 @@ public class TableEntry {
         addEntry(cellIndex, -1, -1, Chain.NORMAL_NODE, cand, set, ri1, ri2, ri3, ri4, ri5);
     }
     
+    void addEntry(int cellIndex1, int alsIndex, int nodeType, int cand, boolean set, int penalty) {
+        addEntry(cellIndex1, Chain.getSLowerAlsIndex(alsIndex), Chain.getSHigherAlsIndex(alsIndex),
+                nodeType, cand, set, 0, 0, 0, 0, 0, penalty);
+    }
+    
     void addEntry(int cellIndex1, int alsIndex, int nodeType, int cand, boolean set) {
         addEntry(cellIndex1, Chain.getSLowerAlsIndex(alsIndex), Chain.getSHigherAlsIndex(alsIndex),
                 nodeType, cand, set, 0, 0, 0, 0, 0);
+    }
+    
+    void addEntry(int cellIndex1, int cellIndex2, int cellIndex3, int nodeType, int cand, boolean set, int ri1,
+            int ri2, int ri3, int ri4, int ri5) {
+        addEntry(cellIndex1, cellIndex2, cellIndex3, nodeType, cand, set,
+                ri1, ri2, ri3, ri4, ri5, 0);
     }
     
     /**
      * Einträge werden nur hinzugefügt, wenn sie nicht schon existieren
      */
     void addEntry(int cellIndex1, int cellIndex2, int cellIndex3, int nodeType, int cand, boolean set, int ri1,
-            int ri2, int ri3, int ri4, int ri5) {
+            int ri2, int ri3, int ri4, int ri5, int penalty) {
         if (index >= entries.length) {
             // leider schon voll...
             Logger.getLogger(getClass().getName()).log(Level.WARNING, "addEntry(): TableEntry is already full!");
@@ -154,6 +169,11 @@ public class TableEntry {
                 offSets[cand].add(cellIndex1);
             }
         }
+        
+        // 20090213: Adjust chain penalty for ALS
+        int distance = getDistance(index);
+        distance += penalty;
+        setDistance(index, distance);
         
         indices.put(entry, index);
         index++;
@@ -311,4 +331,5 @@ public class TableEntry {
     public int getNodeType(int index) {
         return Chain.getSNodeType(entries[index]);
     }
+    
 }

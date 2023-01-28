@@ -40,9 +40,10 @@ public class ConfigDialog extends javax.swing.JDialog {
     private ConfigGeneralPanel myGeneralPanel;
     private ConfigStepPanel myConfigStepPanel;
     private ConfigColorPanel myConfigColorPanel;
+    private ConfigFindAllStepsPanel myConfigFindAllStepsPanel;
 
     /** Creates new form ConfigDialog */
-    public ConfigDialog(java.awt.Frame parent, boolean modal) {
+    public ConfigDialog(java.awt.Frame parent, boolean modal, int tabIndex) {
         super(parent, modal);
         initComponents();
         
@@ -69,6 +70,13 @@ public class ConfigDialog extends javax.swing.JDialog {
         
         myConfigColorPanel = new ConfigColorPanel();
         colorPanel.add(myConfigColorPanel, BorderLayout.CENTER);
+        
+        myConfigFindAllStepsPanel = new ConfigFindAllStepsPanel();
+        findAllStepsPanel.add(myConfigFindAllStepsPanel, BorderLayout.CENTER);
+        
+        if (tabIndex != -1) {
+            tabbedPane.setSelectedIndex(tabIndex);
+        }
     }
     
     /** This method is called from within the constructor to
@@ -82,6 +90,7 @@ public class ConfigDialog extends javax.swing.JDialog {
         tabbedPane = new javax.swing.JTabbedPane();
         generalPanel = new javax.swing.JPanel();
         solverPanel = new javax.swing.JPanel();
+        findAllStepsPanel = new javax.swing.JPanel();
         stepConfigPanel = new javax.swing.JPanel();
         colorPanel = new javax.swing.JPanel();
         okButton = new javax.swing.JButton();
@@ -101,6 +110,9 @@ public class ConfigDialog extends javax.swing.JDialog {
 
         solverPanel.setLayout(new java.awt.BorderLayout());
         tabbedPane.addTab(bundle.getString("ConfigDialog.solverPanel.TabConstraints.tabTitle"), solverPanel); // NOI18N
+
+        findAllStepsPanel.setLayout(new java.awt.BorderLayout());
+        tabbedPane.addTab(bundle.getString("ConfigDialog.findAllStepsPanel.TabConstraints.tabTitle"), findAllStepsPanel); // NOI18N
 
         stepConfigPanel.setLayout(new java.awt.BorderLayout());
         tabbedPane.addTab(bundle.getString("ConfigDialog.stepConfigPanel.TabConstraints.tabTitle"), stepConfigPanel); // NOI18N
@@ -161,6 +173,7 @@ public class ConfigDialog extends javax.swing.JDialog {
         myGeneralPanel.okPressed();
         myConfigStepPanel.okPressed();
         myConfigColorPanel.okPressed();
+        myConfigFindAllStepsPanel.okPressed();
         try {
             Options.getInstance().writeOptions();
         } catch (FileNotFoundException ex) {
@@ -205,7 +218,7 @@ public class ConfigDialog extends javax.swing.JDialog {
         java.awt.EventQueue.invokeLater(new Runnable() {
             @Override
             public void run() {
-                new ConfigDialog(new javax.swing.JFrame(), true).setVisible(true);
+                new ConfigDialog(new javax.swing.JFrame(), true, -1).setVisible(true);
             }
         });
     }
@@ -213,6 +226,7 @@ public class ConfigDialog extends javax.swing.JDialog {
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton cancelButton;
     private javax.swing.JPanel colorPanel;
+    private javax.swing.JPanel findAllStepsPanel;
     private javax.swing.JPanel generalPanel;
     private javax.swing.JButton okButton;
     private javax.swing.JPanel solverPanel;

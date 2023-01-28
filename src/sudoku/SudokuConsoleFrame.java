@@ -43,7 +43,6 @@ public class SudokuConsoleFrame extends javax.swing.JFrame {
                 new PrintStream(new ConsoleOutputStream());
         System.setOut(newOut);
         System.setErr(newOut);
-        System.setIn(new ConsoleInputStream());
 
         consoleHandler = new StreamHandler(newOut, new SimpleFormatter());
         Logger rootLogger = Logger.getLogger("");
@@ -110,6 +109,10 @@ private void closeButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-F
     System.exit(0);
 }//GEN-LAST:event_closeButtonActionPerformed
 
+    public void setIn() {
+        System.setIn(new ConsoleInputStream());
+    }
+    
     /**
     * @param args the command line arguments
     */

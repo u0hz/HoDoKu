@@ -71,7 +71,7 @@ import javax.swing.filechooser.FileFilter;
  */
 public class MainFrame extends javax.swing.JFrame implements FlavorListener {
 
-    public static final String VERSION = "HoDoKu - v1.0";
+    public static final String VERSION = "HoDoKu - v1.1";
     private SudokuPanel sudokuPanel;
     private DifficultyLevel level = Options.getInstance().getDifficultyLevels()[DifficultyType.EASY.ordinal()];
     private Cursor[] numberCursors = new Cursor[10];
@@ -1279,7 +1279,7 @@ public class MainFrame extends javax.swing.JFrame implements FlavorListener {
     }//GEN-LAST:event_loadMenuItemActionPerformed
 
     private void configMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_configMenuItemActionPerformed
-        new ConfigDialog(this, true).setVisible(true);
+        new ConfigDialog(this, true, -1).setVisible(true);
         fixFocus();
         sudokuPanel.repaint();
     }//GEN-LAST:event_configMenuItemActionPerformed
@@ -1742,7 +1742,7 @@ private void formWindowClosing(java.awt.event.WindowEvent evt) {//GEN-FIRST:even
 }//GEN-LAST:event_formWindowClosing
 
 private void hinweisKonfigurierenButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_hinweisKonfigurierenButtonActionPerformed
-    configMenuItemActionPerformed(null);
+    new ConfigDialog(this, true, 1).setVisible(true);
     check();
     fixFocus();
 }//GEN-LAST:event_hinweisKonfigurierenButtonActionPerformed

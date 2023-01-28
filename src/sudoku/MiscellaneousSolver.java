@@ -77,9 +77,11 @@ public class MiscellaneousSolver extends AbstractSolver {
     private SudokuSet blockAllowedCandSet = new SudokuSet(); // Alle erlaubten Kandidaten für block
     private SudokuSet tmpSet = new SudokuSet();
     private SudokuSet tmpCandSet = new SudokuSet();
+    private SudokuSet tmpCandSet1 = new SudokuSet();
     
     /** Creates a new instance of MiscellaneousSolver */
-    public MiscellaneousSolver() {
+    public MiscellaneousSolver(SudokuSolver solver) {
+        super(solver);
     }
     
     @Override
@@ -250,7 +252,7 @@ public class MiscellaneousSolver extends AbstractSolver {
                 // Hier kommt jetzt der Unterschied zwischen erstem und zweiten Durchlauf:
                 // Beim ersten Mal muss irgendeine Eliminierung möglich sein, dann können wir im Block weitersuchen
                 // (es muss aber noch was zu suchen geben!)
-                // Beim zweiten Mal muss die Gesamtsumm der eliminierten Kandidaten nPlus sein
+                // Beim zweiten Mal muss die Gesamtsumme der eliminierten Kandidaten nPlus sein
                 if (! secondCheck) {
                     if (anzContained > 0 && actSet.size() > anzExtra && actSet.size() - anzExtra < nPlus) {
                         // Die Kombination enthält Kandidaten aus der Intersection und es gibt zumindest eine Zusatzzelle ->
@@ -262,6 +264,8 @@ public class MiscellaneousSolver extends AbstractSolver {
                         blockActCandSet.clear();
                         // Kandidaten, die im Zeilen-/Spalten-Set vorkommen, sind verboten!
                         blockAllowedCandSet.set(actCandSet);
+                        // 20090216 ACHTUNG: Die Extra-Kandidaten dürfen in beiden Sets vorkommen (stehen noch in tmpSet)!
+                        blockAllowedCandSet.andNot(tmpSet);
                         blockAllowedCandSet.not();
                         checkHousesRecursive(0, 0, nPlus - (actSet.size() - anzExtra), blockSourceSet, blockActSet, blockActCandSet, blockAddCandSets,
                                 blockAllowedCandSet, true);
@@ -273,6 +277,7 @@ public class MiscellaneousSolver extends AbstractSolver {
                         // eliminiert werden kann:
                         //  - (intersectionActCandSet + blockActCandSet) - nonBlockActCandSet in blockSet - blockActSet - intersectionActSet
                         //  - (intersectionActCandSet + nonBlockActCandSet) - blockActCandSet in nonBlockSet - nonBlockActSet - intersectionActSet
+                        // 20090216 Wenn Extra-Kandidaten in beiden Sets gleich sind, dürfen sie auch in beiden Sets eliminiert werden!
                         globalStep.reset();
 //                        System.out.println("===========================");
 //                        System.out.println("intersectionSet: " + intersectionSet);
@@ -284,12 +289,16 @@ public class MiscellaneousSolver extends AbstractSolver {
 //                        System.out.println("nonBlockSet: " + nonBlockSet);
 //                        System.out.println("nonBlockActSet: " + nonBlockActSet);
 //                        System.out.println("nonBlockActCandSet: " + nonBlockActCandSet);
+                        tmpCandSet1.set(blockActCandSet);
+                        tmpCandSet1.and(nonBlockActCandSet); // 20090216 das sind jetzt die gleichen Extra-Kandidaten
                         tmpSet.set(blockSet);
                         tmpSet.andNot(blockActSet);
                         tmpSet.andNot(intersectionActSet);
                         tmpCandSet.set(intersectionActCandSet);
                         tmpCandSet.or(blockActCandSet);
                         tmpCandSet.andNot(nonBlockActCandSet);
+                        // 20090216
+                        tmpCandSet.or(tmpCandSet1);
                         checkCandidatesToDelete(tmpSet, tmpCandSet);
                         tmpSet.set(nonBlockSet);
                         tmpSet.andNot(nonBlockActSet);
@@ -297,6 +306,8 @@ public class MiscellaneousSolver extends AbstractSolver {
                         tmpCandSet.set(intersectionActCandSet);
                         tmpCandSet.or(nonBlockActCandSet);
                         tmpCandSet.andNot(blockActCandSet);
+                        // 20090216
+                        tmpCandSet.or(tmpCandSet1);
                         checkCandidatesToDelete(tmpSet, tmpCandSet);
                         if (globalStep.getCandidatesToDelete().size() > 0) {
                             // GEFUNDEN!

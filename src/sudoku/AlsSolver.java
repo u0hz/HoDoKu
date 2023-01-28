@@ -16,7 +16,6 @@
  * You should have received a copy of the GNU General Public License
  * along with HoDoKu. If not, see <http://www.gnu.org/licenses/>.
  */
-
 package sudoku;
 
 import java.util.ArrayList;
@@ -31,11 +30,10 @@ import java.util.logging.Logger;
  * @author user
  */
 public class AlsSolver extends AbstractSolver {
+
     private static AlsComparator alsComparator = null;
-    
     private List<SolutionStep> steps; // gefundene Lösungsschritte
     private SolutionStep globalStep = new SolutionStep(SolutionType.HIDDEN_SINGLE);
-    
     private SudokuSet indexSet = new SudokuSet();
     //private SudokuSet candSet = new SudokuSet();
     //private SudokuSet[] candAddSets = new SudokuSet[10];
@@ -48,21 +46,21 @@ public class AlsSolver extends AbstractSolver {
     private Als startAls;  // erstes ALS in der Chain (für Prüfung auf Eliminierungen)
     private int recDepth = 0; // aktuelle Tiefe der Rekursion (Chain-Suche)
     private int maxRecDepth = 0; // maximale Tiefe der Rekursion (Chain-Suche)
-    
     private SudokuSet possibleRestrictedCommonsSet = new SudokuSet(); // alle Kandidaten, die in beiden ALS vorkommen
     private SudokuSet restrictedCommonSet = new SudokuSet(); // zum Prüfen auf restricted commons (Buddies aufsummieren)
     private SudokuSet restrictedCommonTmpSet = new SudokuSet(); // Position mit Buddies vereinen
     private SudokuSet restrictedCommonIndexSet = new SudokuSet(); // Ale Positionen eines Kandidaten in beiden ALS
     private SudokuSet forbiddenIndexSet = new SudokuSet();  // Alle Positionen in allen ALS -> kommen nicht in Frage!
     private SudokuSet intersectionSet = new SudokuSet();  // für Prüfung auf Überlappen
-    
+
     /** Creates a new instance of AlsSolver */
-    public AlsSolver() {
+    public AlsSolver(SudokuSolver solver) {
+        super(solver);
         if (alsComparator == null) {
             alsComparator = new AlsComparator();
         }
     }
-    
+
     @Override
     protected SolutionStep getStep(SolutionType type) {
         SolutionStep result = null;
@@ -97,7 +95,7 @@ public class AlsSolver extends AbstractSolver {
         }
         return result;
     }
-    
+
     @Override
     protected boolean doStep(SolutionStep step) {
         boolean handled = true;
@@ -115,7 +113,7 @@ public class AlsSolver extends AbstractSolver {
         }
         return handled;
     }
-    
+
     public List<SolutionStep> getAllAlses(Sudoku sudoku) {
         Sudoku save = getSudoku();
         setSudoku(sudoku);
@@ -144,28 +142,28 @@ public class AlsSolver extends AbstractSolver {
         }
         return resultSteps;
     }
-    
+
     private void getAlsXYChain() {
         steps = new ArrayList<SolutionStep>();
         collectAllAlses();
         collectAllRestrictedCommons(true);
         getAlsXYChainInt();
     }
-    
+
     private void getAlsXYWing() {
         steps = new ArrayList<SolutionStep>();
         collectAllAlses();
         collectAllRestrictedCommons(false);
         getAlsXYWingInt();
     }
-    
+
     private void getAlsXZ() {
         steps = new ArrayList<SolutionStep>();
         collectAllAlses();
         collectAllRestrictedCommons(false);
         getAlsXZInt();
     }
-    
+
     /**
      * Alle restricted commons durchgehen. Für jeden alle in beiden ALS enthaltene Kandidaten durchgehen
      * (außer restricted common selbst) und schauen, ob es Buddies außerhalb der ALS gibt. Wenn ja,
@@ -173,11 +171,15 @@ public class AlsSolver extends AbstractSolver {
      *
      * Wenn es mehr als einen restricted common zwischen den selben beiden ALS gibt, können beide für
      * Eliminierungen verwendet werden
+     * 
+     * 20090226: Doubly linked ALS-XZ: if two ALS are linked by 2 RCs, the rest of
+     *    each ALS becomes a locked set and eliminates additional candidates
      */
     private void getAlsXZInt() {
         globalStep.reset();
         int lastAls1 = -1;
         int lastAls2 = -1;
+        int lastRC = -1;
         for (int i = 0; i < restrictedCommons.size(); i++) {
             RestrictedCommon rc = restrictedCommons.get(i);
             if (lastAls1 != rc.als1 || lastAls2 != rc.als2) {
@@ -187,7 +189,7 @@ public class AlsSolver extends AbstractSolver {
                     globalStep.addAls(alses.get(lastAls1).indices, alses.get(lastAls1).candidates);
                     globalStep.addAls(alses.get(lastAls2).indices, alses.get(lastAls2).candidates);
                     try {
-                        steps.add((SolutionStep)globalStep.clone());
+                        steps.add((SolutionStep) globalStep.clone());
                     } catch (CloneNotSupportedException ex) {
                         Logger.getLogger(getClass().getName()).log(Level.SEVERE, "Error while cloning", ex);
                     }
@@ -195,13 +197,19 @@ public class AlsSolver extends AbstractSolver {
                 }
                 lastAls1 = rc.als1;
                 lastAls2 = rc.als2;
+                lastRC = rc.cand;
             }
             Als als1 = alses.get(rc.als1);
             Als als2 = alses.get(rc.als2);
             checkCandidatesToDelete(als1, als2, null, rc.cand, -1);
+            if (lastRC != rc.cand) {
+                // als1 and als2 are doubly linked, the RCs are lastRC and rc.cand
+                checkDoublyLinkedAls(als1, als2, lastRC, rc.cand);
+                checkDoublyLinkedAls(als2, als1, lastRC, rc.cand);
+            }
         }
     }
-    
+
     /**
      * Alle Kombinationen aus zwei restricted commons durchgehen und schauen, ob sich ein XY-Wing
      * konstruieren lässt (die Kandidaten für die zwei restricted commons müssen verschieden sein,
@@ -224,7 +232,7 @@ public class AlsSolver extends AbstractSolver {
                 // die beiden restricted commons müssen insgesamt 3 verschiedene ALS verbinden, die
                 // sich nicht überschneiden dürfen
                 // da rc1.als1 != rc1.als2 && rc2.als1 != rc2.als2 fällt der Check kurz aus
-                if (! ((rc1.als1 == rc2.als1 && rc1.als2 != rc2.als2) ||
+                if (!((rc1.als1 == rc2.als1 && rc1.als2 != rc2.als2) ||
                         (rc1.als2 == rc2.als1 && rc1.als1 != rc2.als2) ||
                         (rc1.als1 == rc2.als2 && rc1.als2 != rc2.als1) ||
                         (rc1.als2 == rc2.als2 && rc1.als1 != rc2.als1))) {
@@ -264,7 +272,7 @@ public class AlsSolver extends AbstractSolver {
                 indexSet.set(alses.get(rc2.als1).indices);
                 indexSet.or(alses.get(rc2.als2).indices);
                 intersectionSet.and(indexSet);
-                if (! intersectionSet.equals(c.indices)) {
+                if (!intersectionSet.equals(c.indices)) {
                     // Überlappung -> darf nicht sein
                     continue;
                 }
@@ -277,7 +285,7 @@ public class AlsSolver extends AbstractSolver {
                     globalStep.addAls(b.indices, b.candidates);
                     globalStep.addAls(c.indices, c.candidates);
                     try {
-                        steps.add((SolutionStep)globalStep.clone());
+                        steps.add((SolutionStep) globalStep.clone());
                     } catch (CloneNotSupportedException ex) {
                         Logger.getLogger(getClass().getName()).log(Level.SEVERE, "Error while cloning", ex);
                     }
@@ -286,7 +294,7 @@ public class AlsSolver extends AbstractSolver {
             }
         }
     }
-    
+
     /**
      * Ausgehend von jedem ALS alle möglichen Kombinationen durchgehen:
      *
@@ -317,7 +325,7 @@ public class AlsSolver extends AbstractSolver {
         }
         Logger.getLogger(AlsSolver.class.getName()).log(Level.FINER, steps.size() + " (maxRecDepth: " + maxRecDepth + ")");
     }
-    
+
     /**
      * Hier passierts: Für das ALS mit Index alsIndex alle restricted commons durchgehen.
      * Wenn das ALS, auf das der restricted common verweist, sich nicht mit den
@@ -345,11 +353,11 @@ public class AlsSolver extends AbstractSolver {
                 continue;
             }
             Als aktAls = alses.get(rc.als2);
-            if (! chainSet.andEmpty(aktAls.indices)) {
+            if (!chainSet.andEmpty(aktAls.indices)) {
                 // neues ALS überschneidet sich mit dem Rest -> darf nicht sein
                 continue;
             }
-            
+
             // ok, nächstes ALS darf hinzugefügt werden
             if (firstRestrictedCommon == -1) {
                 firstRestrictedCommon = rc.cand;
@@ -374,16 +382,16 @@ public class AlsSolver extends AbstractSolver {
                         tmpAls = tmp;
                     }
                     try {
-                        steps.add((SolutionStep)globalStep.clone());
+                        steps.add((SolutionStep) globalStep.clone());
                     } catch (CloneNotSupportedException ex) {
                         Logger.getLogger(getClass().getName()).log(Level.SEVERE, "Error while cloning", ex);
                     }
                 }
             }
-            
+
             // und weiter geht die wilde Hatz...
             getAlsXYChainRecursive(rc.als2, firstRestrictedCommon, aktAls);
-            
+
             // und wieder retour
             chainSet.andNot(aktAls.indices);
             chain.remove(rc);
@@ -393,7 +401,7 @@ public class AlsSolver extends AbstractSolver {
         }
         recDepth--;
     }
-    
+
     /**
      * Kann für XZ und XY-Wing verwendet werden: Die gemeinsamen Kandidaten (!= restricted common) zweier ALS prüfen,
      * schauen, ob es Kandidaten gibt, die außerhalb der ALS liegen und alle Kandidaten sehen -> können gelöscht werden
@@ -401,7 +409,7 @@ public class AlsSolver extends AbstractSolver {
     private void checkCandidatesToDelete(Als als1, Als als2, Als als3, int restr1, int restr2) {
         checkCandidatesToDelete(als1, als2, als3, restr1, restr2, false, null);
     }
-    
+
     private void checkCandidatesToDelete(Als als1, Als als2, Als als3, int restr1, int restr2, boolean forChain, SudokuSet forbiddenIndices) {
         boolean rcWritten = false;
         possibleRestrictedCommonsSet.set(als1.candidates);
@@ -439,7 +447,7 @@ public class AlsSolver extends AbstractSolver {
             for (int k = 0; k < restrictedCommonIndexSet.size(); k++) {
                 int rIndex = restrictedCommonIndexSet.get(k);
                 // die Position des Kandidatens selbst ist hier egal
-                restrictedCommonTmpSet.set(sudoku.buddies[rIndex]);
+                restrictedCommonTmpSet.set(Sudoku.buddies[rIndex]);
                 restrictedCommonSet.and(restrictedCommonTmpSet);
             }
             // die Positionen in den ALS werden explizit ausgenommen (für XY-Wing/XY-Chain nötig!)
@@ -449,7 +457,7 @@ public class AlsSolver extends AbstractSolver {
             restrictedCommonIndexSet.not();
             restrictedCommonIndexSet.and(sudoku.getAllowedPositions()[cand]);
             restrictedCommonSet.and(restrictedCommonIndexSet);
-            if (! restrictedCommonSet.isEmpty()) {
+            if (!restrictedCommonSet.isEmpty()) {
                 // gefunden -> können alle gelöscht werden
                 for (int l = 0; l < restrictedCommonSet.size(); l++) {
                     globalStep.addCandidateToDelete(restrictedCommonSet.get(l), cand);
@@ -458,9 +466,9 @@ public class AlsSolver extends AbstractSolver {
                 for (int l = 0; l < indexSet.size(); l++) {
                     globalStep.addFin(indexSet.get(l), cand);
                 }
-                if (! rcWritten) {
+                if (!rcWritten) {
                     // endoFins mit restricted common belegen und chain einschreiben
-                    if (! forChain) {
+                    if (!forChain) {
                         if (als3 != null) {
                             addRestrictedCommonToStep(als1, als3, restr1, false);
                         } else {
@@ -475,7 +483,7 @@ public class AlsSolver extends AbstractSolver {
             }
         }
     }
-    
+
     private void addRestrictedCommonToStep(Als als1, Als als2, int cand, boolean withChain) {
         // endoFins mit restricted common belegen und chain einschreiben
         indexSet.set(als1.indicesPerCandidat[cand]);
@@ -492,8 +500,8 @@ public class AlsSolver extends AbstractSolver {
                 for (int i2 = 0; i2 < als2.indicesPerCandidat[cand].size(); i2++) {
                     int index1 = als1.indicesPerCandidat[cand].get(i1);
                     int index2 = als2.indicesPerCandidat[cand].get(i2);
-                    int dx = sudoku.getLine(index1) - Sudoku.getLine(index2);
-                    int dy = sudoku.getCol(index1) - Sudoku.getCol(index2);
+                    int dx = Sudoku.getLine(index1) - Sudoku.getLine(index2);
+                    int dy = Sudoku.getCol(index1) - Sudoku.getCol(index2);
                     int dist = dx * dx + dy * dy;
                     if (dist < minDist) {
                         minDist = dist;
@@ -502,15 +510,54 @@ public class AlsSolver extends AbstractSolver {
                     }
                 }
             }
-            int[] chain = new int[2];
+            int[] tmpChain = new int[2];
 //            chain[0] = minIndex1 * 10 + cand;
 //            chain[1] = minIndex2 * 10 + cand;
-            chain[0] = Chain.makeSEntry(minIndex1, cand, false);
-            chain[1] = Chain.makeSEntry(minIndex2, cand, false);
-            globalStep.addChain(0, 1, chain);
+            tmpChain[0] = Chain.makeSEntry(minIndex1, cand, false);
+            tmpChain[1] = Chain.makeSEntry(minIndex2, cand, false);
+            globalStep.addChain(0, 1, tmpChain);
         }
     }
-    
+
+    /**
+     * als1 and als2 are doubly linked by RCs rc1 and rc2; check whether the locked
+     * set {als1 - rc1 - rc2 } can eliminate candidates that are not in als2.
+     * 
+     * The method has to be called twice with als1 and als2 swapped.
+     * 
+     * @param als1 The als that becomes a locked set
+     * @param als2 The doubly linked second als, no candidates can be eliminated from it
+     * @param rc1 The first Restricted Common
+     * @param rc2 The second Restricted Common
+     */
+    private void checkDoublyLinkedAls(Als als1, Als als2, int rc1, int rc2) {
+        // collect the remaining candidates
+        possibleRestrictedCommonsSet.set(als1.candidates);
+        possibleRestrictedCommonsSet.remove(rc1);
+        possibleRestrictedCommonsSet.remove(rc2);
+        if (possibleRestrictedCommonsSet.isEmpty()) {
+            // nothing can be eliminated
+            return;
+        }
+        // for any candidate left get all buddies, subtract als1 and als2 and check for eliminations
+        for (int i = 0; i < possibleRestrictedCommonsSet.size(); i++) {
+            int cand = possibleRestrictedCommonsSet.get(i);
+            restrictedCommonIndexSet.setAll();
+            for (int j = 0; j < als1.indicesPerCandidat[cand].size(); j++) {
+                restrictedCommonIndexSet.and(Sudoku.buddies[als1.indicesPerCandidat[cand].get(j)]);
+            }
+            restrictedCommonIndexSet.andNot(als1.indices);
+            restrictedCommonIndexSet.andNot(als2.indices);
+            // check whether something can be eliminated
+            restrictedCommonIndexSet.and(sudoku.getAllowedPositions()[cand]);
+            if (! restrictedCommonIndexSet.isEmpty()) {
+                for (int j = 0; j < restrictedCommonIndexSet.size(); j++) {
+                    globalStep.addCandidateToDelete(restrictedCommonIndexSet.get(j), cand);
+                }
+            }
+        }
+    }
+
     /**
      * Alle Kombinationen von jeweils 2 ALS durchgehen und prüfen, ob es einen restricted common gibt
      * (Kandidat, der in beiden ALS vorkommt, und wo alle Vorkommen im einem ALS alle Vorkommen
@@ -536,7 +583,7 @@ public class AlsSolver extends AbstractSolver {
                 // Kombination nur prüfen, wenn sich die ALS nicht überlappen
                 intersectionSet.set(als1.indices);
                 intersectionSet.and(als2.indices);
-                if (! intersectionSet.isEmpty()) {
+                if (!intersectionSet.isEmpty()) {
                     // Überlappung -> nichts checken
                     continue;
                 }
@@ -584,22 +631,23 @@ public class AlsSolver extends AbstractSolver {
         ticks = System.currentTimeMillis() - ticks;
         Logger.getLogger(AlsSolver.class.getName()).log(Level.FINE, "collectAllRestrictedCommons(): " + ticks + "ms; restrictedCommon size: " + restrictedCommons.size());
     }
-    
+
     private void collectAllAlses() {
         alses = Als.getAlses(sudoku);
     }
-    
+
     class RestrictedCommon implements Comparable<RestrictedCommon> {
+
         int als1;
         int als2;
         int cand;
-        
+
         RestrictedCommon(int als1, int als2, int cand) {
             this.als1 = als1;
             this.als2 = als2;
             this.cand = cand;
         }
-        
+
         @Override
         public int compareTo(AlsSolver.RestrictedCommon r) {
             int result = als1 - r.als1;
@@ -612,7 +660,7 @@ public class AlsSolver extends AbstractSolver {
             return result;
         }
     }
-    
+
     public static void main(String[] args) {
         Sudoku sudoku = new Sudoku(true);
         //sudoku.setSudoku(":0361:4:..5.132673268..14917...2835..8..1.262.1.96758.6..283...12....83693184572..723.6..:434 441 442 461 961 464 974:411:r7c39 r6c1b9 fr3c3");
@@ -625,7 +673,7 @@ public class AlsSolver extends AbstractSolver {
 //        sudoku.setSudoku(":0000:x:8...742.5.248.57...3.621.9...94.2....1...8.2.2....63...5.263.7...214965....587..2:541 847 849 653 469 869 391 491 497::");        
 //        sudoku.setSudoku(":0000:x:1.7.5.....8.17..3.3...98...7628394..8.1245.67..471682....58...6.1..67.9....92.5..:927 237 637 438 569 372 277 377 281 389 392 199::");        
 //        sudoku.setSudoku(":0000:x:8..7...4...43....667.1248.9.6.2.9...4..871625...6.3.9.3.6.12.871....73.2.2..3...4:112 512 513 913 515 922 525 128 343 543 743 167 972 982 485 585 985 596::");        
-        AlsSolver as = new AlsSolver();
+        AlsSolver as = new AlsSolver(null);
         as.setSudoku(sudoku);
         long millis = System.currentTimeMillis();
 //        as.getAlsXYChain();
@@ -640,6 +688,7 @@ public class AlsSolver extends AbstractSolver {
 }
 
 class AlsComparator implements Comparator<SolutionStep> {
+
     /**
      * - Nach Anzahl zu löschender Kandidaten
      * - Nach Äquivalenz (gleiche zu löschende Kandidaten)
@@ -649,29 +698,29 @@ class AlsComparator implements Comparator<SolutionStep> {
      */
     @Override
     public int compare(SolutionStep o1, SolutionStep o2) {
-        int sum1 = 0, sum2 = 0;
-        
+        int sum1 = 0,  sum2 = 0;
+
         // zuerst nach Anzahl zu löschende Kandidaten (absteigend!)
         int result = o2.getCandidatesToDelete().size() - o1.getCandidatesToDelete().size();
-        if (result != 0) return result;
-        
-        // nach Äquivalenz (gleiche zu löschende Kandidaten)
-        if (! o1.isEquivalent(o2)) {
+        if (result != 0) {
+            return result;        // nach Äquivalenz (gleiche zu löschende Kandidaten)
+        }
+        if (!o1.isEquivalent(o2)) {
             // nicht äquivalent: nach Indexsumme der zu löschenden Kandidaten
             sum1 = o1.getIndexSumme(o1.getCandidatesToDelete());
             sum2 = o1.getIndexSumme(o2.getCandidatesToDelete());
             return sum1 == sum2 ? 1 : sum1 - sum2;
         }
-        
+
         // Nach Anzahl ALS
         result = o1.getAlses().size() - o2.getAlses().size();
-        if (result != 0) return result;
-        
-        // Nach Anzahl Kandidaten in allen ALS
+        if (result != 0) {
+            return result;        // Nach Anzahl Kandidaten in allen ALS
+        }
         result = o1.getAlsesIndexCount() - o2.getAlsesIndexCount();
-        if (result != 0) return result;
-        
-        // zuletzt nach Typ
+        if (result != 0) {
+            return result;        // zuletzt nach Typ
+        }
         return o1.getType().ordinal() - o2.getType().ordinal();
     }
 }

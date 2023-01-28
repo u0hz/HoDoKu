@@ -49,8 +49,8 @@ public class TemplateSolver extends AbstractSolver {
     private SolutionStep globalStep = new SolutionStep(SolutionType.HIDDEN_SINGLE);
     
     /** Creates a new instance of TemplateSolver */
-    public TemplateSolver() {
-        super();
+    public TemplateSolver(SudokuSolver solver) {
+        super(solver);
     }
     
     @Override
@@ -182,7 +182,7 @@ public class TemplateSolver extends AbstractSolver {
 //            System.out.println("allowedPositions[" + i + "]: " + sudoku.getAllowedPositions()[i]);
 //            System.out.println("positions[" + i + "]: " + sudoku.getPositions()[i]);
 //        }
-        TemplateSolver ts = new TemplateSolver();
+        TemplateSolver ts = new TemplateSolver(null);
         long millis = System.currentTimeMillis();
         for (int i = 0; i < 1; i++) {
             List<SolutionStep> steps = ts.getAllTemplates(sudoku);

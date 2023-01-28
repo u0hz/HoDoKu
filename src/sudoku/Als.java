@@ -16,7 +16,6 @@
  * You should have received a copy of the GNU General Public License
  * along with HoDoKu. If not, see <http://www.gnu.org/licenses/>.
  */
-
 package sudoku;
 
 import java.util.ArrayList;
@@ -28,9 +27,12 @@ import java.util.List;
  */
 public class Als {
 
-    public SudokuSet indices;
-    public SudokuSet candidates;
-    public SudokuSet[] indicesPerCandidat = new SudokuSet[10];
+    public SudokuSet indices;    // all indices of the ALS
+    public SudokuSet candidates; // all candidate of the ALS
+    public SudokuSet[] indicesPerCandidat = new SudokuSet[10]; // for every candidate all cells containing that candidate
+    public SudokuSet[] buddiesPerCandidat = new SudokuSet[10]; // for every candidate all cells that are buddies to all ALS cells holding that candidate
+    public SudokuSet buddies = new SudokuSet();  // all cells, that contain at least one candidate, that is a buddy to the ALS
+    public int chainPenalty = -1;
     private static SudokuSet indexSet = new SudokuSet();
     private static SudokuSet candSet = new SudokuSet();
     private static SudokuSet[] candAddSets = new SudokuSet[10];
@@ -41,15 +43,37 @@ public class Als {
         for (int i = 1; i <= 9; i++) {
             if (candidates.contains(i)) {
                 indicesPerCandidat[i] = new SudokuSet();
+                buddiesPerCandidat[i] = new SudokuSet();
+                buddiesPerCandidat[i].setAll();
                 for (int j = 0; j < indices.size(); j++) {
                     int index = indices.get(j);
                     SudokuCell cell = sudoku.getCell(index);
                     if (cell.isCandidate(SudokuCell.PLAY, i)) {
                         indicesPerCandidat[i].add(index);
+                        buddiesPerCandidat[i].and(Sudoku.buddies[index]);
                     }
                 }
+                buddies.or(buddiesPerCandidat[i]);
             }
         }
+    }
+
+    public static int getChainPenalty(int candSize) {
+//        return 0;
+        if (candSize == 0 || candSize == 1) {
+            return 0;
+        } else if (candSize == 2) {
+            return candSize - 1;
+        } else {
+            return (candSize - 1) * 2;
+        }
+    }
+
+    public int getChainPenalty() {
+        if (chainPenalty == -1) {
+            chainPenalty = getChainPenalty(candidates.size());
+        }
+        return chainPenalty;
     }
 
     public void getBuddies(SudokuSet buddies) {

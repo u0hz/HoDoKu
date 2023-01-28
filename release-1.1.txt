@@ -25,6 +25,30 @@ JRE, please look up the correct parameter for setting the maximum heap size at s
 Change log
 ==========
 
+Version 1.1 (2009-03-03)
+------------------------
+
+Features added:
+
+  - #2512895: Support for Kraken Fish added
+  - Support for Turbot fish added
+  - #2579893: ERs with only two cells in the ER are now found
+  - #2512881: Sue de Coqs with the same additional candidate in both 
+    flanking sets are now supported
+  - #2512876: Support for doubly linked ALS-XZ added
+  - #2512874: Change chain ordering (size of ALS is taken into account)
+  - #2577506: Fish type (endo fins/cannibalism) added in console output
+  - New command line options: /f, /bsa, /bsaf, /stdin
+  - #2634172: ALS nodes in Continuous Nice Loops are now handled
+  - "Find all steps" is now freely configurable
+
+Bugs fixed:
+
+  - #2619238: ALS might be not displayed correctly in steps containing more than one chain
+  - #2619244: ALS buddies handled incorrectly in chains
+  - #2628375: Some AICs were not found
+  - #2634176: AICs could overlap
+
 Version 1.0 (2009-01-29)
 ------------------------
 

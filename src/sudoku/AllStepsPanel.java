@@ -36,13 +36,10 @@ import javax.swing.tree.TreeSelectionModel;
  * @author  Bernhard Hobiger
  */
 public class AllStepsPanel extends javax.swing.JPanel implements TreeSelectionListener, Runnable {
-    private static String[] fishSizes = { "2", "3", "4", "5", "6", "7" };
-    private static String[] finSizes = { "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10" };
-    
     private Sudoku sudoku;
-    private List<SolutionStep> steps;
     private MainFrame mainFrame;
     private DefaultTreeModel model;
+    private List<SolutionStep> steps;
     
     /** Creates new form AllStepsPanel */
     public AllStepsPanel(MainFrame mainFrame, Sudoku sudoku) {
@@ -55,17 +52,7 @@ public class AllStepsPanel extends javax.swing.JPanel implements TreeSelectionLi
         stepsTree.getSelectionModel().setSelectionMode(TreeSelectionModel.SINGLE_TREE_SELECTION);
         stepsTree.addTreeSelectionListener(this);
         
-        for (int i = 0; i < fishSizes.length; i++) {
-            groesseVonComboBox.addItem(fishSizes[i]);
-            groesseBisComboBox.addItem(fishSizes[i]);
-        }
-        for (int i = 0; i < finSizes.length; i++) {
-            maxFinsComboBox.addItem(finSizes[i]);
-            maxEndoFinsComboBox.addItem(finSizes[i]);
-        }
-        //groesseBisComboBox.setSelectedIndex(2);
-        maxFinsComboBox.setSelectedIndex(5);
-        maxEndoFinsComboBox.setSelectedIndex(0);
+        setCheckBoxes();
     }
     
     /** This method is called from within the constructor to
@@ -77,16 +64,10 @@ public class AllStepsPanel extends javax.swing.JPanel implements TreeSelectionLi
     private void initComponents() {
 
         jPanel1 = new javax.swing.JPanel();
-        groesseVonLabel = new javax.swing.JLabel();
-        groesseVonComboBox = new javax.swing.JComboBox();
-        groesseBisLabel = new javax.swing.JLabel();
-        groesseBisComboBox = new javax.swing.JComboBox();
-        maxFinsLabel = new javax.swing.JLabel();
-        maxFinsComboBox = new javax.swing.JComboBox();
-        maxEndoFinsLabel = new javax.swing.JLabel();
-        maxEndoFinsComboBox = new javax.swing.JComboBox();
         forcingChainsCheckBox = new javax.swing.JCheckBox();
         forcingNetsCheckBox = new javax.swing.JCheckBox();
+        krakenFishCheckBox = new javax.swing.JCheckBox();
+        configureButton = new javax.swing.JButton();
         jPanel2 = new javax.swing.JPanel();
         findButton = new javax.swing.JButton();
         addToSolutionButton = new javax.swing.JButton();
@@ -98,31 +79,41 @@ public class AllStepsPanel extends javax.swing.JPanel implements TreeSelectionLi
         java.util.ResourceBundle bundle = java.util.ResourceBundle.getBundle("intl/AllStepsPanel"); // NOI18N
         jPanel1.setBorder(javax.swing.BorderFactory.createTitledBorder(bundle.getString("AllStepsPanel.jPanel1.border.title"))); // NOI18N
 
-        groesseVonLabel.setDisplayedMnemonic(java.util.ResourceBundle.getBundle("intl/AllStepsPanel").getString("AllStepsPanel.groesseVonLabel.mnemonic").charAt(0));
-        groesseVonLabel.setLabelFor(groesseVonComboBox);
-        groesseVonLabel.setText(bundle.getString("AllStepsPanel.groesseVonLabel.text")); // NOI18N
-
-        groesseBisLabel.setDisplayedMnemonic(java.util.ResourceBundle.getBundle("intl/AllStepsPanel").getString("AllStepsPanel.groesseBisLabel.mnemonic").charAt(0));
-        groesseBisLabel.setLabelFor(groesseBisComboBox);
-        groesseBisLabel.setText(bundle.getString("AllStepsPanel.groesseBisLabel.text")); // NOI18N
-
-        maxFinsLabel.setDisplayedMnemonic(java.util.ResourceBundle.getBundle("intl/AllStepsPanel").getString("AllStepsPanel.maxFinsLabel.mnemonic").charAt(0));
-        maxFinsLabel.setLabelFor(maxFinsComboBox);
-        maxFinsLabel.setText(bundle.getString("AllStepsPanel.maxFinsLabel.text")); // NOI18N
-
-        maxEndoFinsLabel.setDisplayedMnemonic(java.util.ResourceBundle.getBundle("intl/AllStepsPanel").getString("AllStepsPanel.maxEndoFinsLabel.mnemonic").charAt(0));
-        maxEndoFinsLabel.setLabelFor(maxEndoFinsComboBox);
-        maxEndoFinsLabel.setText(bundle.getString("AllStepsPanel.maxEndoFinsLabel.text")); // NOI18N
-
         forcingChainsCheckBox.setMnemonic(java.util.ResourceBundle.getBundle("intl/AllStepsPanel").getString("AllStepsPanel.forcingChainsCheckBox.mnemonic").charAt(0));
         forcingChainsCheckBox.setText(bundle.getString("AllStepsPanel.forcingChainsCheckBox.text")); // NOI18N
         forcingChainsCheckBox.setBorder(javax.swing.BorderFactory.createEmptyBorder(0, 0, 0, 0));
         forcingChainsCheckBox.setMargin(new java.awt.Insets(0, 0, 0, 0));
+        forcingChainsCheckBox.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                forcingChainsCheckBoxActionPerformed(evt);
+            }
+        });
 
         forcingNetsCheckBox.setMnemonic(java.util.ResourceBundle.getBundle("intl/AllStepsPanel").getString("AllStepsPanel.forcingNetsCheckBox.mnemonic").charAt(0));
         forcingNetsCheckBox.setText(bundle.getString("AllStepsPanel.forcingNetsCheckBox.text")); // NOI18N
         forcingNetsCheckBox.setBorder(javax.swing.BorderFactory.createEmptyBorder(0, 0, 0, 0));
         forcingNetsCheckBox.setMargin(new java.awt.Insets(0, 0, 0, 0));
+        forcingNetsCheckBox.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                forcingNetsCheckBoxActionPerformed(evt);
+            }
+        });
+
+        krakenFishCheckBox.setMnemonic(java.util.ResourceBundle.getBundle("intl/AllStepsPanel").getString("AllStepsPanel.krakenFishCheckBox.mnemonic").charAt(0));
+        krakenFishCheckBox.setText(bundle.getString("AllStepsPanel.krakenFishCheckBox.text")); // NOI18N
+        krakenFishCheckBox.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                krakenFishCheckBoxActionPerformed(evt);
+            }
+        });
+
+        configureButton.setMnemonic(java.util.ResourceBundle.getBundle("intl/AllStepsPanel").getString("AllStepsPanel.configureButton.mnemonic").charAt(0));
+        configureButton.setText(bundle.getString("AllStepsPanel.configureButton.text")); // NOI18N
+        configureButton.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                configureButtonActionPerformed(evt);
+            }
+        });
 
         javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
         jPanel1.setLayout(jPanel1Layout);
@@ -131,50 +122,27 @@ public class AllStepsPanel extends javax.swing.JPanel implements TreeSelectionLi
             .addGroup(jPanel1Layout.createSequentialGroup()
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(jPanel1Layout.createSequentialGroup()
-                        .addComponent(groesseVonLabel)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(groesseVonComboBox, javax.swing.GroupLayout.PREFERRED_SIZE, 45, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(groesseBisLabel)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(groesseBisComboBox, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(maxFinsLabel)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(maxFinsComboBox, javax.swing.GroupLayout.PREFERRED_SIZE, 41, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(maxEndoFinsLabel)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(maxEndoFinsComboBox, javax.swing.GroupLayout.PREFERRED_SIZE, 43, javax.swing.GroupLayout.PREFERRED_SIZE))
-                    .addGroup(jPanel1Layout.createSequentialGroup()
                         .addComponent(forcingChainsCheckBox)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(forcingNetsCheckBox)))
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                        .addComponent(forcingNetsCheckBox)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(krakenFishCheckBox))
+                    .addComponent(configureButton))
+                .addContainerGap(171, Short.MAX_VALUE))
         );
-
-        jPanel1Layout.linkSize(javax.swing.SwingConstants.HORIZONTAL, new java.awt.Component[] {groesseBisComboBox, groesseVonComboBox, maxEndoFinsComboBox, maxFinsComboBox});
-
         jPanel1Layout.setVerticalGroup(
             jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel1Layout.createSequentialGroup()
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(groesseVonLabel)
-                    .addComponent(groesseVonComboBox, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(groesseBisLabel)
-                    .addComponent(groesseBisComboBox, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(maxFinsLabel)
-                    .addComponent(maxFinsComboBox, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(maxEndoFinsLabel)
-                    .addComponent(maxEndoFinsComboBox, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(forcingChainsCheckBox)
-                    .addComponent(forcingNetsCheckBox))
+                    .addComponent(forcingNetsCheckBox)
+                    .addComponent(krakenFishCheckBox))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(configureButton)
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
 
-        add(jPanel1, java.awt.BorderLayout.NORTH);
+        add(jPanel1, java.awt.BorderLayout.PAGE_START);
 
         findButton.setMnemonic(java.util.ResourceBundle.getBundle("intl/AllStepsPanel").getString("AllStepsPanel.findButton.mnemonic").charAt(0));
         findButton.setText(bundle.getString("AllStepsPanel.findButton.text")); // NOI18N
@@ -201,7 +169,7 @@ public class AllStepsPanel extends javax.swing.JPanel implements TreeSelectionLi
                 .addComponent(findButton)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(addToSolutionButton)
-                .addContainerGap(102, Short.MAX_VALUE))
+                .addContainerGap(214, Short.MAX_VALUE))
         );
 
         jPanel2Layout.linkSize(javax.swing.SwingConstants.HORIZONTAL, new java.awt.Component[] {addToSolutionButton, findButton});
@@ -258,18 +226,56 @@ public class AllStepsPanel extends javax.swing.JPanel implements TreeSelectionLi
         resetTreeNodes();
         new Thread(this).start();
     }//GEN-LAST:event_findButtonActionPerformed
-        
+
+private void configureButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_configureButtonActionPerformed
+    new ConfigDialog(mainFrame, true, 2).setVisible(true);
+    setCheckBoxes();
+}//GEN-LAST:event_configureButtonActionPerformed
+
+private void forcingChainsCheckBoxActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_forcingChainsCheckBoxActionPerformed
+    adjustAllStepsEnabled(SolutionType.FORCING_CHAIN, forcingChainsCheckBox.isSelected());
+    adjustAllStepsEnabled(SolutionType.FORCING_CHAIN_CONTRADICTION, forcingChainsCheckBox.isSelected());
+    adjustAllStepsEnabled(SolutionType.FORCING_CHAIN_VERITY, forcingChainsCheckBox.isSelected());
+}//GEN-LAST:event_forcingChainsCheckBoxActionPerformed
+
+private void forcingNetsCheckBoxActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_forcingNetsCheckBoxActionPerformed
+    adjustAllStepsEnabled(SolutionType.FORCING_NET, forcingNetsCheckBox.isSelected());
+    adjustAllStepsEnabled(SolutionType.FORCING_NET_CONTRADICTION, forcingNetsCheckBox.isSelected());
+    adjustAllStepsEnabled(SolutionType.FORCING_NET_VERITY, forcingNetsCheckBox.isSelected());
+}//GEN-LAST:event_forcingNetsCheckBoxActionPerformed
+
+private void krakenFishCheckBoxActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_krakenFishCheckBoxActionPerformed
+    adjustAllStepsEnabled(SolutionType.KRAKEN_FISH, krakenFishCheckBox.isSelected());
+}//GEN-LAST:event_krakenFishCheckBoxActionPerformed
+      
+    private void adjustAllStepsEnabled(SolutionType type, boolean allStepsEnabled) {
+        StepConfig[] tmpSteps = Options.getInstance().solverSteps;
+        for (int i = 0; i < tmpSteps.length; i++) {
+            if (tmpSteps[i].getType() == type) {
+                tmpSteps[i].setAllStepsEnabled(allStepsEnabled);
+            }
+        }
+    }
+
+    private boolean getAllStepsEnabled(SolutionType type) {
+        StepConfig[] tmpSteps = Options.getInstance().solverSteps;
+        for (int i = 0; i < tmpSteps.length; i++) {
+            if (tmpSteps[i].getType() == type) {
+                return tmpSteps[i].isAllStepsEnabled();
+            }
+        }
+        return false;
+    }
+    
+    private void setCheckBoxes() {
+        forcingChainsCheckBox.setSelected(getAllStepsEnabled(SolutionType.FORCING_CHAIN));
+        forcingNetsCheckBox.setSelected(getAllStepsEnabled(SolutionType.FORCING_NET));
+        krakenFishCheckBox.setSelected(getAllStepsEnabled(SolutionType.KRAKEN_FISH));
+    }
+    
     @Override
     public void run() {
-        int minSize = Integer.parseInt((String)groesseVonComboBox.getSelectedItem());
-        int maxSize = Integer.parseInt((String)groesseBisComboBox.getSelectedItem());
-        int maxFins = Integer.parseInt((String)maxFinsComboBox.getSelectedItem());
-        int maxEndoFins = Integer.parseInt((String)maxEndoFinsComboBox.getSelectedItem());
-        boolean forcingChains = forcingChainsCheckBox.isSelected();
-        boolean forcingNets = forcingNetsCheckBox.isSelected();
-        
-        FindAllStepsProgressDialog dlg = new FindAllStepsProgressDialog(mainFrame, true, sudoku,
-                minSize, maxSize, maxFins, maxEndoFins, forcingChains, forcingNets);
+        FindAllStepsProgressDialog dlg = new FindAllStepsProgressDialog(mainFrame, true, sudoku);
         dlg.setVisible(true);
         steps = dlg.getSteps();
         createTreeNodes();
@@ -550,20 +556,14 @@ public class AllStepsPanel extends javax.swing.JPanel implements TreeSelectionLi
     
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton addToSolutionButton;
+    private javax.swing.JButton configureButton;
     private javax.swing.JButton findButton;
     private javax.swing.JCheckBox forcingChainsCheckBox;
     private javax.swing.JCheckBox forcingNetsCheckBox;
-    private javax.swing.JComboBox groesseBisComboBox;
-    private javax.swing.JLabel groesseBisLabel;
-    private javax.swing.JComboBox groesseVonComboBox;
-    private javax.swing.JLabel groesseVonLabel;
     private javax.swing.JPanel jPanel1;
     private javax.swing.JPanel jPanel2;
     private javax.swing.JScrollPane jScrollPane1;
-    private javax.swing.JComboBox maxEndoFinsComboBox;
-    private javax.swing.JLabel maxEndoFinsLabel;
-    private javax.swing.JComboBox maxFinsComboBox;
-    private javax.swing.JLabel maxFinsLabel;
+    private javax.swing.JCheckBox krakenFishCheckBox;
     private javax.swing.JTree stepsTree;
     // End of variables declaration//GEN-END:variables
     

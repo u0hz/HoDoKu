@@ -88,7 +88,7 @@
           <Properties>
             <Property name="border" type="javax.swing.border.Border" editor="org.netbeans.modules.form.editors2.BorderEditor">
               <Border info="org.netbeans.modules.form.compat2.border.TitledBorderInfo">
-                <TitledBorder title="Eigenschaften L&#xf6;sungsschritt">
+                <TitledBorder title="Step properties">
                   <ResourceString PropertyName="titleX" bundle="intl/ConfigSolverPanel.properties" key="ConfigSolverPanel.jPanel3.border.title" replaceFormat="java.util.ResourceBundle.getBundle(&quot;{bundleNameSlashes}&quot;).getString(&quot;{key}&quot;)"/>
                 </TitledBorder>
               </Border>

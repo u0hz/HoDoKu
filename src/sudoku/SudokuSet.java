@@ -19,8 +19,6 @@
 
 package sudoku;
 
-import java.util.Arrays;
-
 /**
  * Hilfsklasse für die Fischsuche:
  *
@@ -81,9 +79,12 @@ public class SudokuSet extends SudokuSetBase implements Cloneable {
     public SudokuSet clone() {
         SudokuSet newSet = null;
         newSet = (SudokuSet) super.clone();
-        if (values != null) {
-            newSet.values = Arrays.copyOf(values, values.length);
-        }
+        // dont clone the array (for performance reasons - might not be necessary)
+        values = null;
+        initialized = false;
+//        if (values != null) {
+//            newSet.values = Arrays.copyOf(values, values.length);
+//        }
         return newSet;
     }
     

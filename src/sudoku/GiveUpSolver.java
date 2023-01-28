@@ -26,7 +26,8 @@ package sudoku;
 public class GiveUpSolver extends AbstractSolver {
     
     /** Creates a new instance of GiveUpSolver */
-    public GiveUpSolver() {
+    public GiveUpSolver(SudokuSolver solver) {
+        super(solver);
     }
 
     @Override

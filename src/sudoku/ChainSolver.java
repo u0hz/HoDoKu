@@ -42,6 +42,7 @@ public class ChainSolver extends AbstractSolver {
     private static final int XY_CHAIN = 1;
     private static final int REMOTE_PAIR = 2;
     private static final int NICE_LOOP = 3;
+    private static final int TURBOT_FISH = 4;
     private static ChainComparator chainComparator = null;
 
     private int[] links = new int[20000];       // Array mit allen Links
@@ -63,7 +64,8 @@ public class ChainSolver extends AbstractSolver {
     private List<SolutionStep> steps;
 
     /** Creates a new instance of ChainSolver */
-    public ChainSolver() {
+    public ChainSolver(SudokuSolver solver) {
+        super(solver);
         if (chainComparator == null) {
             chainComparator = new ChainComparator();
         }
@@ -82,6 +84,9 @@ public class ChainSolver extends AbstractSolver {
             case REMOTE_PAIR:
                 result = getRemotePairs();
                 break;
+            case TURBOT_FISH:
+                result = getTurbotChains();
+                break;
 //            case NICE_LOOP:
 //            case CONTINUOUS_NICE_LOOP:
 //            case DISCONTINUOUS_NICE_LOOP:
@@ -99,6 +104,7 @@ public class ChainSolver extends AbstractSolver {
             case XY_CHAIN:
             case REMOTE_PAIR:
             case NICE_LOOP:
+            case TURBOT_FISH:
 //            case CONTINUOUS_NICE_LOOP:
 //            case DISCONTINUOUS_NICE_LOOP:
                 for (Candidate cand : step.getCandidatesToDelete()) {
@@ -114,6 +120,16 @@ public class ChainSolver extends AbstractSolver {
     private SolutionStep getXChains() {
         steps = new ArrayList<SolutionStep>();
         getChains(X_CHAIN);
+        if (steps.size() > 0) {
+            Collections.sort(steps);
+            return steps.get(0);
+        }
+        return null;
+    }
+
+    private SolutionStep getTurbotChains() {
+        steps = new ArrayList<SolutionStep>();
+        getChains(TURBOT_FISH);
         if (steps.size() > 0) {
             Collections.sort(steps);
             return steps.get(0);
@@ -161,23 +177,31 @@ public class ChainSolver extends AbstractSolver {
         return tmpSteps;
     }
 
-    public List<SolutionStep> getAllChains(List<SolutionStep> steps) {
+    public List<SolutionStep> getAllChains(List<SolutionStep> allSteps) {
         // initialisieren
         long ticks = System.currentTimeMillis();
         this.steps = new ArrayList<SolutionStep>();
+        allSteps.clear();
+
+        getChains(TURBOT_FISH);
+        Collections.sort(this.steps);
+//        allSteps.addAll(this.steps);
+
+//        allSteps.clear();
         getChains(X_CHAIN);
         Collections.sort(this.steps);
-        steps.addAll(this.steps);
+//        allSteps.addAll(this.steps);
 
-        steps.clear();
+//        allSteps.clear();
         getChains(XY_CHAIN);
         Collections.sort(this.steps);
-        steps.addAll(this.steps);
+//        allSteps.addAll(this.steps);
 
-        steps.clear();
+//        allSteps.clear();
         getChains(REMOTE_PAIR);
         Collections.sort(this.steps);
-        steps.addAll(this.steps);
+  
+        allSteps.addAll(this.steps);
 
 //        steps.clear();
 //        getChains(NICE_LOOP);
@@ -186,7 +210,7 @@ public class ChainSolver extends AbstractSolver {
         ticks = System.currentTimeMillis() - ticks;
         Logger.getLogger(getClass().getName()).log(Level.FINE, "getAllChains() gesamt: " + ticks + "ms");
 
-        return steps;
+        return allSteps;
     }
 
     /**
@@ -200,6 +224,7 @@ public class ChainSolver extends AbstractSolver {
      * typ: 2 .. nur Remote Pairs (alle Einschränkungen für XY-Chains plus alle
      *           Kandidaten gleich)
      * typ: 3 .. Nice Loops (keine Einschränkungen, aber muss Loop zum Beginn sein)
+     * typ: 4 .. Turbot Fish - wie X-Chain, aber Länge = 5
      */
     private void getChains(int typ) {
         long ticks = System.currentTimeMillis();
@@ -214,24 +239,24 @@ public class ChainSolver extends AbstractSolver {
         //checkLoopSetsIndex = 0;
         boolean onlyOne = false; // zum testen: nur für einen Kandidaten in einer Zelle
         for (int i = 0; i < sudoku.getCells().length; i++) {
-            if (onlyOne && i != 64) {
+            if (onlyOne && i != 15) {
                 continue;
             }
             for (int j = 1; j <= 9; j++) {
-//                if (onlyOne && j != 6) {
-//                    continue;
-//                }
+                if (onlyOne && j != 5) {
+                    continue;
+                }
                 int tmp = i * 10 + j;
                 // zuerst die Strong Links, dann die weak links
                 for (int l = 0; l < 2; l++) {
-                    if ((typ == X_CHAIN || typ == XY_CHAIN || typ == REMOTE_PAIR) && l == 1) {
+                    if ((typ == X_CHAIN || typ == XY_CHAIN || typ == REMOTE_PAIR || typ == TURBOT_FISH) && l == 1) {
                         ///*K*/if (typ == 1 && l == 1) {
                         // Kein Start mit weak link
                         continue;
                     }
                     for (int k = startIndices[tmp]; k < endIndices[tmp]; k++) {
                         // Nach Typ unterscheiden
-                        if (typ == X_CHAIN && Chain.getSCandidate(links[k]) != j) {
+                        if ((typ == X_CHAIN || typ == TURBOT_FISH) && Chain.getSCandidate(links[k]) != j) {
                             // link ist für anderen Kandidaten -> keine X-Chain möglich
                             continue;
                         }
@@ -295,6 +320,10 @@ public class ChainSolver extends AbstractSolver {
      *   - Alle anderen Links verlängern die Chain
      */
     private void getChainRecursive(int chainIndex, int typ) {
+        // Turbot Fish can maximal 4 Glieder lang sein
+        if (typ == TURBOT_FISH && chainIndex == 3) {
+            return;
+        }
         // chain[chainIndex] anthält das letzte Glied der Kette: Neue aktuelle
         // Zelle und neuen Kandidaten ermitteln und weitermachen
         anzAufrufe++;
@@ -327,7 +356,7 @@ public class ChainSolver extends AbstractSolver {
                 continue;
             }
             // Nach Typ unterscheiden
-            if (typ == X_CHAIN && Chain.getSCandidate(newLink) != startCandidate) {
+            if ((typ == X_CHAIN || typ == TURBOT_FISH) && Chain.getSCandidate(newLink) != startCandidate) {
                 // link ist für anderen Kandidaten -> keine X-Chain möglich
                 continue;
             }
@@ -374,7 +403,10 @@ public class ChainSolver extends AbstractSolver {
             // Jetzt könnte es eine gültige Chain mit Eliminierungen sein
             switch (typ) {
                 case X_CHAIN:
-                    checkXChain(newLink, chainIndex);
+                    checkXChain(newLink, chainIndex, false);
+                    break;
+                case TURBOT_FISH:
+                    checkXChain(newLink, chainIndex, true);
                     break;
                 case XY_CHAIN:
                     checkXYChain(newLink, chainIndex);
@@ -390,12 +422,14 @@ public class ChainSolver extends AbstractSolver {
             // nur maximal MAX_CHAIN_LENGTH Glieder lange chains
             // wenn restrictChainSize gesetzt ist, nur options.restrictChainLength Glieder
             // Ist die Chain ein Loop, darf nicht rekursiv weitergesucht werden
+            // TURNOT_FISHES sind genau 5 Elemente lang
             if (chainIndex < MAX_CHAIN_LENGTH - 1 &&
                     !(typ != NICE_LOOP && Options.getInstance().restrictChainSize &&
                     chainIndex >= Options.getInstance().restrictChainLength) &&
                     !(typ == NICE_LOOP && Options.getInstance().restrictChainSize &&
                     chainIndex >= Options.getInstance().restrictNiceLoopLength) &&
-                    loopIndex != 0) {
+                    loopIndex != 0 &&
+                    !(typ == TURBOT_FISH && chainIndex >= 4)) {
                 // Rekursion
                 getChainRecursive(chainIndex, typ);
             }
@@ -408,7 +442,7 @@ public class ChainSolver extends AbstractSolver {
         recDepth--;
     }
 
-    private void checkXChain(int lastLink, int chainIndex) {
+    private void checkXChain(int lastLink, int chainIndex, boolean isTurbot) {
         // Chain muss mindestens 3 Glieder haben, erster und letzter Link
         // müssen strong sein (erster ist Strong, sonst wird die Chain
         // gar nicht erst gefunden)
@@ -416,18 +450,23 @@ public class ChainSolver extends AbstractSolver {
             // Chain zu kurz oder Ende mit weak link -> geht nicht
             return;
         }
+        if (isTurbot && chainIndex != 3) {
+            // Turbot Fish ist genau 4 lang (5. ist zu löschender Kandidat)
+            return;
+        }
         //int endIndex = (lastLink / 10) % 100;
         int endIndex = Chain.getSCellIndex(lastLink);
-        if (endCells.contains(endIndex)) {
+        if (! isTurbot && endCells.contains(endIndex)) {
             // die Chain hatten wir schon!
             return;
         }
         // wenn es die Chain schon gibt, nichts tun (da die chains bidirektional sind,
         // wird jede Chain zumindest 2 mal gefunden)
-//        if (!isNewChain(startIndex, endIndex)) {
-//            // gibts schon!
-//            return;
-//        }
+        // für Turbot reaktivieren (hier gibt es so wenig Chains, dass es nicht ins Gewicht fällt)
+        if (isTurbot && !isNewChain(startIndex, endIndex, SolutionType.TURBOT_FISH)) {
+            // gibts schon!
+            return;
+        }
 
         // ok, könnte eine neue Chain sein
         globalStep.reset();
@@ -441,20 +480,27 @@ public class ChainSolver extends AbstractSolver {
             return;
         }
         // es gibt was zu löschen -> Step zusammenbauen
-        globalStep.setType(SolutionType.X_CHAIN);
+        if (isTurbot) {
+            globalStep.setType(SolutionType.TURBOT_FISH);
+        } else {
+            globalStep.setType(SolutionType.X_CHAIN);
+        }
         globalStep.addValue(startCandidate);
         for (int i = 0; i < checkBuddies.size(); i++) {
             globalStep.addCandidateToDelete(checkBuddies.get(i), startCandidate);
         }
         
         // check if the chain has already been found
-        String del = globalStep.getCandidateString();
-        Integer oldLength = deletesMap.get(del);
-        if (oldLength != null && oldLength.intValue() <= chainIndex) {
-            // Für diese Kandidaten gibt es schon eine Chain und sie ist kürzer als die neue
-            return;
+        // dont do the check for Turbot fishes
+        if (isTurbot == false) {
+            String del = globalStep.getCandidateString();
+            Integer oldLength = deletesMap.get(del);
+            if (oldLength != null && oldLength.intValue() <= chainIndex) {
+                // Für diese Kandidaten gibt es schon eine Chain und sie ist kürzer als die neue
+                return;
+            }
+            deletesMap.put(del, chainIndex);
         }
-        deletesMap.put(del, chainIndex);
 
         // Die Chain muss kopiert werden
         int[] newChain = new int[chainIndex + 1];
@@ -755,9 +801,12 @@ public class ChainSolver extends AbstractSolver {
         }
     }
 
-    private boolean isNewChain(int startIndex, int endIndex) {
+    private boolean isNewChain(int startIndex, int endIndex, SolutionType type) {
         boolean isNew = true;
         for (int i = 0; i < steps.size(); i++) {
+            if (steps.get(i).getType() != type) {
+                continue;
+            }
             Chain tmpChain = steps.get(i).getChains().get(0);
             //if ((chain.getChain()[chain.getStart()] / 10) % 100 == endIndex && (chain.getChain()[chain.getEnd()] / 10) % 100 == startIndex) {
             //if (Chain.getSCellIndex(chain.getChain()[chain.getStart()]) == endIndex && Chain.getSCellIndex(chain.getChain()[chain.getEnd()]) == startIndex) {
@@ -878,7 +927,7 @@ public class ChainSolver extends AbstractSolver {
         //sudoku.setSudoku(":0703:8:45.132..63.1657.4.2768493516.2415.37.1472356.73598612416.594.8..2.3614.554.27861.::817 829 917 929:");
         // BUG: No Remote Pair found (found but not displayed correctly - fixed
         sudoku.setSudoku(":0703:4:5.91673.8.63548.191..23956.952413..6316782495...9561328.53916..637824951.91675..3:432 462 298:498:");
-        ChainSolver cs = new ChainSolver();
+        ChainSolver cs = new ChainSolver(null);
         cs.setSudoku(sudoku);
         cs.steps = new ArrayList<SolutionStep>();
         long millis = System.currentTimeMillis();

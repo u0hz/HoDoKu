@@ -190,10 +190,6 @@ public class SudokuSetBase implements Cloneable {
         return (b.mask1 & ~mask1) == 0 && (b.mask2 & ~mask2) == 0;
     }
 
-    public void merge(SudokuSetBase b) {
-        or(b);
-    }
-
     public void or(SudokuSetBase b) {
         mask1 = mask1 | b.mask1;
         mask2 = mask2 | b.mask2;

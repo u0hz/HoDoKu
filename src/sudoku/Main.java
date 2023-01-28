@@ -64,13 +64,13 @@ public class Main {
     }
 
     @SuppressWarnings("empty-statement")
-    public void searchForType(SortedMap<SolutionType, Integer> typeMap) {
+    void searchForType(List<StepType> typeList, String outFile) {
         //Logger.getLogger(getClass().getName()).log(Level.INFO, "Starting search for " + type.getStepName());
         System.out.println("Starting search for:");
-        for (SolutionType tmpType : typeMap.keySet()) {
-            System.out.println("   " + tmpType.getStepName() + " (" + typeMap.get(tmpType) + ")");
+        for (StepType tmpType : typeList) {
+            System.out.println("   " + tmpType);
         }
-        SearchForTypeThread thread = new SearchForTypeThread(this, typeMap);
+        SearchForTypeThread thread = new SearchForTypeThread(this, typeList, outFile);
         thread.start();
         BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
         try {
@@ -90,16 +90,18 @@ public class Main {
     }
 
     public void batchSolve(String fileName, String puzzleString, boolean printSolution, boolean printSolutionPath,
-            ClipboardMode cMode, Set<SolutionType> types) {
+            ClipboardMode cMode, Set<SolutionType> types, String outFile, boolean findAllSteps) {
         BatchSolveThread thread = new BatchSolveThread(fileName, puzzleString, printSolution, printSolutionPath,
-                cMode, types);
+                cMode, types, outFile, findAllSteps);
         thread.start();
-        Runtime.getRuntime().addShutdownHook(new ShutDownThread(thread));
+        ShutDownThread st = new ShutDownThread(thread);
+        Runtime.getRuntime().addShutdownHook(st);
         try {
             thread.join();
         } catch (InterruptedException ex) {
             Logger.getLogger(getClass().getName()).log(Level.SEVERE, "join interrupted...", ex);
         }
+        Runtime.getRuntime().removeShutdownHook(st);
         int min = (int) (thread.getTicks() / 60000);
         int sec = (int) (thread.getTicks() % 60000);
         int ms = sec % 1000;
@@ -118,32 +120,136 @@ public class Main {
         }
     }
 
-    public void sortPuzzleFile(String fileName) {
+    void sortPuzzleFile(String fileName, List<StepType> typeList, String outFileName) {
         try {
+            if (typeList.size() > 0) {
+                System.out.println("Filter:");
+                for (StepType tmpType : typeList) {
+                    System.out.println("   " + tmpType);
+                }
+            }
             BufferedReader in = new BufferedReader(new FileReader(fileName));
-            BufferedWriter out = new BufferedWriter(new FileWriter(fileName + ".out.txt"));
+            BufferedWriter out = null;
+            if (outFileName == null) {
+                outFileName = fileName + ".out.txt";
+            }
+            if (! outFileName.equals("stdout")) {
+                out = new BufferedWriter(new FileWriter(outFileName));
+            }
             List<String> puzzleList = new ArrayList<String>();
             String line = null;
+            int gesAnz = 0;
             while ((line = in.readLine()) != null) {
-                if (line.contains("#")) {
+                gesAnz++;
+                boolean includePuzzle = true;
+                if (line.contains("#") && typeList.size() > 0) {
+                    includePuzzle = false;
+                    // determine puzzle type
+                    String inputStr = line.substring(line.indexOf('#') + 1).trim();
+                    int puzzleType = 3;
+                    String[] types = inputStr.split(" ");
+                    for (int i = 0; i < types.length; i++) {
+                        if (types[i].equals("x")) {
+                            puzzleType = 0;
+                            break;
+                        }
+                    }
+//                    if (inputStr.contains("x")) {
+//                        puzzleType = 0;
+                    if (puzzleType == 3) {
+                        if (inputStr.startsWith("ssts")) {
+                            puzzleType = 2;
+                        }
+                        if (inputStr.endsWith("ssts")) {
+                            puzzleType = 1;
+                        }
+                    }
+                    String typeStr = null;
+                    int compAnz = 0;
+                    String[] parts = inputStr.split(" ");
+                    if (parts.length > 1) {
+                        typeStr = parts[1];
+                    } else {
+                        // invalid type in input -> nothing to apply
+                        continue;
+                    }
+                    int index1 = typeStr.indexOf('(');
+                    int index2 = typeStr.indexOf(')');
+                    String orgTypeStr = typeStr;
+                    if (index1 != -1) {
+                        typeStr = typeStr.substring(0, index1);
+                        if (index2 != -1) {
+                            String anzStr = orgTypeStr.substring(index1 + 1, index2);
+                            if (anzStr.length() > 0) {
+                                compAnz = Integer.parseInt(anzStr);
+                            }
+                        }
+                    }
+                    // apply filter
+                    for (StepType actType : typeList) {
+                        if (typeStr.equals(actType.type.getArgName()) && puzzleType >= actType.puzzleType) {
+                            // filter fits, do comparison
+                            switch (actType.compType) {
+                                case StepType.EQUAL:
+                                    if (compAnz == actType.compAnz) {
+                                        includePuzzle = true;
+                                    }
+                                    break;
+                                case StepType.LT:
+                                    if (compAnz < actType.compAnz) {
+                                        includePuzzle = true;
+                                    }
+                                    break;
+                                case StepType.GT:
+                                    if (compAnz > actType.compAnz) {
+                                        includePuzzle = true;
+                                    }
+                                    break;
+                                default:
+                                    includePuzzle = true;
+                                    break;
+                            }
+                        }
+                        if (includePuzzle) {
+                            break;
+                        }
+                    }
+                }
+                if (includePuzzle) {
                     puzzleList.add(line);
                 }
             }
             in.close();
+            int anz = puzzleList.size();
             Collections.sort(puzzleList, new Comparator<String>() {
 
                 @Override
                 public int compare(String s1, String s2) {
-                    String ss1 = s1.substring(s1.indexOf('#'));
-                    String ss2 = s2.substring(s2.indexOf('#'));
-                    return ss1.compareTo(ss2);
+                    int index1 = s1.indexOf('#');
+                    int index2 = s2.indexOf('#');
+                    if (index1 == -1 && index2 == -1) {
+                        return s1.compareTo(s2);
+                    } else if (index1 == -1 && index2 != -1) {
+                        return -1;
+                    } else if (index1 != -1 && index2 == -1) {
+                        return 1;
+                    } else {
+                        return s1.substring(index1).compareTo(s2.substring(index2));
+                    }
                 }
             });
             for (String key : puzzleList) {
-                out.write(key);
-                out.newLine();
+                if (out != null) {
+                    out.write(key);
+                    out.newLine();
+                } else {
+                    System.out.println(key);
+                }
             }
-            out.close();
+            if (out != null) {
+                out.close();
+            }
+            System.out.println(anz + " puzzles sorted (" + gesAnz + ")!");
         } catch (Exception ex) {
             Logger.getLogger(Main.class.getName()).log(Level.SEVERE, "Error sorting puzzle file", ex);
         }
@@ -228,16 +334,28 @@ public class Main {
             Logger.getLogger(Main.class.getName()).log(Level.SEVERE, "Error changing LaF", ex);
         }
 
+        // to detect whether launch4j is used, a constant command line parameter
+        // "/launch4j" is used for the exe version; detect it
+        boolean launch4jUsed = false;
+        for (int i = 0; i < args.length; i++) {
+            if (args[i].equals("/launch4j")) {
+                launch4jUsed = true;
+            }
+        }
         // handle command line arguments
-        if (args.length > 0) {
+        SudokuConsoleFrame consoleFrame = null;
+        if (launch4jUsed && args.length > 1 || ! launch4jUsed && args.length > 0) {
 //            for (int i = 0; i < args.length; i++) {
 //                System.out.println("args[" + i + "]: <" + args[i] + ">");
 //            }
             // open a fake console when HoDoKu is started as exe file
-            if (System.console() == null) {
+            // problem: console is null when using pipeing or input redirection
+//            if (System.console() == null) {
+            if (launch4jUsed) {
                 //JOptionPane.showMessageDialog(null, "Program has no console!", "Console error", JOptionPane.ERROR_MESSAGE);
                 //System.out.println("no console!");
-                new SudokuConsoleFrame().setVisible(true);
+                consoleFrame = new SudokuConsoleFrame();
+                consoleFrame.setVisible(true);
             }
             // copyright notice
             System.out.println(MainFrame.VERSION);
@@ -247,35 +365,116 @@ public class Main {
                     "it under the terms of the GNU General Public License as published by\r\n" +
                     "the Free Software Foundation, either version 3 of the License, or\r\n" +
                     "(at your option) any later version.\r\n\r\n");
+            // all options are stored in a list, if /f is present, the list is
+            // expanded accordingly (/f may be present more than once)
+            List<String> options = new ArrayList<String>();
+            for (int i = 0; i < args.length; i++) {
+                //System.out.println("args original: " + args[i]);
+                if (args[i].equals("/launch4j")) {
+                    // ignore it
+                    continue;
+                }
+                if (args[i].equals("/f")) {
+                    if (i + 1 >= args.length) {
+                        System.out.println("No options file given: /f ignored");
+                    } else {
+                        try {
+                            System.out.println("reading options from file '" + args[i + 1] + "'");
+                            BufferedReader in = new BufferedReader(new FileReader(args[i + 1]));
+                            StringBuffer tmpOptions = new StringBuffer();
+                            String line = null;
+                            while ((line = in.readLine()) != null) {
+                                tmpOptions.append(line.trim() + " ");
+                            }
+                            in.close();
+                            //String[] tmpOptionsArray = tmpOptions.toString().split(" ");
+                            String[] tmpOptionsArray = getOptionsFromStringBuffer(tmpOptions);
+                            for (int j = 0; j < tmpOptionsArray.length; j++) {
+                                String opt = tmpOptionsArray[j].trim();
+                                if (! opt.equals("")) {
+                                    options.add(tmpOptionsArray[j]);
+                                }
+                            }
+                        } catch (Exception ex) {
+                            System.out.println("Can't read from file '" + args[i + 1] + "': /f ignored");
+                        }
+                        i++;
+                    }
+                } else if (args[i].equals("/stdin")) {
+                    // read options from stdin
+                    try {
+                        BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
+                        StringBuffer tmpOptions = new StringBuffer();
+                        String line = null;
+                        while ((line = in.readLine()) != null) {
+                            //System.out.println("Line: <" + line + ">");
+                            tmpOptions.append(line.trim() + " ");
+                        }
+                        in.close();
+                        //String[] tmpOptionsArray = tmpOptions.toString().split(" ");
+                        String[] tmpOptionsArray = getOptionsFromStringBuffer(tmpOptions);
+                        for (int j = 0; j < tmpOptionsArray.length; j++) {
+                            String opt = tmpOptionsArray[j].trim();
+                            if (!opt.equals("")) {
+                                options.add(tmpOptionsArray[j]);
+                            }
+                        }
+                    } catch (Exception ex) {
+                        System.out.println("Can't read from stdin: /stdin ignored");
+                    }
+                } else {
+                    options.add(args[i]);
+                }
+            }
+//            for (String opt : options) {
+//                System.out.println("option: " + opt);
+//            }
+            // if a custom console is used, it is safe now to redirect input
+            if (consoleFrame != null) {
+                consoleFrame.setIn();
+            }
             // store all args in a map (except puzzle string)
             String puzzleString = null;
             Map<String, String> argMap = new TreeMap<String, String>();
-            for (int i = 0; i < args.length; i++) {
-                String arg = args[i].trim().toLowerCase();
-                if (arg.equals("/bs") || arg.equals("/vg") || arg.equals("/s") ||
-                        arg.equals("/so") || arg.equals("/c")) {
+            args = null; // safe guard against refactoring error
+            for (int i = 0; i < options.size(); i++) {
+                String arg = options.get(i).trim().toLowerCase();
+                if (arg.equals("/bs") || arg.equals("/vg") || arg.equals("/sc") ||
+                        arg.equals("/so") || arg.equals("/c") || arg.equals("/o") ||
+                        arg.equals("/bsaf") ||
+                        (arg.equals("/s") && (i + 1 < options.size()) && options.get(i + 1).trim().charAt(0) != '/')) {
                     // args with parameters (only one parameter per arg permitted)
-                    argMap.put(arg, args[i + 1]);
-                    i++;
+                    if (i + 1 >= options.size() || options.get(i + 1).trim().charAt(0) == '/') {
+                        System.out.println("No value for parameter: '" + arg + "' ignored!");
+                    } else {
+                        if (arg.equals("/s")) {
+                            argMap.put("/s", null);
+                            argMap.put("/sc", options.get(i + 1));
+                        } else {
+                            argMap.put(arg, options.get(i + 1));
+                        }
+                        i++;
+                    }
                 } else {
                     // args without parameters (could be puzzle)
-                    if (Character.isDigit(arg.charAt(0)) || arg.charAt(0) == '.') {
+                    if (arg.charAt(0) == '/') {
+                        argMap.put(arg, null);
+                    } else {
                         // has to be puzzle
                         puzzleString = arg;
-                        if (puzzleString.length() != 81) {
-                            System.out.println("Puzzle string is not 81 characters long - ignored!");
-                            puzzleString = null;
-                        } else {
-                            for (int j = 0; j < puzzleString.length(); j++) {
-                                if (!Character.isDigit(arg.charAt(j)) && arg.charAt(j) != '.') {
-                                    System.out.println("Invalid character in puzzle string (" +
-                                            puzzleString.charAt(j) + ") - puzzle ignored!");
-                                    puzzleString = null;
-                                }
-                            }
-                        }
-                    } else {
-                        argMap.put(arg, null);
+                        // could be PM - format check is impossible
+//                        if (puzzleString.length() != 81) {
+//                            System.out.println("Puzzle string is not 81 characters long - ignored!");
+//                            puzzleString = null;
+//                        } else {
+//                            for (int j = 0; j < puzzleString.length(); j++) {
+//                                if (!Character.isDigit(arg.charAt(j)) && arg.charAt(j) != '.') {
+//                                    System.out.println("Invalid character in puzzle string (" +
+//                                            puzzleString.charAt(j) + ") - puzzle ignored!");
+//                                    puzzleString = null;
+//                                }
+//                            }
+//                        }
                     }
                 }
             }
@@ -284,42 +483,11 @@ public class Main {
             if (argMap.containsKey("/h")) {
                 helpArg = "/h";
             }
-            if (argMap.containsKey("-h")) {
-                helpArg = "-h";
-            }
             if (argMap.containsKey("/?")) {
                 helpArg = "/?";
             }
-            if (argMap.containsKey("-?")) {
-                helpArg = "-?";
-            }
             if (helpArg != null) {
-                System.out.println("Usage: java -Xmx512m -jar hodoku_x.x.x.jar [options]\r\n" +
-                        "\r\n" +
-                        "Options:\r\n" +
-                        "  /h, /?: print this help screen\r\n" +
-                        "  /c <hcfg file>: use <file> for this console run\r\n" +
-                        "  /lt: list internal names of techniques\r\n" +
-                        "      (current config of GUI program is not changed)\r\n" +
-                        "  /so <file>: sort puzzle file created with /s\r\n" +
-                        "  /s <step>[:0|1|2|3][,<step>[:0|1|2|3]]...]: create puzzles with <step>\r\n" +
-                        "      in their solution and write them to <step>[_<step>...].txt.\r\n" +
-                        "      <step> is an internal name according to /lt or \"all\" (all steps except\r\n" +
-                        "          singles) or \"nssts\" (all steps except SSTS: singles, h2, h3, h4, n2,\r\n" +
-                        "          n3, n4, l2, l3, lc1, lc2, bf2, bf3, bf4, xy, sc, mc)\r\n" +
-                        "      0: x <step> x (default)\r\n" +
-                        "      1: ssts <step> ssts\r\n" +
-                        "      2: ssts <step> s\r\n" +
-                        "      3: s <step> s\r\n" +
-                        "      with: 'x' - arbitrary steps, 'ssts' - SSTS, 's' - singles\r\n" +
-                        "  /bs <file>: batch solve puzzles in file (output written to <file>.out.txt)\r\n" +
-                        "  /vs: print solution in output file (only valid with /bs)\r\n" +
-                        "  /vp: print complete solution for each puzzle (only valid with /bs)\r\n" +
-                        "  /vg [l|c|s:]<step>[,<step>...]: print pm before every <step> in the solution\r\n" +
-                        "      (only valid with /bs and /vp)\r\n" +
-                        "      l: print library format\r\n" +
-                        "      c: print candidate grid\r\n" +
-                        "      s: print candidate grid with step highlighted\r\n");
+                printHelpScreen();
                 printIgnoredOptions(helpArg, argMap);
                 return;
             }
@@ -338,84 +506,40 @@ public class Main {
             }
             if (argMap.containsKey("/c")) {
                 String fileName = argMap.get("/c");
+                System.out.println("Using configuration file '" + fileName + "'");
                 Options.readOptions(fileName);
                 argMap.remove("/c");
             }
+            String outFile = null;
+            if (argMap.containsKey("/o")) {
+                outFile = argMap.get("/o");
+                argMap.remove("/o");
+                if (outFile.equals("stdout")) {
+                    System.out.println("Writing output to console");
+                } else {
+                    System.out.println("Using output file '" + outFile + "'");
+                }
+            }
+            List<StepType> typeList = new ArrayList<StepType>();
+            if (argMap.containsKey("/sc")) {
+                String[] steps = argMap.get("/sc").toLowerCase().split(",");
+                for (int i = 0; i < steps.length; i++) {
+                    StepType.parseTypeStr(typeList, steps[i]);
+                }
+                argMap.remove("/sc");
+            }
             if (argMap.containsKey("/so")) {
                 printIgnoredOptions("/so", argMap);
-                new Main().sortPuzzleFile(argMap.get("/so"));
+                new Main().sortPuzzleFile(argMap.get("/so"), typeList, outFile);
                 return;
             }
             if (argMap.containsKey("/s")) {
                 printIgnoredOptions("/s", argMap);
-                SortedMap<SolutionType, Integer> typeMap = new TreeMap<SolutionType, Integer>();
-                String[] types = argMap.get("/s").toLowerCase().split(",");
-                for (int i = 0; i < types.length; i++) {
-                    String typeStr = types[i].toLowerCase();
-                    int typeMode = 0;
-                    if (typeStr.contains(":")) {
-                        int index = typeStr.indexOf(':');
-                        if (typeStr.length() < (index + 2)) {
-                            System.out.println("Puzzle type missing (assume '0')!");
-                        } else {
-                            char typeModeChar = typeStr.charAt(index + 1);
-                            switch (typeModeChar) {
-                                case '0':
-                                    typeMode = 0; // step must be in puzzle, nothing else required
-
-                                    break;
-                                case '1':
-                                    typeMode = 1; // SSTS + step + SSTS
-
-                                    break;
-                                case '2':
-                                    typeMode = 2; // SSTS + step + Singles
-
-                                    break;
-                                case '3':
-                                    typeMode = 3; // singles + step + singles
-
-                                    break;
-                                default:
-                                    System.out.println("Invalid puzzle type: " + typeModeChar + " (assume '0')");
-                                    break;
-                            }
-                        }
-                        typeStr = typeStr.substring(0, index);
-                    }
-                    if (typeStr.equals("all")) {
-                        for (SolutionType tmpType : SolutionType.values()) {
-                            if (!tmpType.isSingle()) {
-                                typeMap.put(tmpType, typeMode);
-                            }
-                        }
-                        break;
-                    } else if (typeStr.equals("nssts")) {
-                        for (SolutionType tmpType : SolutionType.values()) {
-                            if (!tmpType.isSingle() && !tmpType.isSSTS()) {
-                                typeMap.put(tmpType, typeMode);
-                            }
-                        }
-                        break;
-                    }
-                    SolutionType type = null;
-                    SolutionType[] values = SolutionType.values();
-                    for (int j = 0; j < values.length; j++) {
-                        if (values[j].getArgName().equals(typeStr)) {
-                            type = values[j];
-                        }
-                    }
-                    if (type == null) {
-                        System.out.println("Invalid step name: " + typeStr + " (ignored!)");
-                        continue;
-                    }
-                    typeMap.put(type, typeMode);
-                }
-                if (typeMap.size() == 0) {
+                if (typeList.size() == 0) {
                     System.out.println("No step name given!");
                     return;
                 }
-                new Main().searchForType(typeMap);
+                new Main().searchForType(typeList, outFile);
                 return;
             }
             boolean printSolution = false;
@@ -483,17 +607,36 @@ public class Main {
                 printIgnoredOptions("/bs", argMap);
                 String fileName = argMap.get("/bs");
                 new Main().batchSolve(fileName, null, printSolution, printSolutionPath,
-                        clipboardMode, outTypes);
+                        clipboardMode, outTypes, outFile, false);
+                return;
+            }
+            if (argMap.containsKey("/bsaf")) {
+                printIgnoredOptions("/bsaf", argMap);
+                String fileName = argMap.get("/bsaf");
+                new Main().batchSolve(fileName, null, printSolution, printSolutionPath,
+                        clipboardMode, outTypes, outFile, true);
+                return;
+            }
+            if (argMap.containsKey("/bsa")) {
+                printIgnoredOptions("/bsa", argMap);
+                System.out.println("bsa: started");
+                if (puzzleString == null) {
+                    System.out.println("No puzzle given with /bsa - ignored!");
+                    return;
+                }
+                new Main().batchSolve(null, puzzleString, printSolution, printSolutionPath,
+                        clipboardMode, outTypes, outFile, true);
                 return;
             }
             if (puzzleString != null) {
                 printIgnoredOptions("", argMap);
                 new Main().batchSolve(null, puzzleString, printSolution, printSolutionPath,
-                        clipboardMode, outTypes);
+                        clipboardMode, outTypes, outFile, false);
                 return;
             }
             printIgnoredOptions("", argMap);
             System.out.println("Don't know what to do...");
+            printHelpScreen();
             return;
         }
 
@@ -526,24 +669,138 @@ public class Main {
             System.out.println("The following options were ignored: " + tmp.toString().trim());
         }
     }
+    
+    /**
+     * Parses a command line string that comes from a file or from stdin.
+     * This used to be a String.split(" "), but we have to support text qualifiers.
+     * 
+     * Allowed qualifiers: " or '
+     * 
+     * Qualifiers within the string have to be doubled
+     * 
+     * @param in The command line string
+     * @return Array with options
+     */
+    private static String[] getOptionsFromStringBuffer(StringBuffer in) {
+        List<String> options = new ArrayList<String>();
+        char qualifier = '"';
+        boolean qualifierSeen = false;
+        int startIndex = -1;
+        for (int i = 0; i < in.length(); i++) {
+            char ch = in.charAt(i);
+            if (ch == ' ') {
+                if (qualifierSeen) {
+                    // we are in the middle of an option -> ignore it
+                    continue;
+                }
+                if (startIndex != -1) {
+                    // we reached the end of an option -> copy it
+                    options.add(in.substring(startIndex, i));
+                    startIndex = -1;
+                }
+            }
+            if (qualifierSeen && ch == qualifier) {
+                // could be a stuffed character or the end of an option
+                if (i < in.length() - 1 && in.charAt(i + 1) == qualifier) {
+                    // stuffed character -> delete the superfluous one and
+                    // skip the correct one to avoid confusion
+                    in.delete(i, i);
+                    i++;
+                } else {
+                    // end of qualified option reached -> store it
+                    options.add(in.substring(startIndex, i));
+                    startIndex = -1;
+                    qualifierSeen = false;
+                }
+            }
+            if (! qualifierSeen && (ch == '"' || ch == '\'')) {
+                // if we are in the middle of an option -> store
+                // what we have so far
+                if (startIndex != -1) {
+                    options.add(in.substring(startIndex, i));
+                }
+                // start a new qualified option
+                startIndex = i + 1;
+                qualifier = ch;
+                qualifierSeen = true;
+            }
+            if (ch != ' ' && startIndex == -1) {
+                // a new option starts
+                startIndex = i;
+            }
+        }
+        if (startIndex != -1 && startIndex < in.length()) {
+            options.add(in.substring(startIndex, in.length()));
+        }
+        return options.toArray(new String[0]);
+    }
+    
+    private static void printHelpScreen() {
+                System.out.println("Usage: java -Xmx512m -jar hodoku_x.x.x.jar [options] [puzzle]\r\n" +
+                        "\r\n" +
+                        "Options:\r\n" +
+                        "  /h, /?: print this help screen\r\n" +
+                        "  /f <file>: read options from file <file>\r\n" +
+                        "  /c <hcfg file>: use <file> for this console run\r\n" +
+                        "      (current config of GUI program is not changed)\r\n" +
+                        "  /lt: list internal names of techniques\r\n" +
+                        "  /so <file>: sort puzzle file created with /s, write output to <file>.out.txt\r\n" +
+                        "      or to a file given by /o; a filter can be applied with /sc\r\n" +
+                        "  /s: create puzzles which contain steps according to /sc\r\n" +
+                        "      and write them to <step>[_<step>...].txt or a file given by /o\r\n" +
+                        "      (for compatibility reasons steps can be defined directly with /s)\r\n" +
+                        "  /sc <step>[:0|1|2|3][+[e|l|g]n][,[-]<step>[:0|1|2|3][+[e|l|g]n]...]: define\r\n" +
+                        "      puzzle properties for /s or /so\r\n" +
+                        "      <step> is an internal name according to /lt or \"all\" (all steps except\r\n" +
+                        "          singles), \"nssts\" (all steps except SSTS: singles, h2, h3, h4, n2,\r\n" +
+                        "          n3, n4, l2, l3, lc1, lc2, bf2, bf3, bf4, xy, sc, mc) or \r\n" +
+                        "          \"nssts1\" (nssts minus 2sk, sk, bug1, er, w, u1, xyz, rp)\r\n" +
+                        "      -: exclude the step (not allowed with first <step> definition)\r\n" +
+                        "      0: x <step> x (default)\r\n" +
+                        "      1: ssts <step> ssts\r\n" +
+                        "      2: ssts <step> s\r\n" +
+                        "      3: s <step> s\r\n" +
+                        "      with: 'x' - arbitrary steps, 'ssts' - SSTS, 's' - singles\r\n" +
+                        "      +[e|l|g]n: number of candidates, <step> has to eliminate equales |\r\n" +
+                        "          is less than | is greater than n\r\n" +
+                        "  /bs <file>: batch solve puzzles in <file> (output written to <file>.out.txt\r\n" +
+                        "       or a file given by /o)\r\n" +
+                        "  /bsaf <file>: batch process puzzles in <file> (output as in /bs);\r\n" + 
+                        "       for each puzzle \"Find all Steps\" is executed\r\n" +
+                        "  /bsa: execute \"Find all Steps\" for [puzzle] (output written to\r\n" +
+                        "       <file>.out.txt or a file given by /o)\r\n" +
+                        "  /vs: print solution in output file (only valid with /bs)\r\n" +
+                        "  /vp: print complete solution for each puzzle (only valid with /bs)\r\n" +
+                        "  /vg [l|c|s:]<step>[,<step>...]: print pm before every <step> in the solution\r\n" +
+                        "      (only valid with /bs and /vp)\r\n" +
+                        "      l: print library format\r\n" +
+                        "      c: print candidate grid\r\n" +
+                        "      s: print candidate grid with step highlighted\r\n" +
+                        "  /o <file>: write output to <file>; if <file> is \"stdout\", all output is\r\n" + 
+                        "      written to the console\r\n" +
+                        "  /stdin: read options from stdin\r\n" +
+                        "\r\n" +
+                        "Puzzle: If a puzzle is given it is solved as if it was read from a file with\r\n" +
+                        "      /bs; if a PM is given it must be delimited by \" or '");
+    }
+    
 }
 
 class SearchForTypeThread extends Thread {
 
     private class PuzzleType {
 
-        SolutionType type;
+        StepType type;
         boolean typeSeen = false;
         boolean immediatelyFollowed = false; // set, when type is seen
-        int shouldBePuzzleMode = 0;
         int isPuzzleMode1 = -1;
         int isPuzzleMode2 = -1;
         String puzzleString = "";
+        int anzCandDel = 0;
 
-        PuzzleType(SolutionType type, int mode) {
+        PuzzleType(StepType type) {
             reset();
             this.type = type;
-            shouldBePuzzleMode = mode;
         }
 
         void reset() {
@@ -552,16 +809,20 @@ class SearchForTypeThread extends Thread {
             isPuzzleMode1 = -1;
             isPuzzleMode2 = -1;
             puzzleString = "";
+            anzCandDel = 0;
         }
     }
     private Main m;
-    private SortedMap<SolutionType, Integer> typeMap;
+    private List<StepType> typeList;
     private int anz = 0;
     private int anzFound = 0;
+    private String outFile = null;
 
-    public SearchForTypeThread(Main m, SortedMap<SolutionType, Integer> typeMap) {
+    public SearchForTypeThread(Main m, List<StepType> typeList,
+            String outFile) {
         this.m = m;
-        this.typeMap = typeMap;
+        this.typeList = typeList;
+        this.outFile = outFile;
     }
 
     private void appendPuzzleString(PuzzleType pType, boolean mode1) {
@@ -586,27 +847,29 @@ class SearchForTypeThread extends Thread {
     @Override
     public void run() {
         //String path = m.getSrcDir() + "ar.txt";
-        PuzzleType[] puzzleTypes = new PuzzleType[typeMap.size()];
+        PuzzleType[] puzzleTypes = new PuzzleType[typeList.size()];
         StringBuffer pathBuffer = new StringBuffer();
         int index = 0;
-        for (SolutionType tmpType : typeMap.keySet()) {
-            pathBuffer.append(tmpType.getArgName() + "_");
-            puzzleTypes[index] = new PuzzleType(tmpType, typeMap.get(tmpType));
+        for (StepType tmpType : typeList) {
+            pathBuffer.append(tmpType.type.getArgName() + "_");
+            puzzleTypes[index] = new PuzzleType(tmpType);
             index++;
         }
         pathBuffer.deleteCharAt(pathBuffer.length() - 1);
-        if (puzzleTypes.length == SolutionType.getNonSinglesAnz()) {
-            pathBuffer.delete(0, pathBuffer.length());
-            pathBuffer.append("all");
-        } else if (puzzleTypes.length == SolutionType.getNonSSTSAnz()) {
-            pathBuffer.delete(0, pathBuffer.length());
-            pathBuffer.append("nssts");
+        if (pathBuffer.length() > 50) {
+            pathBuffer.delete(50, pathBuffer.length() - 1);
         }
         pathBuffer.append(".txt");
+        if (outFile != null) {
+            pathBuffer = new StringBuffer(outFile);
+        }
         anz = 0;
         anzFound = 0;
         try {
-            BufferedWriter out = new BufferedWriter(new FileWriter(pathBuffer.toString(), true));
+            BufferedWriter out = null;
+            if (! pathBuffer.toString().equals("stdout")) {
+                out = new BufferedWriter(new FileWriter(pathBuffer.toString(), true));
+            }
             SudokuCreator creator = new SudokuCreator();
             SudokuSolver solver = SudokuSolver.getInstance();
             // einmal ein leeres Sudoku erzeugen, damit alles richtig initialisiert wird
@@ -623,18 +886,38 @@ class SearchForTypeThread extends Thread {
                 for (int i = 0; i < steps.size(); i++) {
                     SolutionType type = steps.get(i).getType();
                     for (int j = 0; j < puzzleTypes.length; j++) {
-                        if (type.equals(puzzleTypes[j].type)) {
+                        if (type.equals(puzzleTypes[j].type.type)) {
+                            int anzCandDel = steps.get(i).getAnzCandidatesToDelete();
+                            if (puzzleTypes[j].anzCandDel < anzCandDel) {
+                                puzzleTypes[j].anzCandDel = anzCandDel;
+                            }
+                            StringBuffer stepName = new StringBuffer(" " + type.getArgName());
+                            if (type.isFish()) {
+                                if (steps.get(i).getEndoFins().size() > 0) {
+                                    stepName.append("e");
+                                }
+                                if (steps.get(i).getCannibalistic().size() > 0) {
+                                    stepName.append("c");
+                                }
+                            }
+                            stepName.append("(" + anzCandDel + ")");
                             if (puzzleTypes[j].immediatelyFollowed) {
                                 // nothing between two occurences of type
-                                puzzleTypes[j].puzzleString += " " + type.getArgName();
+                                // nothing special has to be done
                             } else {
+                                // what was before type?
+                                if (!puzzleTypes[j].typeSeen) {
+                                    appendPuzzleString(puzzleTypes[j], true);
+                                } else {
+                                    // we are between two steps of <type>
+                                    appendPuzzleString(puzzleTypes[j], false);
+                                    // start from scratch
+                                    puzzleTypes[j].isPuzzleMode2 = -1;
+                                }
                                 puzzleTypes[j].typeSeen = true;
                                 puzzleTypes[j].immediatelyFollowed = true;
-                                // what was before type?
-                                appendPuzzleString(puzzleTypes[j], true);
-                                // now the type itself
-                                puzzleTypes[j].puzzleString += " " + type.getArgName();
                             }
+                            puzzleTypes[j].puzzleString += stepName.toString();
                         } else {
                             puzzleTypes[j].immediatelyFollowed = false;
                             if (type.isSingle()) {
@@ -651,14 +934,16 @@ class SearchForTypeThread extends Thread {
                             } else if (type.isSSTS()) {
                                 // step is SSTS -> can only be 2 or 1
                                 if (puzzleTypes[j].typeSeen) {
-                                    if (puzzleTypes[j].isPuzzleMode2 > 2) {
+                                    if (puzzleTypes[j].isPuzzleMode2 == -1 || 
+                                            puzzleTypes[j].isPuzzleMode2 > 2) {
                                         puzzleTypes[j].isPuzzleMode2 = 1;
                                     }
                                     if (puzzleTypes[j].isPuzzleMode1 > 1) {
                                         puzzleTypes[j].isPuzzleMode1 = 1;
                                     }
                                 } else {
-                                    if (puzzleTypes[j].isPuzzleMode1 == 3) {
+                                    if (puzzleTypes[j].isPuzzleMode1 == 3 ||
+                                            puzzleTypes[j].isPuzzleMode1 == -1) {
                                         puzzleTypes[j].isPuzzleMode1 = 2;
                                     }
                                 }
@@ -675,15 +960,37 @@ class SearchForTypeThread extends Thread {
                 // now check, whether the puzzle fits the specification
                 for (int i = 0; i < puzzleTypes.length; i++) {
                     String txt = null;
-                    if (puzzleTypes[i].typeSeen && puzzleTypes[i].isPuzzleMode1 >= puzzleTypes[i].shouldBePuzzleMode) {
-                        // found a suitable sudoku
+                    if (puzzleTypes[i].typeSeen && 
+                            puzzleTypes[i].isPuzzleMode1 >= puzzleTypes[i].type.puzzleType) {
+                        // found a suitable sudoku, check candidates
+                        if (puzzleTypes[i].type.compType != StepType.UNDEFINED) {
+                            switch (puzzleTypes[i].type.compType) {
+                                case StepType.EQUAL:
+                                    if (puzzleTypes[i].anzCandDel != puzzleTypes[i].type.compAnz) {
+                                        continue;
+                                    }
+                                    break;
+                                case StepType.LT:
+                                    if (puzzleTypes[i].anzCandDel >= puzzleTypes[i].type.compAnz) {
+                                        continue;
+                                    }
+                                    break;
+                                case StepType.GT:
+                                    if (puzzleTypes[i].anzCandDel <= puzzleTypes[i].type.compAnz) {
+                                        continue;
+                                    }
+                                    break;
+                            }
+                        }
                         appendPuzzleString(puzzleTypes[i], false);
                         if (txt == null) {
                             txt = newSudoku.getSudoku(ClipboardMode.CLUES_ONLY);
                         }
-                        out.write(txt + " #" + puzzleTypes[i].puzzleString);
-                        out.newLine();
-                        out.flush();
+                        if (out != null) {
+                            out.write(txt + " #" + puzzleTypes[i].puzzleString);
+                            out.newLine();
+                            out.flush();
+                        }
                         System.out.println(txt + " #" + puzzleTypes[i].puzzleString);
                         anzFound++;
                     }
@@ -693,7 +1000,9 @@ class SearchForTypeThread extends Thread {
 //                    System.out.println(".");
 //                }
             }
-            out.close();
+            if (out != null) {
+                out.close();
+            }
         } catch (IOException ex) {
             System.out.println("Error writing sudoku file");
             ex.printStackTrace();
@@ -726,8 +1035,12 @@ class BatchSolveThread extends Thread {
     private ClipboardMode clipboardMode;
     private Set<SolutionType> types;
     private boolean outputGrid = false;
+    private String outFileName = null;
+    private boolean findAllSteps = false;
 
-    BatchSolveThread(String fn, String pStr, boolean ps, boolean pp, ClipboardMode cm, Set<SolutionType> t) {
+    BatchSolveThread(String fn, String pStr, boolean ps, boolean pp, 
+            ClipboardMode cm, Set<SolutionType> t,
+            String ofn, boolean fas) {
         fileName = fn;
         puzzleString = pStr;
         printSolution = ps;
@@ -737,6 +1050,8 @@ class BatchSolveThread extends Thread {
         if (clipboardMode != null && types != null) {
             outputGrid = true;
         }
+        outFileName = ofn;
+        findAllSteps = fas;
     }
 
     @Override
@@ -754,7 +1069,14 @@ class BatchSolveThread extends Thread {
         try {
             if (fileName != null) {
                 inFile = new BufferedReader(new FileReader(fileName));
-                outFile = new BufferedWriter(new FileWriter(fileName + ".out.txt"));
+            }
+            if (outFileName == null) {
+                outFileName = fileName + ".out.txt";
+            }
+            if (outFileName.equals("stdout")) {
+                outFile = null;
+            } else {
+                outFile = new BufferedWriter(new FileWriter(outFileName));
             }
             String line = null;
             SudokuSolver solver = SudokuSolver.getInstance();
@@ -775,34 +1097,43 @@ class BatchSolveThread extends Thread {
                 if (outputGrid) {
                     tmpSudoku = sudoku.clone();
                 }
-                solver.setSudoku(sudoku);
-                solver.solve();
                 count++;
                 boolean needsGuessing = false;
                 boolean needsTemplates = false;
                 boolean givenUp = false;
                 boolean unsolved = false;
-                List<SolutionStep> steps = solver.getSteps();
-                for (int i = 0; i < steps.size(); i++) {
-                    if (steps.get(i).getType() == SolutionType.BRUTE_FORCE && !needsGuessing) {
-                        needsGuessing = true;
-                        unsolved = true;
-                        bruteForceAnz++;
+                List<SolutionStep> steps = null;
+                if (findAllSteps) {
+                    steps = new ArrayList<SolutionStep>();
+                    Thread thread = new Thread(new FindAllSteps(steps, sudoku, null));
+                    thread.start();
+                    thread.join();
+                    //System.out.println("fas: " + steps.size());
+                } else {
+                    solver.setSudoku(sudoku);
+                    solver.solve();
+                    steps = solver.getSteps();
+                    for (int i = 0; i < steps.size(); i++) {
+                        if (steps.get(i).getType() == SolutionType.BRUTE_FORCE && !needsGuessing) {
+                            needsGuessing = true;
+                            unsolved = true;
+                            bruteForceAnz++;
+                        }
+                        if ((steps.get(i).getType() == SolutionType.TEMPLATE_DEL ||
+                                steps.get(i).getType() == SolutionType.TEMPLATE_SET) && !needsTemplates) {
+                            needsTemplates = true;
+                            unsolved = true;
+                            templateAnz++;
+                        }
+                        if (steps.get(i).getType() == SolutionType.GIVE_UP && !givenUp) {
+                            givenUp = true;
+                            unsolved = true;
+                            givenUpAnz++;
+                        }
                     }
-                    if ((steps.get(i).getType() == SolutionType.TEMPLATE_DEL ||
-                            steps.get(i).getType() == SolutionType.TEMPLATE_SET) && !needsTemplates) {
-                        needsTemplates = true;
-                        unsolved = true;
-                        templateAnz++;
+                    if (unsolved) {
+                        unsolvedAnz++;
                     }
-                    if (steps.get(i).getType() == SolutionType.GIVE_UP && !givenUp) {
-                        givenUp = true;
-                        unsolved = true;
-                        givenUpAnz++;
-                    }
-                }
-                if (unsolved) {
-                    unsolvedAnz++;
                 }
                 String guess = needsGuessing ? " " + SolutionType.BRUTE_FORCE.getArgName() : "";
                 String template = needsTemplates ? " " + SolutionType.TEMPLATE_DEL.getArgName() : "";
@@ -821,9 +1152,12 @@ class BatchSolveThread extends Thread {
                     //System.out.println("line: " + line);
                     }
                 }
-                String out = line + " #" + count + " " + solver.getLevel().getName() + " (" + solver.getScore() + ")" +
+                String out = line + " #" + count;
+                if (! findAllSteps) {
+                    out += " " + solver.getLevel().getName() + " (" + solver.getScore() + ")" +
                         guess + template + giveUp;
-                results[solver.getLevel().getOrdinal()]++;
+                    results[solver.getLevel().getOrdinal()]++;
+                }
                 if (outFile != null) {
                     outFile.write(out);
                     outFile.newLine();
@@ -831,7 +1165,7 @@ class BatchSolveThread extends Thread {
                     System.out.println(out);
                 }
 
-                if (printSolutionPath) {
+                if (printSolutionPath || findAllSteps) {
                     for (int i = 0; i < steps.size(); i++) {
                         if (outputGrid) {
                             if (types != null && clipboardMode != null && types.contains(steps.get(i).getType())) {
@@ -931,5 +1265,200 @@ class ShutDownThread extends Thread {
     @Override
     public void run() {
         thread.interrupt();
+    }
+}
+
+class StepType {
+    static final int UNDEFINED = -1;
+    static final int EQUAL = 0;
+    static final int LT = 1;
+    static final int GT = 2;
+    
+    SolutionType type;
+    int puzzleType = 0;
+    boolean isRemove = false;
+    int compType = UNDEFINED;
+    int compAnz = 0;
+    
+    private StepType(SolutionType type, int puzzleType, boolean isRemove, int compType, int compAnz) {
+        this.type = type;
+        this.puzzleType = puzzleType;
+        this.isRemove = isRemove;
+        this.compType = compType;
+        this.compAnz = compAnz;
+    }
+
+    @Override
+    public String toString() {
+        char compChar = '-';
+        switch (compType) {
+            case EQUAL: compChar = '='; break;
+            case LT: compChar = '<'; break;
+            case GT: compChar = '>'; break;
+        }
+        if (compType != UNDEFINED) {
+            return type.getStepName() + " (" + puzzleType + ", " + compChar + compAnz + ")";
+        } else {
+            return type.getStepName() + " (" + puzzleType + ", -)";
+        }
+    }
+    
+    public static void parseTypeStr(List<StepType> stepList, String inputStr) {
+        SolutionType type;
+        int puzzleType = 0;
+        boolean isRemove = false;
+        int compType = UNDEFINED;
+        int compAnz = 0;
+        
+        inputStr = inputStr.toLowerCase();
+        if (inputStr.startsWith("-")) {
+            isRemove = true;
+            inputStr = inputStr.substring(1);
+        }
+        String compStr = null;
+        String typeStr = null;
+        int compIndex = -1;
+        compIndex = inputStr.indexOf('+');
+        int typeIndex = inputStr.indexOf(':');
+        if (typeIndex == -1 && compIndex != -1) {
+            compStr = inputStr.substring(compIndex + 1);
+            inputStr = inputStr.substring(0, compIndex);
+        } else if (typeIndex != -1 && compIndex == -1) {
+            typeStr = inputStr.substring(typeIndex);
+            inputStr = inputStr.substring(0, typeIndex);
+        } else if (typeIndex != -1 && compIndex != -1) {
+            if (typeIndex < compIndex) {
+                compStr = inputStr.substring(compIndex + 1);
+                typeStr = inputStr.substring(typeIndex, compIndex);
+                inputStr = inputStr.substring(0, typeIndex);
+            } else {
+                typeStr = inputStr.substring(typeIndex);
+                compStr = inputStr.substring(compIndex + 1, typeIndex);
+                inputStr = inputStr.substring(0, compIndex);
+            }
+        }
+        puzzleType = 0;
+        if (typeStr != null) {
+            if (typeStr.length() < 2) {
+                System.out.println("Puzzle type missing (assuming '0')!");
+            } else {
+                char typeModeChar = typeStr.charAt(1);
+                switch (typeModeChar) {
+                    case '0':
+                        puzzleType = 0; // step must be in puzzle, nothing else required
+                        break;
+                    case '1':
+                        puzzleType = 1; // SSTS + step + SSTS
+                        break;
+                    case '2':
+                        puzzleType = 2; // SSTS + step + Singles
+                        break;
+                    case '3':
+                        puzzleType = 3; // singles + step + singles
+                        break;
+                    default:
+                        System.out.println("Invalid puzzle type: " + typeModeChar + " (assuming '0')");
+                        break;
+                }
+            }
+        }
+        if (compStr != null) {
+            // now comparison
+            if (compStr.length() < 2) {
+                System.out.println("Invalid comparison spec - ignored!");
+            } else {
+                switch (compStr.charAt(0)) {
+                    case 'e':
+                        compType = EQUAL;
+                        break;
+                    case 'l':
+                        compType = LT;
+                        break;
+                    case 'g':
+                        compType = GT;
+                        break;
+                    default:
+                        System.out.println("Invalid comparison mode: " + compStr.charAt(0) + " (ignored)");
+                        break;
+                }
+                if (compType != UNDEFINED) {
+                    String compAnzStr = compStr.substring(1);
+                    try {
+                        compAnz = Integer.parseInt(compAnzStr);
+                    } catch (NumberFormatException ex) {
+                        System.out.println("Invalid comparison digit: " + compAnzStr + " (comparison ignored)");
+                        compType = UNDEFINED;
+                    }
+                }
+            }
+        }
+        type = null;
+        SolutionType[] values = SolutionType.values();
+        for (int j = 0; j < values.length; j++) {
+            if (values[j].getArgName().equals(inputStr)) {
+                type = values[j];
+            }
+        }
+        if (type == null) {
+            if (inputStr.equals("all")) {
+                for (SolutionType tmpType : SolutionType.values()) {
+                    if (!tmpType.isSingle()) {
+                        addDeleteStepInList(stepList, new StepType(tmpType, puzzleType, isRemove, compType, compAnz));
+                    }
+                }
+            } else if (inputStr.equals("nssts")) {
+                for (SolutionType tmpType : SolutionType.values()) {
+                    if (!tmpType.isSingle() && !tmpType.isSSTS()) {
+                        addDeleteStepInList(stepList, new StepType(tmpType, puzzleType, isRemove, compType, compAnz));
+                    }
+                }
+            } else if (inputStr.equals("nssts1")) {
+                for (SolutionType tmpType : SolutionType.values()) {
+                    if (!tmpType.isSingle() && !tmpType.isSSTS() &&
+                            !tmpType.equals(SolutionType.TWO_STRING_KITE) &&
+                            !tmpType.equals(SolutionType.SKYSCRAPER) &&
+                            !tmpType.equals(SolutionType.BUG_PLUS_1) &&
+                            !tmpType.equals(SolutionType.EMPTY_RECTANGLE) &&
+                            !tmpType.equals(SolutionType.W_WING) &&
+                            !tmpType.equals(SolutionType.UNIQUENESS_1) &&
+                            !tmpType.equals(SolutionType.XYZ_WING) &&
+                            !tmpType.equals(SolutionType.REMOTE_PAIR)) {
+                        addDeleteStepInList(stepList, new StepType(tmpType, puzzleType, isRemove, compType, compAnz));
+                    }
+                }
+            } else {
+                System.out.println("Invalid step name: " + inputStr + " (ignored!)");
+            }
+        } else {
+            addDeleteStepInList(stepList, new StepType(type, puzzleType, isRemove, compType, compAnz));
+        }
+    }
+
+    private static void addDeleteStepInList(List<StepType> stepList, StepType step) {
+        if (step.type == null) {
+            return;
+        }
+        boolean found = false;
+        for (int i = 0; i < stepList.size(); i++) {
+            StepType tmpStep = stepList.get(i);
+            if (tmpStep.type == step.type && tmpStep.puzzleType == step.puzzleType) {
+                found = true;
+                if (step.isRemove) {
+                    stepList.remove(i);
+                    i--;
+                } else {
+                    // allow multiple instances with same puzzleType
+//                    tmpStep.compType = step.compType;
+//                    tmpStep.compAnz = step.compAnz;
+                }
+            }
+        }
+        if (step.isRemove) {
+            if (!found) {
+                System.out.println("Could not remove step " + step.type.getArgName() + ":" + step.puzzleType + ": was not set yet.");
+            }
+        } else {
+            stepList.add(step);
+        }
     }
 }

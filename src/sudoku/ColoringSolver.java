@@ -45,7 +45,8 @@ public class ColoringSolver extends AbstractSolver {
     private List<SolutionStep> steps = new ArrayList<SolutionStep>();
     private SolutionStep globalStep = new SolutionStep();
 
-    public ColoringSolver() {
+    public ColoringSolver(SudokuSolver solver) {
+        super(solver);
     }
 
     @Override

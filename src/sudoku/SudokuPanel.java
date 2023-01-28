@@ -721,12 +721,16 @@ public class SudokuPanel extends javax.swing.JPanel implements Printable {
                                     hintColor = Options.getInstance().getHintCandidateBackColor();
                                     candColor = Options.getInstance().getHintCandidateColor();
                                 }
-                                int alsIndex = step.getAlsIndex(index);
-                                if (alsIndex != -1 && (chainIndex == -1 || alsToShow.contains(alsIndex))) {
+                                int alsIndex = step.getAlsIndex(index, chainIndex);
+                                if (alsIndex != -1 && ((chainIndex == -1 && step.getType() != SolutionType.KRAKEN_FISH) || alsToShow.contains(alsIndex))) {
                                     hintColor = Options.getInstance().getHintCandidateAlsBackColors()[alsIndex % Options.getInstance().getHintCandidateAlsBackColors().length];
                                     candColor = Options.getInstance().getHintCandidateAlsColors()[alsIndex % Options.getInstance().getHintCandidateAlsColors().length];
                                 }
                                 for (int k = 0; k < step.getChains().size(); k++) {
+                                    if (step.getType() == SolutionType.KRAKEN_FISH && chainIndex == -1) {
+                                        // Index 0 means show no chain at all
+                                        continue;
+                                    }
                                     if (chainIndex != -1 && k != chainIndex) {
                                         // show only one chain in Forcing Chains/Nets
                                         continue;
@@ -837,6 +841,9 @@ public class SudokuPanel extends javax.swing.JPanel implements Printable {
             points.clear();
             //for (Chain chain : step.getChains()) {
             for (int ci = 0; ci < step.getChainAnz(); ci++) {
+                if (step.getType() == SolutionType.KRAKEN_FISH && chainIndex == -1) {
+                    continue;
+                }
                 if (chainIndex != -1 && chainIndex != ci) {
                     continue;
                 }
@@ -861,6 +868,9 @@ public class SudokuPanel extends javax.swing.JPanel implements Printable {
             }
             //for (AlsInSolutionStep als : step.getAlses()) {
             for (int ai = 0; ai < step.getAlses().size(); ai++) {
+                if (step.getType() == SolutionType.KRAKEN_FISH && chainIndex == -1) {
+                    continue;
+                }
                 if (chainIndex != -1 && ! alsToShow.contains(ai)) {
                     continue;
                 }
@@ -876,6 +886,9 @@ public class SudokuPanel extends javax.swing.JPanel implements Printable {
             // dann zeichnen
             //for (Chain chain : step.getChains()) {
             for (int ci = 0; ci < step.getChainAnz(); ci++) {
+                if (step.getType() == SolutionType.KRAKEN_FISH && chainIndex == -1) {
+                    continue;
+                }
                 if (chainIndex != -1 && ci != chainIndex) {
                     continue;
                 }
@@ -1358,10 +1371,13 @@ public class SudokuPanel extends javax.swing.JPanel implements Printable {
     public void setChainInStep(int chainIndex) {
         if (step == null) {
             chainIndex = -1;
+        } else if (step.getType() == SolutionType.KRAKEN_FISH && chainIndex > -1) {
+            chainIndex--;
         }
         if (chainIndex >= 0 && chainIndex > step.getChainAnz() - 1) {
             chainIndex = -1;
         }
+        //System.out.println("chainIndex = " + chainIndex);
         this.chainIndex = chainIndex;
         alsToShow.clear();
         if (chainIndex != -1) {

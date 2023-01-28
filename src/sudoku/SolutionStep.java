@@ -24,6 +24,7 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.SortedMap;
+import java.util.SortedSet;
 import java.util.TreeMap;
 import java.util.TreeSet;
 
@@ -41,6 +42,7 @@ public class SolutionStep implements Comparable<SolutionStep>, Cloneable {
     };
     private static final String[] entityShortNames = {"b", "r", "c", ""};
     private SolutionType type;
+    private SolutionType subType; // for kraken fish: holds the underlying fish type
     private int entity;
     private int entityNumber;
     private int entity2;        // für LOCKED_CANDIDATES_X
@@ -484,6 +486,17 @@ public class SolutionStep implements Comparable<SolutionStep>, Cloneable {
         endoFins.add(new Candidate(index, candidate));
     }
 
+    public int getAnzCandidatesToDelete() {
+        SortedSet<Candidate> tmpSet = new TreeSet<Candidate>();
+        for (int i = 0; i < candidatesToDelete.size(); i++) {
+            tmpSet.add(candidatesToDelete.get(i));
+        }
+        int anz = tmpSet.size();
+        tmpSet.clear();
+        tmpSet = null;
+        return anz;
+    }
+    
     public SolutionType getType() {
         return type;
     }
@@ -699,6 +712,7 @@ public class SolutionStep implements Comparable<SolutionStep>, Cloneable {
             case X_CHAIN:
             case XY_CHAIN:
             case REMOTE_PAIR:
+            case TURBOT_FISH:
             case NICE_LOOP:
             case CONTINUOUS_NICE_LOOP:
             case DISCONTINUOUS_NICE_LOOP:
@@ -847,9 +861,15 @@ public class SolutionStep implements Comparable<SolutionStep>, Cloneable {
             case FINNED_MUTANT_SQUIRMBAG:
             case FINNED_MUTANT_WHALE:
             case FINNED_MUTANT_LEVIATHAN:
+            case KRAKEN_FISH:
                 tmp = new StringBuffer();
                 tmp.append(getStepName());
                 if (art >= 1) {
+                    if (type == SolutionType.KRAKEN_FISH) {
+                        tmp.append(": ");
+                        getCandidatesToDelete(tmp);
+                        tmp.append("\r\n  " + subType.getStepName());
+                    }
                     tmp.append(": " + values.get(0));
                 }
                 if (art >= 2) {
@@ -866,7 +886,14 @@ public class SolutionStep implements Comparable<SolutionStep>, Cloneable {
                         tmp.append(" ");
                         getFins(tmp, true, true);
                     }
-                    getCandidatesToDelete(tmp);
+                    if (type != SolutionType.KRAKEN_FISH) {
+                        getCandidatesToDelete(tmp);
+                    }
+                }
+                if (type == SolutionType.KRAKEN_FISH) {
+                    for (int i = 0; i < chains.size(); i++) {
+                        tmp.append("\r\n  " + getChainString(chains.get(i)));
+                    }
                 }
                 str = tmp.toString();
                 break;
@@ -1306,6 +1333,7 @@ public class SolutionStep implements Comparable<SolutionStep>, Cloneable {
     }
 
     public void addChain(Chain chain) {
+        chain.resetLength();
         chains.add(chain);
     }
 
@@ -1350,7 +1378,7 @@ public class SolutionStep implements Comparable<SolutionStep>, Cloneable {
         int length = 0;
         for (int i = 0; i < chains.size(); i++) {
             //length += (chains.get(i).end + 1);
-            length += chains.get(i).length;
+            length += chains.get(i).getLength(alses);
         }
         return length;
     }
@@ -1407,11 +1435,28 @@ public class SolutionStep implements Comparable<SolutionStep>, Cloneable {
     /**
      * Prüft, ob Index index in einem AlsInSolutionStep enthalten ist. Wenn ja, wird der
      * index in alses zurückgegeben, sonst -1;
+     * 
+     * Doesnt work: if a step has more than one chain, a cell can be part of more than one
+     * ALS; index has to be checked against a chain (only when a certain chain is requested,
+     * which means if chainIndex != -1)!
      */
-    public int getAlsIndex(int index) {
-        for (int i = 0; i < alses.size(); i++) {
-            if (alses.get(i).indices.contains(index)) {
-                return i;
+    public int getAlsIndex(int index, int chainIndex) {
+        if (chainIndex == -1) {
+            for (int i = 0; i < alses.size(); i++) {
+                if (alses.get(i).indices.contains(index)) {
+                    return i;
+                }
+            }
+        } else {
+            Chain chain = chains.get(chainIndex);
+            for (int i = chain.start; i <= chain.end; i++) {
+                if (chain.getNodeType(i) == Chain.ALS_NODE) {
+                    int alsIndex = Chain.getSAlsIndex(chain.chain[i]);
+                    AlsInSolutionStep als = alses.get(alsIndex);
+                    if (als.getIndices().contains(index)) {
+                        return alsIndex;
+                    }
+                }
             }
         }
         return -1;
@@ -1557,17 +1602,25 @@ public class SolutionStep implements Comparable<SolutionStep>, Cloneable {
             return sum1 == sum2 ? 1 : sum1 - sum2;
         }
 
+        // kraken fish: sort for (fish type, chain length)
+        if (type == SolutionType.KRAKEN_FISH && o.getType() == SolutionType.KRAKEN_FISH) {
+            int ret = subType.compare(o.getSubType());
+            if (ret != 0) {
+                return ret;
+            }
+        }
+        
         // Neu: Chains - nach Länge der Chains (gesamt)
         if (getChains().size() > 0) {
             int length1 = 0;
             for (Chain chain : chains) {
                 //length1 += chain.end - chain.start;
-                length1 += chain.length;
+                length1 += chain.getLength(alses);
             }
             int length2 = 0;
             for (Chain chain : o.chains) {
                 //length2 += chain.end - chain.start;
-                length2 += chain.length;
+                length2 += chain.getLength(alses);
             }
             // absteigend sortiert!
             if (length1 - length2 != 0) {
@@ -1601,7 +1654,8 @@ public class SolutionStep implements Comparable<SolutionStep>, Cloneable {
         }
 
         // zuletzt nach Typ
-        return type.ordinal() - o.type.ordinal();
+        //return type.ordinal() - o.type.ordinal();
+        return type.compare(o.getType());
     }
 
     private boolean isEqualInteger(List<Integer> l1, List<Integer> l2) {
@@ -1684,15 +1738,6 @@ public class SolutionStep implements Comparable<SolutionStep>, Cloneable {
         return 0;
     }
 
-    public int getAnzChainSteps() {
-        int anz = 0;
-        for (int i = 0; i < chains.size(); i++) {
-            //anz += chains.get(i).end - chains.get(i).start;
-            anz += chains.get(i).length;
-        }
-        return anz;
-    }
-
     public List<Entity> getBaseEntities() {
         return baseEntities;
     }
@@ -1747,5 +1792,13 @@ public class SolutionStep implements Comparable<SolutionStep>, Cloneable {
 
     public void setColorCandidates(SortedMap<Integer, Integer> colorCandidates) {
         this.colorCandidates = colorCandidates;
+    }
+
+    public SolutionType getSubType() {
+        return subType;
+    }
+
+    public void setSubType(SolutionType subType) {
+        this.subType = subType;
     }
 }

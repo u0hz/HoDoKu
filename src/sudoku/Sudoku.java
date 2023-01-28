@@ -339,8 +339,28 @@ public class Sudoku implements Cloneable {
                 // '|' ist fast immer vertikales Trennzeichen -> durch ' ' ersetzen
                 StringBuffer tmp = new StringBuffer(lines[i].trim());
                 // Trennzeilen sind Zeilen, die "---" enthalten
-                if (tmp.indexOf("---") > 0) {
-                    tmp.delete(0, tmp.length());
+                // Trennzeilen enthalten manchmal Punkte; wenn der Inputstring von der
+                // Kommandozeile kommt, macht das Probleme!
+                int tmpIndex = -1;
+                while ((tmpIndex = tmp.indexOf("---")) >= 0) {
+                    if (tmpIndex > 0) {
+                        char ch = tmp.charAt(tmpIndex - 1);
+                        if (! Character.isDigit(ch) && ch != ' ' && ch != '|') {
+                            tmpIndex--;
+                        }
+                    }
+                    int endIndex = tmpIndex + 1;
+                    while (endIndex < tmp.length() && tmp.charAt(endIndex) == '-') {
+                        endIndex++;
+                    }
+                    if (endIndex < tmp.length() - 1) {
+                        char ch = tmp.charAt(endIndex + 1);
+                        if (! Character.isDigit(ch) && ch != ' ' && ch != '|') {
+                            endIndex++;
+                        }
+                    }
+                    //tmp.delete(0, tmp.length());
+                    tmp.delete(tmpIndex, endIndex + 1);
                 }
                 // Müll entfernen
                 for (int j = 0; j < tmp.length(); j++) {

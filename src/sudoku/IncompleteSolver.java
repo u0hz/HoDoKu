@@ -26,7 +26,8 @@ package sudoku;
 public class IncompleteSolver extends AbstractSolver {
     
     /** Creates a new instance of IncompleteSolver */
-    public IncompleteSolver() {
+    public IncompleteSolver(SudokuSolver solver) {
+        super(solver);
     }
 
     @Override

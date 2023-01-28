@@ -56,6 +56,10 @@ public abstract class AbstractSolver {
     
     //protected static boolean[] cellsSeen = null;
     
+    // solvers should not be created as standalone objects, they should always be part of a SudokuSolver;
+    // that way solvers belonging to the same SudokuSolver can communicate with each other
+    // (e.g. for Kraken Fish search)
+    protected SudokuSolver solver;  // the solver instance to which this particular instance belongs
     protected Sudoku sudoku;
     protected int candType;
     
@@ -103,7 +107,8 @@ public abstract class AbstractSolver {
     }
     
     /** Creates a new instance of AbstractSolver */
-    public AbstractSolver() {
+    public AbstractSolver(SudokuSolver solver) {
+        this.solver = solver;
         // Templates erzeugen
         candTemplates = new List[10];
         for (int i = 0; i < setValueTemplates.length; i++) {
@@ -111,6 +116,10 @@ public abstract class AbstractSolver {
             delCandTemplates[i] = new SudokuSet();
             candTemplates[i] = new LinkedList<SudokuSetBase>();
         }
+    }
+    
+    public SudokuSolver getSolver() {
+        return solver;
     }
     
     /**

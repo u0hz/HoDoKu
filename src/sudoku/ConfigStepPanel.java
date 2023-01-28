@@ -85,8 +85,9 @@ public class ConfigStepPanel extends javax.swing.JPanel {
         maxTableEntryLengthTextField = new javax.swing.JTextField();
         lookAheadTextField = new javax.swing.JTextField();
         onlyOneChainCheckBox = new javax.swing.JCheckBox();
-        jPanel4 = new javax.swing.JPanel();
+        miscellaneousPanel = new javax.swing.JPanel();
         useZeroInsteadOfDotCheckBox = new javax.swing.JCheckBox();
+        erWithTwoCandidatesCheckBox = new javax.swing.JCheckBox();
 
         java.util.ResourceBundle bundle = java.util.ResourceBundle.getBundle("intl/ConfigStepPanel"); // NOI18N
         fishPanel.setBorder(javax.swing.BorderFactory.createTitledBorder(bundle.getString("ConfigStepPanel.fishPanel.border.title"))); // NOI18N
@@ -260,25 +261,32 @@ public class ConfigStepPanel extends javax.swing.JPanel {
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
 
-        jPanel4.setBorder(javax.swing.BorderFactory.createTitledBorder(bundle.getString("ConfigStepPanel.jPanel4.border.title"))); // NOI18N
+        miscellaneousPanel.setBorder(javax.swing.BorderFactory.createTitledBorder(bundle.getString("ConfigStepPanel.miscellaneousPanel.border.title"))); // NOI18N
 
         useZeroInsteadOfDotCheckBox.setMnemonic(java.util.ResourceBundle.getBundle("intl/ConfigStepPanel").getString("ConfigStepPanel.useZeroInsteadOfDotCheckBox.mnemonic").charAt(0));
         useZeroInsteadOfDotCheckBox.setText(bundle.getString("ConfigStepPanel.useZeroInsteadOfDotCheckBox.text")); // NOI18N
 
-        javax.swing.GroupLayout jPanel4Layout = new javax.swing.GroupLayout(jPanel4);
-        jPanel4.setLayout(jPanel4Layout);
-        jPanel4Layout.setHorizontalGroup(
-            jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(jPanel4Layout.createSequentialGroup()
+        erWithTwoCandidatesCheckBox.setMnemonic(java.util.ResourceBundle.getBundle("intl/ConfigStepPanel").getString("ConfigStepPanel.erWithTwoCandidatesCheckBox.mnemonic").charAt(0));
+        erWithTwoCandidatesCheckBox.setText(bundle.getString("ConfigStepPanel.erWithTwoCandidatesCheckBox.text")); // NOI18N
+
+        javax.swing.GroupLayout miscellaneousPanelLayout = new javax.swing.GroupLayout(miscellaneousPanel);
+        miscellaneousPanel.setLayout(miscellaneousPanelLayout);
+        miscellaneousPanelLayout.setHorizontalGroup(
+            miscellaneousPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(miscellaneousPanelLayout.createSequentialGroup()
                 .addContainerGap()
-                .addComponent(useZeroInsteadOfDotCheckBox)
-                .addContainerGap(108, Short.MAX_VALUE))
+                .addGroup(miscellaneousPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(erWithTwoCandidatesCheckBox)
+                    .addComponent(useZeroInsteadOfDotCheckBox))
+                .addContainerGap(56, Short.MAX_VALUE))
         );
-        jPanel4Layout.setVerticalGroup(
-            jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(jPanel4Layout.createSequentialGroup()
+        miscellaneousPanelLayout.setVerticalGroup(
+            miscellaneousPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(miscellaneousPanelLayout.createSequentialGroup()
+                .addComponent(erWithTwoCandidatesCheckBox)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(useZeroInsteadOfDotCheckBox)
-                .addContainerGap(54, Short.MAX_VALUE))
+                .addContainerGap(33, Short.MAX_VALUE))
         );
 
         javax.swing.GroupLayout jPanel2Layout = new javax.swing.GroupLayout(jPanel2);
@@ -287,7 +295,7 @@ public class ConfigStepPanel extends javax.swing.JPanel {
             jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel2Layout.createSequentialGroup()
                 .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
-                    .addComponent(jPanel4, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(miscellaneousPanel, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addComponent(tablingPanel, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addGroup(jPanel2Layout.createSequentialGroup()
                         .addContainerGap(132, Short.MAX_VALUE)
@@ -299,8 +307,8 @@ public class ConfigStepPanel extends javax.swing.JPanel {
             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel2Layout.createSequentialGroup()
                 .addComponent(tablingPanel, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jPanel4, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 161, Short.MAX_VALUE)
+                .addComponent(miscellaneousPanel, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 159, Short.MAX_VALUE)
                 .addComponent(resetButton)
                 .addContainerGap())
         );
@@ -340,6 +348,8 @@ public class ConfigStepPanel extends javax.swing.JPanel {
         Options.getInstance().onlyOneChainPerStep = onlyOneChainCheckBox.isSelected();
         
         Options.getInstance().useZeroInsteadOfDot = useZeroInsteadOfDotCheckBox.isSelected();
+        
+        Options.getInstance().allowErsWithOnlyTwoCandidates = erWithTwoCandidatesCheckBox.isSelected();
     }
     
     private void initAll(boolean setDefault) {
@@ -357,6 +367,8 @@ public class ConfigStepPanel extends javax.swing.JPanel {
             onlyOneChainCheckBox.setSelected(Options.ONLY_ONE_CHAIN_PER_STEP);
             
             useZeroInsteadOfDotCheckBox.setSelected(Options.USE_ZERO_INSTEAD_OF_DOT);
+            
+            erWithTwoCandidatesCheckBox.setSelected(Options.ALLOW_ERS_WITH_ONLY_TWO_CANDIDATES);
         } else {
             maxFinsComboBox.setSelectedIndex(Options.getInstance().maxFins);
             maxEndoFinsComboBox.setSelectedIndex(Options.getInstance().maxEndoFins);
@@ -371,16 +383,18 @@ public class ConfigStepPanel extends javax.swing.JPanel {
             onlyOneChainCheckBox.setSelected(Options.getInstance().onlyOneChainPerStep);
             
             useZeroInsteadOfDotCheckBox.setSelected(Options.getInstance().useZeroInsteadOfDot);
+            
+            erWithTwoCandidatesCheckBox.setSelected(Options.getInstance().allowErsWithOnlyTwoCandidates);
         }
     }
     
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JCheckBox checkTemplatesCheckBox;
+    private javax.swing.JCheckBox erWithTwoCandidatesCheckBox;
     private javax.swing.JPanel fishPanel;
     private javax.swing.JPanel jPanel1;
     private javax.swing.JPanel jPanel2;
     private javax.swing.JPanel jPanel3;
-    private javax.swing.JPanel jPanel4;
     private javax.swing.JLabel lookAheadLabel;
     private javax.swing.JTextField lookAheadTextField;
     private javax.swing.JComboBox maxEndoFinsComboBox;
@@ -389,6 +403,7 @@ public class ConfigStepPanel extends javax.swing.JPanel {
     private javax.swing.JLabel maxFinsLabel;
     private javax.swing.JLabel maxTableEntryLengthLabel;
     private javax.swing.JTextField maxTableEntryLengthTextField;
+    private javax.swing.JPanel miscellaneousPanel;
     private javax.swing.JCheckBox onlyOneChainCheckBox;
     private javax.swing.JButton resetButton;
     private javax.swing.JCheckBox restrictChainSizeCheckBox;

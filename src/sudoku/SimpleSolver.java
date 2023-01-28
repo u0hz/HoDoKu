@@ -42,7 +42,8 @@ public class SimpleSolver extends AbstractSolver {
     private List<SolutionStep> steps;
     
     /** Creates a new instance of SimpleSolver */
-    public SimpleSolver() {
+    public SimpleSolver(SudokuSolver solver) {
+        super(solver);
         setSteps(new ArrayList<SolutionStep>());
     }
     

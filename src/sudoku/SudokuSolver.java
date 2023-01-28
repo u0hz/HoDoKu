@@ -19,6 +19,7 @@
 
 package sudoku;
 
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;
@@ -30,18 +31,11 @@ import java.util.logging.Logger;
  */
 public class SudokuSolver {
 
-    private static SudokuSolver instance = null;
+    private static List<SudokuSolver> instances = new ArrayList<SudokuSolver>();
     private Sudoku sudoku;
     private int candType;
     private List<SolutionStep> steps = new ArrayList<SolutionStep>();
-    private AbstractSolver[] solvers = {
-        new SimpleSolver(), new FishSolver(), new SingleDigitPatternSolver(),
-        new UniquenessSolver(), new WingSolver(), 
-        new ColoringSolver(), new ChainSolver(),
-        new TemplateSolver(), new BruteForceSolver(), new MiscellaneousSolver(),
-        new AlsSolver(), new TemplateSolver(), new TablingSolver(), new IncompleteSolver(),
-        new GiveUpSolver()
-    };
+    private AbstractSolver[] solvers = null;
     private boolean[] firstInstance = new boolean[Options.getInstance().solverSteps.length];
     private DifficultyLevel level;
     private DifficultyLevel maxLevel;
@@ -50,13 +44,41 @@ public class SudokuSolver {
 
     /** Creates a new instance of SudokuSolver */
     public SudokuSolver() {
+        solvers = new AbstractSolver[]{
+                    new SimpleSolver(this), new FishSolver(this), new SingleDigitPatternSolver(this),
+                    new UniquenessSolver(this), new WingSolver(this),
+                    new ColoringSolver(this), new ChainSolver(this),
+                    new TemplateSolver(this), new BruteForceSolver(this), new MiscellaneousSolver(this),
+                    new AlsSolver(this), new TemplateSolver(this), new TablingSolver(this), 
+                    new IncompleteSolver(this),
+                    new GiveUpSolver(this)
+                };
     }
 
     public static SudokuSolver getInstance() {
-        if (instance == null) {
-            instance = new SudokuSolver();
+        return getInstance(0);
+    }
+
+    public static SudokuSolver getInstance(int index) {
+        if (index == instances.size()) {
+            SudokuSolver newSolver = new SudokuSolver();
+            instances.add(newSolver);
+            return newSolver;
+        } else if (index < instances.size()) {
+            return instances.get(index);
+        } else {
+            Logger.getLogger(SudokuSolver.class.getName()).log(Level.SEVERE, "Cannot create SudokuSolver: indices not contiguous");
+            throw new RuntimeException("Cannot create SudokuSolver: indices not contiguous");
         }
-        return instance;
+    }
+    
+    public AbstractSolver getSpecialisedSolver(Class solverClass) {
+        for (AbstractSolver as : solvers) {
+            if (as.getClass().getName().equals(solverClass.getName())) {
+                return as;
+            }
+        }
+        return null;
     }
 
     public void set(SudokuSolver ss) {

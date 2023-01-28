@@ -4,38 +4,75 @@
     <editor-bookmarks xmlns="http://www.netbeans.org/ns/editor-bookmarks/1">
         <file>
             <url>src/sudoku/Main.java</url>
-            <line>493</line>
-            <line>729</line>
+            <line>102</line>
+            <line>523</line>
+            <line>1283</line>
+            <line>1320</line>
         </file>
         <file>
             <url>src/sudoku/UniquenessSolver.java</url>
-            <line>288</line>
-            <line>325</line>
-            <line>545</line>
-        </file>
-        <file>
-            <url>src/sudoku/FishSolver.java</url>
-            <line>418</line>
-        </file>
-        <file>
-            <url>src/sudoku/ChainSolver.java</url>
-            <line>610</line>
+            <line>289</line>
+            <line>326</line>
+            <line>546</line>
         </file>
         <file>
             <url>src/sudoku/SolutionStep.java</url>
-            <line>718</line>
-            <line>1348</line>
-            <line>1686</line>
+            <line>489</line>
+            <line>865</line>
+            <line>1376</line>
+        </file>
+        <file>
+            <url>src/sudoku/SimpleSolver.java</url>
+            <line>220</line>
+        </file>
+        <file>
+            <url>src/sudoku/AlsSolver.java</url>
+            <line>184</line>
+        </file>
+        <file>
+            <url>src/sudoku/MiscellaneousSolver.java</url>
+            <line>209</line>
+            <line>293</line>
+        </file>
+        <file>
+            <url>src/sudoku/Options.java</url>
+            <line>460</line>
+        </file>
+        <file>
+            <url>src/sudoku/SudokuPanel.java</url>
+            <line>724</line>
+        </file>
+        <file>
+            <url>src/sudoku/FishSolver.java</url>
+            <line>487</line>
+            <line>574</line>
+            <line>612</line>
+            <line>706</line>
+            <line>850</line>
+            <line>864</line>
+        </file>
+        <file>
+            <url>src/sudoku/ChainSolver.java</url>
+            <line>404</line>
+            <line>465</line>
+            <line>656</line>
         </file>
         <file>
             <url>src/sudoku/SingleDigitPatternSolver.java</url>
-            <line>272</line>
-            <line>295</line>
+            <line>273</line>
+            <line>296</line>
         </file>
         <file>
             <url>src/sudoku/TablingSolver.java</url>
-            <line>398</line>
-            <line>1334</line>
+            <line>349</line>
+            <line>411</line>
+            <line>1122</line>
+            <line>1198</line>
+            <line>1321</line>
+            <line>1483</line>
+            <line>1606</line>
+            <line>2233</line>
+            <line>2299</line>
         </file>
         <file>
             <url>src/sudoku/MainFrame.java</url>
@@ -46,10 +83,6 @@
             <url>src/sudoku/SolutionPanel.java</url>
             <line>387</line>
             <line>411</line>
-        </file>
-        <file>
-            <url>src/sudoku/Options.java</url>
-            <line>418</line>
         </file>
     </editor-bookmarks>
 </project-private>

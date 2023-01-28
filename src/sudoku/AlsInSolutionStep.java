@@ -29,6 +29,7 @@ import java.util.List;
 public class AlsInSolutionStep implements Cloneable {
     public List<Integer> indices = new ArrayList<Integer>();
     public List<Integer> candidates = new ArrayList<Integer>();
+    private int chainPenalty = -1;
     
     public AlsInSolutionStep() {
     }
@@ -64,5 +65,16 @@ public class AlsInSolutionStep implements Cloneable {
     
     public void setCandidates(List<Integer> candidates) {
         this.candidates = candidates;
+    }
+
+    public int getChainPenalty() {
+        if (chainPenalty == -1) {
+            chainPenalty = Als.getChainPenalty(indices.size());
+        }
+        return chainPenalty;
+    }
+
+    public void setChainPenalty(int chainPenalty) {
+        this.chainPenalty = chainPenalty;
     }
 }

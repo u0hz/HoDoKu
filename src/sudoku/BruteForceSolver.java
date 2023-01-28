@@ -28,7 +28,8 @@ public class BruteForceSolver extends AbstractSolver {
     private SudokuCreator creator = new SudokuCreator();
     
     /** Creates a new instance of BruteForceSolver */
-    public BruteForceSolver() {
+    public BruteForceSolver(SudokuSolver solver) {
+        super(solver);
     }
     
     @Override

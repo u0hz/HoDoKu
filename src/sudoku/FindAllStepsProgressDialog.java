@@ -22,6 +22,7 @@ package sudoku;
 import java.awt.EventQueue;
 import java.awt.event.ActionEvent;
 import java.awt.event.KeyEvent;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -34,44 +35,15 @@ import javax.swing.KeyStroke;
  *
  * @author  Bernhard Hobiger
  */
-public class FindAllStepsProgressDialog extends javax.swing.JDialog implements Runnable {
-    private static final int MAX_STEPS = 18;
+public class FindAllStepsProgressDialog extends javax.swing.JDialog {
+    private static final int MAX_STEPS = 27;
     
     private List<SolutionStep> steps;
-    private Sudoku sudoku;
-    private int minSize;
-    private int maxSize;
-    private int maxFins;
-    private int maxEndoFins;
     private Thread thread;
-    private boolean forcingChains;
-    private boolean forcingNets;
-    
-    private static SimpleSolver solver1 = new SimpleSolver();
-    private static SingleDigitPatternSolver solver2 = new SingleDigitPatternSolver();
-    private static MiscellaneousSolver solver3 = new MiscellaneousSolver();
-    private static FishSolver solver4 = new FishSolver();
-    private static UniquenessSolver solver5 = new UniquenessSolver();
-    private static WingSolver solver6 = new WingSolver();
-    private static ColoringSolver solver7 = new ColoringSolver();
-    private static ChainSolver solver8 = new ChainSolver();
-    private static TemplateSolver solver9 = new TemplateSolver();
-    private static AlsSolver solver10 = new AlsSolver();
-    private static TablingSolver solver11 = new TablingSolver();
     
     /** Creates new form FindAllStepsProgressDialog */
-    public FindAllStepsProgressDialog(java.awt.Frame parent, boolean modal, Sudoku sudoku,
-            int minSize, int maxSize, int maxFins, int maxEndoFins,
-            boolean forcingChains, boolean forcingNets) {
+    public FindAllStepsProgressDialog(java.awt.Frame parent, boolean modal, Sudoku sudoku) {
         super(parent, modal);
-        
-        this.sudoku = sudoku;
-        this.minSize = minSize;
-        this.maxSize = maxSize;
-        this.maxFins = maxFins;
-        this.maxEndoFins = maxEndoFins;
-        this.forcingChains = forcingChains;
-        this.forcingNets = forcingNets;
         
         initComponents();
         getRootPane().setDefaultButton(abbrechenButton);
@@ -79,7 +51,8 @@ public class FindAllStepsProgressDialog extends javax.swing.JDialog implements R
         Action escapeAction = new AbstractAction() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                setVisible( false );
+                abbrechenButtonActionPerformed(null);
+                //setVisible( false );
             }
         };
         getRootPane().getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(escapeKeyStroke, "ESCAPE");
@@ -88,8 +61,10 @@ public class FindAllStepsProgressDialog extends javax.swing.JDialog implements R
         progressBar.setMinimum(0);
         progressBar.setMaximum(MAX_STEPS);
         progressBar.setValue(0);
-        
-        thread = new Thread(this);
+
+        steps = new ArrayList<SolutionStep>();
+        FindAllSteps findAllSteps = new FindAllSteps(steps, sudoku, this);
+        thread = new Thread(findAllSteps);
         thread.start();
     }
     
@@ -179,118 +154,15 @@ public class FindAllStepsProgressDialog extends javax.swing.JDialog implements R
         } catch (InterruptedException ex) {
             Logger.getLogger(getClass().getName()).log(Level.SEVERE, "Interrupted while waiting for AllSteps-thread", ex);
         }
-        sudoku = null;
         setVisible(false);
     }//GEN-LAST:event_abbrechenButtonActionPerformed
     
-    private void updateProgress(final String label, final int step) {
+    public void updateProgress(final String label, final int step) {
         EventQueue.invokeLater(new Runnable() {
             @Override
             public void run() {
                 progressLabel.setText(java.util.ResourceBundle.getBundle("intl/FindAllStepsProgressDialog").getString("FindAllStepsProgressDialog.searching") + " " + label);
                 progressBar.setValue(step);
-            }
-        });
-    }
-    
-    @Override
-    public void run() {
-        int actStep = 0;
-        //boolean[] tmpCands = new boolean[9];
-        List<SolutionStep> steps1 = null;
-        while (! thread.isInterrupted()) {
-            switch (actStep) {
-                case 0:
-                    updateProgress(java.util.ResourceBundle.getBundle("intl/FindAllStepsProgressDialog").getString("FindAllStepsProgressDialog.simple_solutions"), actStep);
-                    steps = solver1.findAllFullHouses(sudoku);
-                    steps1 = solver1.findAllHiddenXle(sudoku);
-                    steps.addAll(steps1);
-                    steps1 = solver1.findAllNakedXle(sudoku);
-                    steps.addAll(steps1);
-                    steps1 = solver1.findAllLockedCandidates(sudoku);
-                    steps.addAll(steps1);
-                    steps1 = solver2.findAllSkyScrapers(sudoku);
-                    steps.addAll(steps1);
-                    steps1 = solver2.findAllEmptyRectangles(sudoku);
-                    steps.addAll(steps1);
-                    steps1 = solver2.findAllTwoStringKites(sudoku);
-                    steps.addAll(steps1);
-                    steps1 = solver3.getAllSueDeCoqs(sudoku);
-                    steps.addAll(steps1);
-                    break;
-                case 1:
-                case 2:
-                case 3:
-                case 4:
-                case 5:
-                case 6:
-                case 7:
-                case 8:
-                case 9:
-                    updateProgress(java.util.ResourceBundle.getBundle("intl/FindAllStepsProgressDialog").getString("FindAllStepsProgressDialog.fish") + " " + actStep, actStep);
-                    steps1 = solver4.getAllFishes(sudoku, minSize, maxSize, maxFins, maxEndoFins, this, actStep);
-                    steps.addAll(steps1);
-                    break;
-                case 10:
-                    updateProgress(java.util.ResourceBundle.getBundle("intl/FindAllStepsProgressDialog").getString("FindAllStepsProgressDialog.uniqueness"), actStep);
-                    steps1 = solver5.getAllUniqueness(sudoku);
-                    steps.addAll(steps1);
-                    steps1 = solver6.getAllWings(sudoku);
-                    steps.addAll(steps1);
-                    steps1 = solver7.findAllSimpleColors(sudoku);
-                    steps.addAll(steps1);
-                    steps1 = solver7.findAllMultiColors(sudoku);
-                    steps.addAll(steps1);
-                    break;
-                case 11:
-                    updateProgress(java.util.ResourceBundle.getBundle("intl/FindAllStepsProgressDialog").getString("FindAllStepsProgressDialog.chains"), actStep);
-                    steps1 = solver8.getAllChains(sudoku);
-                    steps.addAll(steps1);
-                    break;
-                case 12:
-                    updateProgress(java.util.ResourceBundle.getBundle("intl/FindAllStepsProgressDialog").getString("FindAllStepsProgressDialog.nice_loops"), actStep);
-                    steps1 = solver11.getAllNiceLoops(sudoku);
-                    steps.addAll(steps1);
-                    break;
-                case 13:
-                    updateProgress(java.util.ResourceBundle.getBundle("intl/FindAllStepsProgressDialog").getString("FindAllStepsProgressDialog.grouped_nice_loops"), actStep);
-                    steps1 = solver11.getAllGroupedNiceLoops(sudoku);
-                    steps.addAll(steps1);
-                    break;
-                case 14:
-                    updateProgress(java.util.ResourceBundle.getBundle("intl/FindAllStepsProgressDialog").getString("FindAllStepsProgressDialog.templates"), actStep);
-                    steps1 = solver9.getAllTemplates(sudoku);
-                    steps.addAll(steps1);
-                    break;
-                case 15:
-                    updateProgress(java.util.ResourceBundle.getBundle("intl/FindAllStepsProgressDialog").getString("FindAllStepsProgressDialog.als"), actStep);
-                    steps1 = solver10.getAllAlses(sudoku);
-                    steps.addAll(steps1);
-                    break;
-                case 16:
-                    if (forcingChains) {
-                        updateProgress(java.util.ResourceBundle.getBundle("intl/FindAllStepsProgressDialog").getString("FindAllStepsProgressDialog.forcing_Chains"), actStep);
-                        steps1 = solver11.getAllForcingChains(sudoku);
-                        steps.addAll(steps1);
-                    }
-                    break;
-                case 17:
-                    if (forcingNets) {
-                        updateProgress(java.util.ResourceBundle.getBundle("intl/FindAllStepsProgressDialog").getString("FindAllStepsProgressDialog.forcing_Nets"), actStep);
-                        steps1 = solver11.getAllForcingNets(sudoku);
-                        steps.addAll(steps1);
-                    }
-                    break;
-            }
-            actStep++;
-            if (actStep >= MAX_STEPS) {
-                break;
-            }
-        }
-        EventQueue.invokeLater(new Runnable() {
-            @Override
-            public void run() {
-                setVisible(false);
             }
         });
     }
@@ -321,7 +193,7 @@ public class FindAllStepsProgressDialog extends javax.swing.JDialog implements R
         java.awt.EventQueue.invokeLater(new Runnable() {
             @Override
             public void run() {
-                new FindAllStepsProgressDialog(new javax.swing.JFrame(), true, null, 0, 0, 0, 0, false, false).setVisible(true);
+                new FindAllStepsProgressDialog(new javax.swing.JFrame(), true, null).setVisible(true);
             }
         });
     }

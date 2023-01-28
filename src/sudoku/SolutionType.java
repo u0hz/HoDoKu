@@ -16,9 +16,7 @@
  * You should have received a copy of the GNU General Public License
  * along with HoDoKu. If not, see <http://www.gnu.org/licenses/>.
  */
-
 package sudoku;
-
 
 /**
  *
@@ -55,9 +53,9 @@ public enum SolutionType {
     X_CHAIN(java.util.ResourceBundle.getBundle("intl/SolutionType").getString("X-Chain"), "0701", "x"),
     XY_CHAIN(java.util.ResourceBundle.getBundle("intl/SolutionType").getString("XY-Chain"), "0702", "xyc"),
     REMOTE_PAIR(java.util.ResourceBundle.getBundle("intl/SolutionType").getString("Remote_Pair"), "0703", "rp"),
-    NICE_LOOP(java.util.ResourceBundle.getBundle("intl/SolutionType").getString("Nice_Loop/AIC"), "0706", "nl"),
+    NICE_LOOP(java.util.ResourceBundle.getBundle("intl/SolutionType").getString("Nice_Loop/AIC"), "0000s", "nl"),
     CONTINUOUS_NICE_LOOP(java.util.ResourceBundle.getBundle("intl/SolutionType").getString("Continuous_Nice_Loop"), "0706", "cnl"),
-    DISCONTINUOUS_NICE_LOOP(java.util.ResourceBundle.getBundle("intl/SolutionType").getString("Discontinuous_Nice_Loop"), "0706", "dnl"),
+    DISCONTINUOUS_NICE_LOOP(java.util.ResourceBundle.getBundle("intl/SolutionType").getString("Discontinuous_Nice_Loop"), "0707s", "dnl"),
     X_WING(java.util.ResourceBundle.getBundle("intl/SolutionType").getString("X-Wing"), "0300", "bf2"),
     SWORDFISH(java.util.ResourceBundle.getBundle("intl/SolutionType").getString("Swordfish"), "0301", "bf3"),
     JELLYFISH(java.util.ResourceBundle.getBundle("intl/SolutionType").getString("Jellyfish"), "0302", "bf4"),
@@ -108,25 +106,27 @@ public enum SolutionType {
     TEMPLATE_SET(java.util.ResourceBundle.getBundle("intl/SolutionType").getString("Template_Set"), "xxxx", "ts"),
     TEMPLATE_DEL(java.util.ResourceBundle.getBundle("intl/SolutionType").getString("Template_Delete"), "xxxx", "td"),
     FORCING_CHAIN(java.util.ResourceBundle.getBundle("intl/SolutionType").getString("Forcing_Chain"), "xxxx", "fc"),
-    FORCING_CHAIN_CONTRADICTION(java.util.ResourceBundle.getBundle("intl/SolutionType").getString("Forcing_Chain_Contradiction"), "xxxx", "fcc"),
-    FORCING_CHAIN_VERITY(java.util.ResourceBundle.getBundle("intl/SolutionType").getString("Forcing_Chain_Verity"), "xxxx", "fcv"),
+    FORCING_CHAIN_CONTRADICTION(java.util.ResourceBundle.getBundle("intl/SolutionType").getString("Forcing_Chain_Contradiction"), "1201", "fcc"),
+    FORCING_CHAIN_VERITY(java.util.ResourceBundle.getBundle("intl/SolutionType").getString("Forcing_Chain_Verity"), "1202", "fcv"),
     FORCING_NET(java.util.ResourceBundle.getBundle("intl/SolutionType").getString("Forcing_Net"), "xxxx", "fn"),
-    FORCING_NET_CONTRADICTION(java.util.ResourceBundle.getBundle("intl/SolutionType").getString("Forcing_Net_Contradiction"), "xxxx", "fnc"),
-    FORCING_NET_VERITY(java.util.ResourceBundle.getBundle("intl/SolutionType").getString("Forcing_Net_Verity"), "xxxx", "fnv"),
+    FORCING_NET_CONTRADICTION(java.util.ResourceBundle.getBundle("intl/SolutionType").getString("Forcing_Net_Contradiction"), "1203", "fnc"),
+    FORCING_NET_VERITY(java.util.ResourceBundle.getBundle("intl/SolutionType").getString("Forcing_Net_Verity"), "1204", "fnv"),
     BRUTE_FORCE(java.util.ResourceBundle.getBundle("intl/SolutionType").getString("Brute_Force"), "xxxx", "bf"),
     INCOMPLETE(java.util.ResourceBundle.getBundle("intl/SolutionType").getString("Incomplete_Solution"), "0000", "in"),
     GIVE_UP(java.util.ResourceBundle.getBundle("intl/SolutionType").getString("Give_Up"), "0000", "gu"),
-    GROUPED_NICE_LOOP(java.util.ResourceBundle.getBundle("intl/SolutionType").getString("Grouped_Nice_Loop/AIC"), "0706", "gnl"),
-    GROUPED_CONTINUOUS_NICE_LOOP(java.util.ResourceBundle.getBundle("intl/SolutionType").getString("Grouped_Continuous_Nice_Loop"), "0706", "gcnl"),
-    GROUPED_DISCONTINUOUS_NICE_LOOP(java.util.ResourceBundle.getBundle("intl/SolutionType").getString("Grouped_Discontinuous_Nice_Loop"), "0706", "gdnl"),
+    GROUPED_NICE_LOOP(java.util.ResourceBundle.getBundle("intl/SolutionType").getString("Grouped_Nice_Loop/AIC"), "0000", "gnl"),
+    GROUPED_CONTINUOUS_NICE_LOOP(java.util.ResourceBundle.getBundle("intl/SolutionType").getString("Grouped_Continuous_Nice_Loop"), "0709", "gcnl"),
+    GROUPED_DISCONTINUOUS_NICE_LOOP(java.util.ResourceBundle.getBundle("intl/SolutionType").getString("Grouped_Discontinuous_Nice_Loop"), "0710", "gdnl"),
     EMPTY_RECTANGLE(java.util.ResourceBundle.getBundle("intl/SolutionType").getString("Empty_Rectangle"), "0402", "er"),
     HIDDEN_RECTANGLE(java.util.ResourceBundle.getBundle("intl/SolutionType").getString("Hidden_Rectangle"), "0606", "hr"),
     AVOIDABLE_RECTANGLE_1(java.util.ResourceBundle.getBundle("intl/SolutionType").getString("Avoidable_Rectangle_Type_1"), "0607", "ar1"),
     AVOIDABLE_RECTANGLE_2(java.util.ResourceBundle.getBundle("intl/SolutionType").getString("Avoidable_Rectangle_Type_2"), "0608", "ar2"),
-    AIC(java.util.ResourceBundle.getBundle("intl/SolutionType").getString("AIC"), "0706", "aic"),
-    GROUPED_AIC(java.util.ResourceBundle.getBundle("intl/SolutionType").getString("Grouped_AIC"), "0706", "gaic"),
+    AIC(java.util.ResourceBundle.getBundle("intl/SolutionType").getString("AIC"), "0708", "aic"),
+    GROUPED_AIC(java.util.ResourceBundle.getBundle("intl/SolutionType").getString("Grouped_AIC"), "0711", "gaic"),
     SIMPLE_COLORS(java.util.ResourceBundle.getBundle("intl/SolutionType").getString("Simple_Colors"), "0500", "sc"),
-    MULTI_COLORS(java.util.ResourceBundle.getBundle("intl/SolutionType").getString("Multi_Colors"), "0501", "mc");
+    MULTI_COLORS(java.util.ResourceBundle.getBundle("intl/SolutionType").getString("Multi_Colors"), "0501", "mc"),
+    KRAKEN_FISH(java.util.ResourceBundle.getBundle("intl/SolutionType").getString("Kraken_Fish"), "0370", "kf"),
+    TURBOT_FISH(java.util.ResourceBundle.getBundle("intl/SolutionType").getString("Turbot_Fish"), "0403", "tf");
     private String stepName;
     private String libraryType;
     private String argName;
@@ -145,6 +145,72 @@ public enum SolutionType {
     public String toString() {
         return "enum SolutionType: " + stepName + " (" + libraryType + "|" + argName + ")";
     }
+
+    /**
+     * compareTo() is final and can't be overridden (uses ordinal() for comparison);
+     * Custom compare order: the order of steps matches the order configured in the
+     * solver;
+     * exception: fishes are sorted for (size, fin status, type)
+     * fin status: finned & sashimi are treated separately
+     * @param t The SolutionType which should be compared with this
+     * @return &lt; 0 for this &lt; t, == 0 for this == t, &gt; 0 for this &gt; t
+     */
+    public int compare(SolutionType t) {
+        StepConfig s1 = getStepConfig();
+        StepConfig s2 = getStepConfig(t);
+        if (isFish() && t.isFish()) {
+            SolutionCategory c1 = s1.getCategory();
+            SolutionCategory c2 = s2.getCategory();
+            if (c1.ordinal() != c2.ordinal()) {
+                // different categories -> category defines order
+                return c1.ordinal() - c2.ordinal();
+            } else {
+                // same category -> type.ordinal can be used
+                // unfortunately not!
+                //return ordinal() - t.ordinal();
+                return getFishSize() - t.getFishSize();
+            }
+        }
+        // for non-fishes use the sort order of the solver
+        return s1.getIndex() - s2.getIndex();
+    }
+
+    private int getFishSize() {
+        switch (this) {
+            case X_WING:
+            case FINNED_X_WING:
+            case SASHIMI_X_WING:
+            case FINNED_FRANKEN_X_WING:
+            case FINNED_MUTANT_X_WING:
+                return 2;
+            case SWORDFISH:
+            case FINNED_SWORDFISH:
+            case SASHIMI_SWORDFISH:
+            case FINNED_FRANKEN_SWORDFISH:
+            case FINNED_MUTANT_SWORDFISH:
+                return 3;
+            case JELLYFISH:
+            case FINNED_JELLYFISH:
+            case SASHIMI_JELLYFISH:
+            case FINNED_FRANKEN_JELLYFISH:
+            case FINNED_MUTANT_JELLYFISH:
+                return 4;
+            case SQUIRMBAG:
+            case FINNED_SQUIRMBAG:
+            case SASHIMI_SQUIRMBAG:
+            case FINNED_FRANKEN_SQUIRMBAG:
+            case FINNED_MUTANT_SQUIRMBAG:
+                return 5;
+            case WHALE:
+            case FINNED_WHALE:
+            case SASHIMI_WHALE:
+            case FINNED_FRANKEN_WHALE:
+            case FINNED_MUTANT_WHALE:
+                return 6;
+            default:
+                return 7;
+        }
+    }
     
     public static boolean isSingle(SolutionType type) {
         if (type == HIDDEN_SINGLE || type == NAKED_SINGLE || type == FULL_HOUSE) {
@@ -152,11 +218,11 @@ public enum SolutionType {
         }
         return false;
     }
-    
+
     public boolean isSingle() {
         return isSingle(this);
     }
-    
+
     public static boolean isSSTS(SolutionType type) {
         if (type.isSingle() ||
                 type == HIDDEN_PAIR || type == HIDDEN_TRIPLE || type == HIDDEN_QUADRUPLE ||
@@ -169,34 +235,46 @@ public enum SolutionType {
         }
         return false;
     }
-    
+
     public boolean isSSTS() {
         return isSSTS(this);
     }
-    
-    public static boolean isFish(SolutionType type) {
+
+    public StepConfig getStepConfig() {
+        return getStepConfig(this);
+    }
+
+    public static StepConfig getStepConfig(SolutionType type) {
         StepConfig[] configs = Options.getInstance().solverSteps;
         for (int i = 0; i < configs.length; i++) {
             if (configs[i].getType() == type) {
-                if (configs[i].getCategory() == SolutionCategory.BASIC_FISH || 
-                        configs[i].getCategory() == SolutionCategory.FINNED_BASIC_FISH ||
-                        configs[i].getCategory() == SolutionCategory.FINNED_FRANKEN_FISH ||
-                        configs[i].getCategory() == SolutionCategory.FINNED_MUTANT_FISH ||
-                        configs[i].getCategory() == SolutionCategory.FRANKEN_FISH ||
-                        configs[i].getCategory() == SolutionCategory.MUTANT_FISH) {
-                    return true;
-                } else {
-                    return false;
-                }
+                return configs[i];
+            }
+        }
+        return null;
+    }
+
+    public static boolean isFish(SolutionType type) {
+        StepConfig config = getStepConfig(type);
+        if (config != null) {
+            if (config.getCategory() == SolutionCategory.BASIC_FISH ||
+                    config.getCategory() == SolutionCategory.FINNED_BASIC_FISH ||
+                    config.getCategory() == SolutionCategory.FINNED_FRANKEN_FISH ||
+                    config.getCategory() == SolutionCategory.FINNED_MUTANT_FISH ||
+                    config.getCategory() == SolutionCategory.FRANKEN_FISH ||
+                    config.getCategory() == SolutionCategory.MUTANT_FISH) {
+                return true;
+            } else {
+                return false;
             }
         }
         return false;
     }
-    
+
     public boolean isFish() {
         return isFish(this);
     }
-    
+
     public static int getNonSinglesAnz() {
         int anz = 0;
         for (SolutionType tmp : values()) {
@@ -206,7 +284,7 @@ public enum SolutionType {
         }
         return anz;
     }
-    
+
     public static int getNonSSTSAnz() {
         int anz = 0;
         for (SolutionType tmp : values()) {
@@ -216,7 +294,7 @@ public enum SolutionType {
         }
         return anz;
     }
-    
+
     public String getLibraryType() {
         return libraryType;
     }
