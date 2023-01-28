@@ -85,8 +85,8 @@ import solver.SudokuSolverFactory;
  */
 public class MainFrame extends javax.swing.JFrame implements FlavorListener {
 
-    public static final String VERSION = "HoDoKu - v2.1";
-    public static final String BUILD = "Build 41";
+    public static final String VERSION = "HoDoKu - v2.1.1";
+    public static final String BUILD = "Build 43";
     private SudokuPanel sudokuPanel;
     //private DifficultyLevel level = Options.getInstance().getDifficultyLevels()[DifficultyType.EASY.ordinal()];
     private JToggleButton[] toggleButtons = new JToggleButton[10];

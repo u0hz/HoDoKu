@@ -24,6 +24,7 @@ import java.awt.Font;
 import java.awt.Graphics;
 import java.awt.Image;
 import java.awt.image.BufferedImage;
+import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -37,6 +38,8 @@ import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
 
 /**
  *
@@ -102,7 +105,11 @@ public class ConfigGeneralPanel extends javax.swing.JPanel {
         // and all LAFs
         initLafs();
 
+        NumbersOnlyDocument doc = new NumbersOnlyDocument();
+        deleteCursorAfterMsTextField.setDocument(doc);
+        
         initAll(false);
+        deleteCursorAfterMsTextField.setEnabled(deleteCursorAfterCheckBox.isSelected());
     }
 
     /** This method is called from within the constructor to
@@ -144,6 +151,10 @@ public class ConfigGeneralPanel extends javax.swing.JPanel {
         showDeviationsCheckBox = new javax.swing.JCheckBox();
         saveWindowLayoutCheckBox = new javax.swing.JCheckBox();
         alternativeMouseModeCheckBox = new javax.swing.JCheckBox();
+        localLabel = new javax.swing.JLabel();
+        localComboBox = new javax.swing.JComboBox();
+        lookAndFeelComboBox = new javax.swing.JComboBox();
+        lookAndFeelLabel = new javax.swing.JLabel();
         jPanel3 = new javax.swing.JPanel();
         valuesLabel = new javax.swing.JLabel();
         candidatesLabel = new javax.swing.JLabel();
@@ -165,14 +176,13 @@ public class ConfigGeneralPanel extends javax.swing.JPanel {
         hintFactorTextField = new javax.swing.JTextField();
         resetButton = new javax.swing.JButton();
         jPanel4 = new javax.swing.JPanel();
-        localLabel = new javax.swing.JLabel();
-        lookAndFeelLabel = new javax.swing.JLabel();
-        localComboBox = new javax.swing.JComboBox();
-        lookAndFeelComboBox = new javax.swing.JComboBox();
         shiftKeyCheckBox = new javax.swing.JCheckBox();
         onlySmallCursorsCheckBox = new javax.swing.JCheckBox();
         colorValuesCheckBox = new javax.swing.JCheckBox();
         showSudokuSolvedCheckBox = new javax.swing.JCheckBox();
+        deleteCursorAfterCheckBox = new javax.swing.JCheckBox();
+        deleteCursorAfterMsTextField = new javax.swing.JTextField();
+        jLabel1 = new javax.swing.JLabel();
 
         java.util.ResourceBundle bundle = java.util.ResourceBundle.getBundle("intl/ConfigGeneralPanel"); // NOI18N
         jPanel1.setBorder(javax.swing.BorderFactory.createTitledBorder(bundle.getString("ConfigGeneralPanel.jPanel1.border.title"))); // NOI18N
@@ -357,7 +367,7 @@ public class ConfigGeneralPanel extends javax.swing.JPanel {
                     .addComponent(mediumBGButton, 0, 25, Short.MAX_VALUE)
                     .addComponent(easyBGButton, javax.swing.GroupLayout.PREFERRED_SIZE, 25, Short.MAX_VALUE)
                     .addComponent(incompleteBGButton, javax.swing.GroupLayout.PREFERRED_SIZE, 25, Short.MAX_VALUE))
-                .addGap(41, 41, 41))
+                .addGap(42, 42, 42))
         );
 
         jPanel1Layout.linkSize(javax.swing.SwingConstants.HORIZONTAL, new java.awt.Component[] {easyTextField, extremeTextField, hardTextField, jTextField1, mediumTextField, unfairTextField});
@@ -442,6 +452,14 @@ public class ConfigGeneralPanel extends javax.swing.JPanel {
         alternativeMouseModeCheckBox.setBorder(javax.swing.BorderFactory.createEmptyBorder(0, 0, 0, 0));
         alternativeMouseModeCheckBox.setMargin(new java.awt.Insets(0, 0, 0, 0));
 
+        localLabel.setDisplayedMnemonic(java.util.ResourceBundle.getBundle("intl/ConfigGeneralPanel").getString("ConfigGeneralPanel.localLabel.mnemonic").charAt(0));
+        localLabel.setLabelFor(localComboBox);
+        localLabel.setText(bundle.getString("ConfigGeneralPanel.localLabel.text")); // NOI18N
+
+        lookAndFeelLabel.setDisplayedMnemonic(java.util.ResourceBundle.getBundle("intl/ConfigGeneralPanel").getString("ConfigGeneralPanel.lookAndFeelLabel.mnemonic").charAt(0));
+        lookAndFeelLabel.setLabelFor(lookAndFeelComboBox);
+        lookAndFeelLabel.setText(bundle.getString("ConfigGeneralPanel.lookAndFeelLabel.text")); // NOI18N
+
         javax.swing.GroupLayout jPanel2Layout = new javax.swing.GroupLayout(jPanel2);
         jPanel2.setLayout(jPanel2Layout);
         jPanel2Layout.setHorizontalGroup(
@@ -449,16 +467,36 @@ public class ConfigGeneralPanel extends javax.swing.JPanel {
             .addGroup(jPanel2Layout.createSequentialGroup()
                 .addContainerGap()
                 .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(showCandidatesCheckBox)
-                    .addComponent(showWrongValuesCheckBox)
-                    .addComponent(showDeviationsCheckBox)
-                    .addComponent(saveWindowLayoutCheckBox)
-                    .addComponent(alternativeMouseModeCheckBox))
-                .addContainerGap(70, Short.MAX_VALUE))
+                    .addGroup(jPanel2Layout.createSequentialGroup()
+                        .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(localLabel)
+                            .addComponent(lookAndFeelLabel))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(localComboBox, 0, 120, Short.MAX_VALUE)
+                            .addComponent(lookAndFeelComboBox, 0, 120, Short.MAX_VALUE))
+                        .addGap(10, 10, 10))
+                    .addGroup(jPanel2Layout.createSequentialGroup()
+                        .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(showCandidatesCheckBox)
+                            .addComponent(showWrongValuesCheckBox)
+                            .addComponent(showDeviationsCheckBox)
+                            .addComponent(saveWindowLayoutCheckBox)
+                            .addComponent(alternativeMouseModeCheckBox))
+                        .addContainerGap(71, Short.MAX_VALUE))))
         );
         jPanel2Layout.setVerticalGroup(
             jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel2Layout.createSequentialGroup()
+                .addContainerGap()
+                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(localLabel)
+                    .addComponent(localComboBox, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(lookAndFeelLabel)
+                    .addComponent(lookAndFeelComboBox, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                 .addComponent(showCandidatesCheckBox)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(showWrongValuesCheckBox)
@@ -468,7 +506,7 @@ public class ConfigGeneralPanel extends javax.swing.JPanel {
                 .addComponent(saveWindowLayoutCheckBox)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(alternativeMouseModeCheckBox)
-                .addContainerGap(46, Short.MAX_VALUE))
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
 
         jPanel3.setBorder(javax.swing.BorderFactory.createTitledBorder(bundle.getString("ConfigGeneralPanel.jPanel3.border.title"))); // NOI18N
@@ -565,7 +603,7 @@ public class ConfigGeneralPanel extends javax.swing.JPanel {
                             .addComponent(candidatesButton)
                             .addComponent(printLargeButton)
                             .addComponent(printSmallButton))))
-                .addContainerGap(35, Short.MAX_VALUE))
+                .addContainerGap(34, Short.MAX_VALUE))
         );
 
         jPanel3Layout.linkSize(javax.swing.SwingConstants.HORIZONTAL, new java.awt.Component[] {candidateFactorTextField, hintFactorTextField, valueFactorTextField});
@@ -617,14 +655,6 @@ public class ConfigGeneralPanel extends javax.swing.JPanel {
 
         jPanel4.setBorder(javax.swing.BorderFactory.createTitledBorder(bundle.getString("ConfigGeneralPanel.jPanel4.border.title"))); // NOI18N
 
-        localLabel.setDisplayedMnemonic(java.util.ResourceBundle.getBundle("intl/ConfigGeneralPanel").getString("ConfigGeneralPanel.localLabel.mnemonic").charAt(0));
-        localLabel.setLabelFor(localComboBox);
-        localLabel.setText(bundle.getString("ConfigGeneralPanel.localLabel.text")); // NOI18N
-
-        lookAndFeelLabel.setDisplayedMnemonic(java.util.ResourceBundle.getBundle("intl/ConfigGeneralPanel").getString("ConfigGeneralPanel.lookAndFeelLabel.mnemonic").charAt(0));
-        lookAndFeelLabel.setLabelFor(lookAndFeelComboBox);
-        lookAndFeelLabel.setText(bundle.getString("ConfigGeneralPanel.lookAndFeelLabel.text")); // NOI18N
-
         shiftKeyCheckBox.setMnemonic(java.util.ResourceBundle.getBundle("intl/ConfigGeneralPanel").getString("ConfigGeneralPanel.shiftKeyCheckBox.mnemonic").charAt(0));
         shiftKeyCheckBox.setText(bundle.getString("ConfigGeneralPanel.shiftKeyCheckBox.text")); // NOI18N
 
@@ -637,6 +667,18 @@ public class ConfigGeneralPanel extends javax.swing.JPanel {
         showSudokuSolvedCheckBox.setMnemonic(java.util.ResourceBundle.getBundle("intl/ConfigGeneralPanel").getString("ConfigGeneralPanel.showSudokuSolvedCheckBox.mnemonic").charAt(0));
         showSudokuSolvedCheckBox.setText(bundle.getString("ConfigGeneralPanel.showSudokuSolvedCheckBox.text")); // NOI18N
 
+        deleteCursorAfterCheckBox.setText(bundle.getString("ConfigGeneralPanel.deleteCursorAfterCheckBox.text")); // NOI18N
+        deleteCursorAfterCheckBox.setActionCommand(bundle.getString("ConfigGeneralPanel.deleteCursorAfterCheckBox.actionCommand")); // NOI18N
+        deleteCursorAfterCheckBox.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                deleteCursorAfterCheckBoxActionPerformed(evt);
+            }
+        });
+
+        deleteCursorAfterMsTextField.setText(bundle.getString("ConfigGeneralPanel.deleteCursorAfterMsTextField.text")); // NOI18N
+
+        jLabel1.setText(bundle.getString("ConfigGeneralPanel.jLabel1.text")); // NOI18N
+
         javax.swing.GroupLayout jPanel4Layout = new javax.swing.GroupLayout(jPanel4);
         jPanel4.setLayout(jPanel4Layout);
         jPanel4Layout.setHorizontalGroup(
@@ -648,34 +690,32 @@ public class ConfigGeneralPanel extends javax.swing.JPanel {
                     .addComponent(colorValuesCheckBox)
                     .addComponent(onlySmallCursorsCheckBox)
                     .addComponent(shiftKeyCheckBox)
+                    .addComponent(deleteCursorAfterCheckBox)
                     .addGroup(jPanel4Layout.createSequentialGroup()
-                        .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(localLabel)
-                            .addComponent(lookAndFeelLabel))
+                        .addGap(21, 21, 21)
+                        .addComponent(deleteCursorAfterMsTextField, javax.swing.GroupLayout.PREFERRED_SIZE, 51, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(localComboBox, 0, 120, Short.MAX_VALUE)
-                            .addComponent(lookAndFeelComboBox, 0, 120, Short.MAX_VALUE))))
-                .addContainerGap())
+                        .addComponent(jLabel1)))
+                .addContainerGap(30, Short.MAX_VALUE))
         );
         jPanel4Layout.setVerticalGroup(
             jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel4Layout.createSequentialGroup()
-                .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(localLabel)
-                    .addComponent(localComboBox, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(lookAndFeelLabel)
-                    .addComponent(lookAndFeelComboBox, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addContainerGap()
                 .addComponent(shiftKeyCheckBox)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(onlySmallCursorsCheckBox)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(colorValuesCheckBox)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(showSudokuSolvedCheckBox))
+                .addComponent(showSudokuSolvedCheckBox)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(deleteCursorAfterCheckBox)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(deleteCursorAfterMsTextField, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(jLabel1))
+                .addContainerGap(34, Short.MAX_VALUE))
         );
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(this);
@@ -693,7 +733,9 @@ public class ConfigGeneralPanel extends javax.swing.JPanel {
                         .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
                             .addComponent(jPanel4, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                             .addComponent(jPanel3, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))
-                    .addComponent(resetButton, javax.swing.GroupLayout.Alignment.TRAILING))
+                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 340, Short.MAX_VALUE)
+                        .addComponent(resetButton)))
                 .addContainerGap())
         );
         layout.setVerticalGroup(
@@ -705,10 +747,10 @@ public class ConfigGeneralPanel extends javax.swing.JPanel {
                     .addComponent(jPanel3, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                    .addComponent(jPanel2, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(jPanel4, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 18, Short.MAX_VALUE)
-                .addComponent(resetButton)
+                    .addComponent(jPanel2, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(jPanel4, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 17, Short.MAX_VALUE)
+                .addComponent(resetButton, javax.swing.GroupLayout.PREFERRED_SIZE, 23, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addContainerGap())
         );
     }// </editor-fold>//GEN-END:initComponents
@@ -780,6 +822,10 @@ public class ConfigGeneralPanel extends javax.swing.JPanel {
     private void easyFGButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_easyFGButtonActionPerformed
         chooseColor(1, true);
     }//GEN-LAST:event_easyFGButtonActionPerformed
+
+    private void deleteCursorAfterCheckBoxActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_deleteCursorAfterCheckBoxActionPerformed
+        deleteCursorAfterMsTextField.setEnabled(deleteCursorAfterCheckBox.isSelected());
+    }//GEN-LAST:event_deleteCursorAfterCheckBoxActionPerformed
     
     public void okPressed() {
         // levels[0] = INCOMPLETE
@@ -830,6 +876,12 @@ public class ConfigGeneralPanel extends javax.swing.JPanel {
         Options.getInstance().setOnlySmallCursors(onlySmallCursorsCheckBox.isSelected());
         Options.getInstance().setColorValues(colorValuesCheckBox.isSelected());
         Options.getInstance().setShowSudokuSolved(showSudokuSolvedCheckBox.isSelected());
+        Options.getInstance().setDeleteCursorDisplay(deleteCursorAfterCheckBox.isSelected());
+        String number = deleteCursorAfterMsTextField.getText();
+        if (number == null || number.equals("")) {
+            number = "0";
+        }
+        Options.getInstance().setDeleteCursorDisplayLength(Integer.parseInt(number));
     }
     
     private void initAll(boolean setDefault) {
@@ -857,6 +909,8 @@ public class ConfigGeneralPanel extends javax.swing.JPanel {
             onlySmallCursorsCheckBox.setSelected(Options.ONLY_SMALL_CURSORS);
             colorValuesCheckBox.setSelected(Options.COLOR_VALUES);
             showSudokuSolvedCheckBox.setSelected(Options.SHOW_SUDOKU_SOLVED);
+            deleteCursorAfterCheckBox.setSelected(Options.DELETE_CURSOR_DISPLAY);
+            deleteCursorAfterMsTextField.setText(String.valueOf(Options.DELETE_CURSOR_DISPLAY_LENGTH));
         } else {
             levels = Options.getInstance().copyDifficultyLevels(Options.getInstance().getDifficultyLevels());
             
@@ -881,6 +935,8 @@ public class ConfigGeneralPanel extends javax.swing.JPanel {
             onlySmallCursorsCheckBox.setSelected(Options.getInstance().isOnlySmallCursors());
             colorValuesCheckBox.setSelected(Options.getInstance().isColorValues());
             showSudokuSolvedCheckBox.setSelected(Options.getInstance().isShowSudokuSolved());
+            deleteCursorAfterCheckBox.setSelected(Options.getInstance().isDeleteCursorDisplay());
+            deleteCursorAfterMsTextField.setText(String.valueOf(Options.getInstance().getDeleteCursorDisplayLength()));
         }
         
         initButtons();
@@ -1033,6 +1089,8 @@ public class ConfigGeneralPanel extends javax.swing.JPanel {
     private javax.swing.JLabel candidatesFontLabel;
     private javax.swing.JLabel candidatesLabel;
     private javax.swing.JCheckBox colorValuesCheckBox;
+    private javax.swing.JCheckBox deleteCursorAfterCheckBox;
+    private javax.swing.JTextField deleteCursorAfterMsTextField;
     private javax.swing.JButton easyBGButton;
     private javax.swing.JButton easyFGButton;
     private javax.swing.JLabel easyLabel;
@@ -1050,6 +1108,7 @@ public class ConfigGeneralPanel extends javax.swing.JPanel {
     private javax.swing.JButton incompleteBGButton;
     private javax.swing.JButton incompleteFGButton;
     private javax.swing.JLabel incompleteLabel;
+    private javax.swing.JLabel jLabel1;
     private javax.swing.JPanel jPanel1;
     private javax.swing.JPanel jPanel2;
     private javax.swing.JPanel jPanel3;
@@ -1116,9 +1175,5 @@ public class ConfigGeneralPanel extends javax.swing.JPanel {
         }
         Locale.setDefault(oldDefault);
     }
-}
-
-class MyControl extends ResourceBundle.Control {
-        
 }
     

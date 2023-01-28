@@ -741,6 +741,9 @@ public class SudokuStepFinder {
      */
     private void initPositions() {
         if (positionsDirty) {
+            for (int i = 1; i < positions.length; i++) {
+                positions[i].clear();
+            }
             int[] values = sudoku.getValues();
             for (int i = 0; i < values.length; i++) {
                 if (values[i] != 0) {
@@ -832,7 +835,7 @@ public class SudokuStepFinder {
      * Initializiation of templates:
      *
      * The following templates are forbidden and will be ignored:
-     *   All templates which have no 1 at atleast one already set position
+     *   All templates which have no 1 at at least one already set position
      *    (positions & template) != positions
      *   All templats which have at least one 1 at a position thats already forbidden
      *    (~(positions | allowedPositions) & template) != 0
@@ -844,7 +847,7 @@ public class SudokuStepFinder {
      *      AND all results: Gives Hidden Pairs (eliminate all candidates from the result,
      *      that dont belong to the two start candidates). - not implemented yet
      *
-     * If <code>initLists</code> is set make the followinh additions (for {@link TemplateSolver}):
+     * If <code>initLists</code> is set make the following additions (for {@link TemplateSolver}):
      * All templates, that have a one at the result of an AND of all templates of another candidate, are forbidden
      * All templates, that dont have at least one non overlapping combination with at least one template
      *    of another candidate, are forbidden.

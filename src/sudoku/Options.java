@@ -137,8 +137,8 @@ public final class Options {
         new StepConfig(8200, SolutionType.FINNED_MUTANT_SQUIRMBAG, DifficultyType.EXTREME.ordinal(), SolutionCategory.FINNED_MUTANT_FISH, 470, 0, false, false, 8200, false, false),
         new StepConfig(8300, SolutionType.FINNED_MUTANT_WHALE, DifficultyType.EXTREME.ordinal(), SolutionCategory.FINNED_MUTANT_FISH, 470, 0, false, false, 8300, false, false),
         new StepConfig(8400, SolutionType.FINNED_MUTANT_LEVIATHAN, DifficultyType.EXTREME.ordinal(), SolutionCategory.FINNED_MUTANT_FISH, 470, 0, false, false, 8400, false, false),
-        new StepConfig(8700, SolutionType.TEMPLATE_SET, DifficultyType.EXTREME.ordinal(), SolutionCategory.LAST_RESORT, 10000, 0, true, true, 8700, false, false),
-        new StepConfig(8800, SolutionType.TEMPLATE_DEL, DifficultyType.EXTREME.ordinal(), SolutionCategory.LAST_RESORT, 10000, 0, true, true, 8800, false, false),
+        new StepConfig(8700, SolutionType.TEMPLATE_SET, DifficultyType.EXTREME.ordinal(), SolutionCategory.LAST_RESORT, 10000, 0, false, false, 8700, false, false),
+        new StepConfig(8800, SolutionType.TEMPLATE_DEL, DifficultyType.EXTREME.ordinal(), SolutionCategory.LAST_RESORT, 10000, 0, false, false, 8800, false, false),
         new StepConfig(8500, SolutionType.FORCING_CHAIN, DifficultyType.EXTREME.ordinal(), SolutionCategory.LAST_RESORT, 500, 0, true, false, 8500, false, false),
         new StepConfig(8600, SolutionType.FORCING_NET, DifficultyType.EXTREME.ordinal(), SolutionCategory.LAST_RESORT, 700, 0, true, false, 8600, false, false),
         new StepConfig(8900, SolutionType.BRUTE_FORCE, DifficultyType.EXTREME.ordinal(), SolutionCategory.LAST_RESORT, 10000, 0, true, false, 8900, false, false),
@@ -285,6 +285,8 @@ public final class Options {
     public static final boolean SAVE_WINDOW_LAYOUT = true; // save window layout at shutdown
     public static final boolean USE_SHIFT_FOR_REGION_SELECT = true; // use shift for selecting cells or toggeling candidates
     public static final boolean ALTERNATIVE_MOUSE_MODE = false; // use simpler mouse mode (less clicks required)
+    public static final boolean DELETE_CURSOR_DISPLAY = false; // let the cursor disappear after a while
+    public static final int DELETE_CURSOR_DISPLAY_LENGTH = 1000; // time in ms
     public static final int DRAW_MODE = 1;
     //public static final int INITIAL_HEIGHT = 728;           // used to store window layout at shutdown
     public static final int INITIAL_HEIGHT = 844;           // used to store window layout at shutdown
@@ -307,6 +309,8 @@ public final class Options {
     private boolean saveWindowLayout = SAVE_WINDOW_LAYOUT;
     private boolean useShiftForRegionSelect = USE_SHIFT_FOR_REGION_SELECT;
     private boolean alternativeMouseMode = ALTERNATIVE_MOUSE_MODE;
+    private boolean deleteCursorDisplay = DELETE_CURSOR_DISPLAY;
+    private int deleteCursorDisplayLength = DELETE_CURSOR_DISPLAY_LENGTH;
     private int drawMode = DRAW_MODE;
     private int initialHeight = INITIAL_HEIGHT;
     private int initialWidth = INITIAL_WIDTH;
@@ -1094,6 +1098,34 @@ public final class Options {
      */
     public void setShowSudokuSolved(boolean showSudokuSolved) {
         this.showSudokuSolved = showSudokuSolved;
+    }
+
+    /**
+     * @return the deleteCursorDisplay
+     */
+    public boolean isDeleteCursorDisplay() {
+        return deleteCursorDisplay;
+    }
+
+    /**
+     * @param deleteCursorDisplay the deleteCursorDisplay to set
+     */
+    public void setDeleteCursorDisplay(boolean deleteCursorDisplay) {
+        this.deleteCursorDisplay = deleteCursorDisplay;
+    }
+
+    /**
+     * @return the deleteCursorDisplayLength
+     */
+    public int getDeleteCursorDisplayLength() {
+        return deleteCursorDisplayLength;
+    }
+
+    /**
+     * @param deleteCursorDisplayLength the deleteCursorDisplayLength to set
+     */
+    public void setDeleteCursorDisplayLength(int deleteCursorDisplayLength) {
+        this.deleteCursorDisplayLength = deleteCursorDisplayLength;
     }
 
     private static class ProgressComparator implements Comparator<StepConfig> {

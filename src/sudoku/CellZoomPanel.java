@@ -974,7 +974,7 @@ public class CellZoomPanel extends javax.swing.JPanel {
             }
         }
         if (found && mainFrame != null) {
-            System.out.println("setColoring(): " + colorNumber + "/" + isCell);
+            //System.out.println("setColoring(): " + colorNumber + "/" + isCell);
             mainFrame.setColoring(colorNumber, isCell);
         }
     }

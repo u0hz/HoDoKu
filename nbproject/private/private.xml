@@ -2,30 +2,46 @@
 <project-private xmlns="http://www.netbeans.org/ns/project-private/1">
     <editor-bookmarks xmlns="http://www.netbeans.org/ns/editor-bookmarks/1">
         <file>
-            <url>src/solver/TablingSolver.java</url>
-            <line>677</line>
-        </file>
-        <file>
             <url>src/sudoku/SolutionStep.java</url>
             <line>1964</line>
         </file>
         <file>
-            <url>src/sudoku/SudokuPanel.java</url>
-            <line>711</line>
-            <line>1523</line>
-            <line>2830</line>
+            <url>src/sudoku/Main.java</url>
+            <line>1375</line>
+            <line>1473</line>
         </file>
         <file>
-            <url>src/sudoku/Sudoku2.java</url>
-            <line>431</line>
+            <url>src/sudoku/MainFrame.java</url>
+            <line>3264</line>
+        </file>
+        <file>
+            <url>src/solver/TablingSolver.java</url>
+            <line>677</line>
+        </file>
+        <file>
+            <url>src/sudoku/SudokuPanel.java</url>
+            <line>1895</line>
         </file>
         <file>
             <url>src/generator/SudokuGenerator.java</url>
             <line>336</line>
         </file>
         <file>
-            <url>src/sudoku/MainFrame.java</url>
-            <line>3264</line>
+            <url>src/solver/SudokuStepFinder.java</url>
+            <line>855</line>
+        </file>
+        <file>
+            <url>src/sudoku/Sudoku2.java</url>
+            <line>431</line>
+        </file>
+        <file>
+            <url>src/solver/FishSolver.java</url>
+            <line>1082</line>
+            <line>1172</line>
+        </file>
+        <file>
+            <url>src/sudoku/CellZoomPanel.java</url>
+            <line>1166</line>
         </file>
     </editor-bookmarks>
 </project-private>

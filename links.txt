@@ -1,0 +1,7 @@
+create hard sudokus
+http://www.sudoku.com/boards/viewtopic.php?t=5336&postdays=0&postorder=asc&start=0
+http://www.sudoku.com/boards/viewtopic.php?t=4212
+
+
+kraken:
+http://www.sudoku.com/boards/viewtopic.php?t=4755

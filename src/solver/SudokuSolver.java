@@ -454,11 +454,11 @@ public class SudokuSolver {
                     type != SolutionType.FULL_HOUSE)) {
                 continue;
             }
-//            Logger.getLogger(getClass().getName()).log(Level.FINER, "trying {0}: ", SolutionStep.getStepName(type));
+            Logger.getLogger(getClass().getName()).log(Level.FINER, "trying {0}: ", SolutionStep.getStepName(type));
             long nanos = System.nanoTime();
             hint = getStepFinder().getStep(type);
             nanos = System.nanoTime() - nanos;
-//            Logger.getLogger(getClass().getName()).log(Level.FINER, "{0}ms ({1})", new Object[]{nanos / 1000, hint != null ? hint.toString(2) : "-"});
+            Logger.getLogger(getClass().getName()).log(Level.FINER, "{0}ms ({1})", new Object[]{nanos / 1000, hint != null ? hint.toString(2) : "-"});
 //            if (nanos > 20000) {
 //                Logger.getLogger(getClass().getName()).log(Level.FINE, "trying {0}: {1}ms", new Object[]{SolutionStep.getStepName(type), nanos});
 //            }

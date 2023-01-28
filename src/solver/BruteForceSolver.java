@@ -19,6 +19,8 @@
 
 package solver;
 
+import generator.SudokuGeneratorFactory;
+import java.util.Arrays;
 import sudoku.SolutionStep;
 import sudoku.SolutionType;
 import sudoku.Sudoku2;
@@ -70,21 +72,29 @@ public class BruteForceSolver extends AbstractSolver {
      * If the sudoku is invalid, no result is returned.
      */
     private SolutionStep getBruteForce() {
+//        System.out.println("Brute Force: " + Arrays.toString(sudoku.getValues()));
         if (! sudoku.isSolutionSet()) {
-            // can happen, when invalid puzzles are pasted
-            return null;
+            // can happen, when command line mode is used (no brute force solving is done)
+            // sets the solution in the sudoku
+//            System.out.println("   no solution set");
+            boolean isValid = SudokuGeneratorFactory.getDefaultGeneratorInstance().validSolution(sudoku);
+            if (! isValid) {
+                return null;
+            }
         }
         
         // alle Positionen ermitteln, die im ungelösten Sudoku2 noch nicht gesetzt sind
         SudokuSet unsolved = new SudokuSet();
         for (int i = 0; i < Sudoku2.LENGTH; i++) {
             if (sudoku.getValue(i) == 0) {
+//                System.out.println("   adding: " + i);
                 unsolved.add(i);
             }
         }
         
         // jetzt die mittlere Zelle aussuchen
         int index = unsolved.size() / 2;
+//        System.out.println("   index = " + index);
         index = unsolved.get(index);
         
         // Step zusammenbauen

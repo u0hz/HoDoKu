@@ -31,6 +31,7 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.EnumSet;
@@ -1418,7 +1419,9 @@ class BatchSolveThread extends Thread {
                 if (line.length() == 0) {
                     continue;
                 }
+//                System.out.println(line);
                 sudoku.setSudoku(line);
+//                System.out.println("Sudoku: " + sudoku.getSudoku(ClipboardMode.VALUES_ONLY));
                 if (outputGrid || bruteForceTest) {
                     tmpSudoku = sudoku.clone();
                 }
@@ -1439,11 +1442,14 @@ class BatchSolveThread extends Thread {
                     thread.join();
                     //System.out.println("fas: " + steps.size());
                 } else {
+                    // only for now: check the solution
+                    generator.validSolution(sudoku);
                     solver.setSudoku(sudoku);
                     solver.solve();
-//                    System.out.println("solved!");
+//                    System.out.println("solved: " + sudoku.getSudoku(ClipboardMode.VALUES_ONLY));
                     steps = solver.getSteps();
                     for (int i = 0; i < steps.size(); i++) {
+//                        System.out.println("      " + steps.get(i).toString(2));
                         if (steps.get(i).getType() == SolutionType.BRUTE_FORCE && !needsGuessing) {
                             needsGuessing = true;
                             unsolved = true;
@@ -1464,6 +1470,16 @@ class BatchSolveThread extends Thread {
                     if (unsolved) {
                         unsolvedAnz++;
                     }
+                    // only for now: check the solution!
+                    for (int i = 0; i < sudoku.getValues().length; i++) {
+                        if (sudoku.getValue(i) != sudoku.getSolution(i)) {
+                            System.out.println("Invalid solution: ");
+                            System.out.println("   Sudoku: " + line);
+                            System.out.println("   Solution:      " + Arrays.toString(sudoku.getValues()));
+                            System.out.println("   True Solution: " + Arrays.toString(sudoku.getSolution()));
+                        }
+                    }
+//                    System.out.println("solved!");
                 }
                 String guess = needsGuessing ? " " + SolutionType.BRUTE_FORCE.getArgName() : "";
                 String template = needsTemplates ? " " + SolutionType.TEMPLATE_DEL.getArgName() : "";

@@ -906,6 +906,8 @@ public class FishSolver extends AbstractSolver {
 //        System.out.println("  Cover search:");
 //        System.out.println("    baseSet: " + baseSet);
 //        System.out.println("    endoFinSet: " + endoFinSet);
+//        printSet("baseSet", baseSetM1, baseSetM2);
+//        printSet("endoFinSet", endoFinSetM1, endoFinSetM2);
         // calculate all valid cover units for this search
         numberOfCoverUnits = 0;
         for (int i = 0; i < numberOfAllCoverUnits; i++) {
@@ -919,6 +921,8 @@ public class FishSolver extends AbstractSolver {
                 continue;
             }
             // valid cover unit
+//            System.out.println("  coverUnit: " + allCoverUnits[i]);
+//            printSet("  cands", allCoverCandidatesM1[i], allCoverCandidatesM2[i]);
             coverUnits[numberOfCoverUnits] = allCoverUnits[i];
 //            coverCandidates[numberOfCoverUnits++] = allCoverCandidates[i];
             coverCandidatesM1[numberOfCoverUnits] = allCoverCandidatesM1[i];
@@ -1161,19 +1165,30 @@ public class FishSolver extends AbstractSolver {
         // a check is only necessary if the cover unit doesnt only contain base candidates
         // for cannibalistic candidates no chain is needed
         krakenCannibalisticSet.clear();
-        for (int coverIndex = 0; coverIndex < coverUnits.length; coverIndex++) {
+//        System.out.println("================ search for kraken type 2 ========================");
+//        printSet("base units", baseSetM1, baseSetM2);
+//        printSet("cannibalistic", cannibalisticM1, cannibalisticM2);
+//        for (int coverIndex = 0; coverIndex < coverUnits.length; coverIndex++) {
+        for (int coverIndex = 0; coverIndex < numberOfCoverUnits; coverIndex++) {
             if (! coverUnitsUsed[coverUnits[coverIndex]]) {
                 continue;
             }
+//            System.out.println("cover unit: " + coverUnits[coverIndex]);
+//            printSet("cover candidates", coverCandidatesM1[coverIndex], coverCandidatesM2[coverIndex]);
             // get all base candidates for that cover unit that are not cannibalistic
 //            tmpSet.set(cInt[coverIndex]);
 //            tmpSet.and(baseCandSet);
 //            tmpSet.andNot(cannibalisticSet);
-            tmpSetM1 = coverCandidatesM1[coverUnits[coverIndex]] & baseSetM1 & ~cannibalisticM1;
-            tmpSetM2 = coverCandidatesM2[coverUnits[coverIndex]] & baseSetM2 & ~cannibalisticM2;
+//            tmpSetM1 = coverCandidatesM1[coverUnits[coverIndex]] & baseSetM1 & ~cannibalisticM1;
+            tmpSetM1 = coverCandidatesM1[coverIndex] & baseSetM1 & ~cannibalisticM1;
+//            tmpSetM2 = coverCandidatesM2[coverUnits[coverIndex]] & baseSetM2 & ~cannibalisticM2;
+            tmpSetM2 = coverCandidatesM2[coverIndex] & baseSetM2 & ~cannibalisticM2;
 //            if (cInt[coverIndex].equals(tmpSet)) {
-            if (coverCandidatesM1[coverUnits[coverIndex]] == tmpSetM1 &&
-                coverCandidatesM2[coverUnits[coverIndex]] == tmpSetM2) {
+//            if (coverCandidatesM1[coverUnits[coverIndex]] == tmpSetM1 &&
+//                coverCandidatesM2[coverUnits[coverIndex]] == tmpSetM2) {
+//            printSet("tmpSetM1", tmpSetM1, tmpSetM2);
+            if (coverCandidatesM1[coverIndex] == tmpSetM1 &&
+                coverCandidatesM2[coverIndex] == tmpSetM2) {
                 // would be a normal Forcing Chain -> skip it
                 continue;
             }
@@ -1181,6 +1196,7 @@ public class FishSolver extends AbstractSolver {
 //            tmpSet.or(fins);
             tmpSetM1 |= finsM1;
             tmpSetM2 |= finsM2;
+//            printSet("tmpSetM1 with fins", tmpSetM1, tmpSetM2);
             krakenDeleteCandSet.set(tmpSetM1, tmpSetM2);
             krakenFinSet.clear();
             for (int endCandidate = 1; endCandidate <= 9; endCandidate++) {
@@ -1195,12 +1211,16 @@ public class FishSolver extends AbstractSolver {
                         step.setSubType(step.getType());
                         step.setType(SolutionType.KRAKEN_FISH_TYPE_2);
                         step.addCandidateToDelete(endIndex, endCandidate);
-                        for (int k = 0; k < krakenFinSet.size(); k++) {
-                            Chain tmpChain = tablingSolver.getKrakenChain(krakenFinSet.get(k), candidate, endIndex, endCandidate);
+                        for (int k = 0; k < krakenDeleteCandSet.size(); k++) {
+                            Chain tmpChain = tablingSolver.getKrakenChain(krakenDeleteCandSet.get(k), candidate, endIndex, endCandidate);
                             step.addChain((Chain) tmpChain.clone());
                         }
                         tablingSolver.adjustChains(step);
                         step = addKrakenStep(step);
+//                        if (step != null) {
+//                            System.out.println(step.toString(2));
+//                            System.out.println("=========================== step found! =============================");
+//                        }
                         if (step != null && !searchAll) {
                             return step;
                         }
